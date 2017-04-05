@@ -1,4 +1,4 @@
-package mtproto
+package core
 
 import (
 	"bytes"

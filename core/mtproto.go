@@ -55,10 +55,10 @@ type appConfig struct {
 
 const appConfigError = "App configuration error: %s"
 
-func NewConfig(id, hash, version, deviceModel, systemVersion, language string) (*appConfig, error) {
+func NewConfig(id int32, hash, version, deviceModel, systemVersion, language string) (*appConfig, error) {
 	appConfig := new(appConfig)
 
-	if id == "" || hash == "" || version == "" {
+	if id == 0 || hash == "" || version == "" {
 		return nil, fmt.Errorf(appConfigError, "Fields id, hash or version are empty")
 	}
 	appConfig.id = id
@@ -84,7 +84,7 @@ func NewConfig(id, hash, version, deviceModel, systemVersion, language string) (
 }
 
 func (appConfig appConfig) Check() error {
-	if appConfig.id == "" || appConfig.hash == "" || appConfig.version == "" {
+	if appConfig.id == 0 || appConfig.hash == "" || appConfig.version == "" {
 		return fmt.Errorf(appConfigError, "appConfig.id, appConfig.hash or appConfig.version are empty")
 	}
 

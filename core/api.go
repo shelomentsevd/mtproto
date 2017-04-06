@@ -50,6 +50,10 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 
 	case crc_null:
 		r = TL_null{}
+	case crc_config:
+		// TODO: TL_config
+	case crc_dcOption:
+		// TODO: TL_dcOption
 	default:
 		m.err = fmt.Errorf("Unknown constructor: \u002508x", constructor)
 		return nil

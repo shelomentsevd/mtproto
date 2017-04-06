@@ -257,6 +257,67 @@ func (m *MTProto) readRoutine() {
 }
 
 func (m *MTProto) process(msgId int64, seqNo int32, data interface{}) interface{} {
+	switch data.(type) {
+	case TL_msg_container:
+		data := data.(TL_msg_container).items
+		for _, v := range data {
+			m.process(v.msg_id, v.seq_no, v.data)
+		}
+
+	case TL_bad_server_salt:
+		data := data.(TL_bad_server_salt)
+		m.serverSalt = data.new_server_salt
+		_ = m.saveData()
+		m.mutex.Lock()
+		for k, v := range m.msgsIdToAck {
+			delete(m.msgsIdToAck, k)
+			m.queueSend <- v
+		}
+		m.mutex.Unlock()
+
+	case TL_new_session_created:
+		data := data.(TL_new_session_created)
+		m.serverSalt = data.server_salt
+		_ = m.saveData()
+
+	case TL_ping:
+		data := data.(TL_ping)
+		m.queueSend <- packetToSend{TL_pong{msgId, data.ping_id}, nil}
+
+	case TL_pong:
+		// ignore
+
+	case TL_msgs_ack:
+		data := data.(TL_msgs_ack)
+		m.mutex.Lock()
+		for _, v := range data.msgIds {
+			delete(m.msgsIdToAck, v)
+		}
+		m.mutex.Unlock()
+
+	case TL_rpc_result:
+		data := data.(TL_rpc_result)
+		x := m.process(msgId, seqNo, data.obj)
+		m.mutex.Lock()
+		v, ok := m.msgsIdToResp[data.req_msg_id]
+		if ok {
+			v <- x.(TL)
+			close(v)
+			delete(m.msgsIdToResp, data.req_msg_id)
+		}
+		delete(m.msgsIdToAck, data.req_msg_id)
+		m.mutex.Unlock()
+
+	default:
+		return data
+
+	}
+
+	// TODO: Check why I should do this
+	if (seqNo & 1) == 1 {
+		m.queueSend <- packetToSend{TL_msgs_ack{[]int64{msgId}}, nil}
+	}
+
 	return nil
 }
 

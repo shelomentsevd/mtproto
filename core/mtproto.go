@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -33,6 +34,8 @@ type MTProto struct {
 	seqNo        int32
 	msgId        int64
 
+	appConfig *appConfig
+
 	dclist map[int32]string
 }
 
@@ -41,10 +44,78 @@ type packetToSend struct {
 	resp chan TL
 }
 
+type appConfig struct {
+	id            int32
+	hash          string
+	version       string
+	deviceModel   string
+	systemVersion string
+	language      string
+}
+
+const appConfigError = "App configuration error: %s"
+
+func NewConfig(id, hash, version, deviceModel, systemVersion, language string) (*appConfig, error) {
+	appConfig := new(appConfig)
+
+	if id == "" || hash == "" || version == "" {
+		return nil, fmt.Errorf(appConfigError, "Fields id, hash or version are empty")
+	}
+	appConfig.id = id
+	appConfig.hash = hash
+	appConfig.version = version
+
+	if deviceModel == "" {
+		appConfig.deviceModel = "Unknown"
+	}
+	appConfig.deviceModel = deviceModel
+
+	if systemVersion == "" {
+		appConfig.systemVersion = runtime.GOOS + "/" + runtime.GOARCH
+	}
+	appConfig.systemVersion = systemVersion
+
+	if language == "" {
+		appConfig.language = "en"
+	}
+	appConfig.language = language
+
+	return appConfig, nil
+}
+
+func (appConfig appConfig) Check() error {
+	if appConfig.id == "" || appConfig.hash == "" || appConfig.version == "" {
+		return fmt.Errorf(appConfigError, "appConfig.id, appConfig.hash or appConfig.version are empty")
+	}
+
+	if appConfig.deviceModel == "" {
+		return fmt.Errorf(appConfigError, "appConfig.deviceModel is empty")
+	}
+
+	if appConfig.systemVersion == "" {
+		return fmt.Errorf(appConfigError, "appConfig.systemVersion is empty")
+	}
+
+	if appConfig.language == "" {
+		return fmt.Errorf(appConfigError, "appConfig.language is empty")
+	}
+
+	return nil
+}
+
 const telegramAddr = "149.154.167.50:443"
 
-func NewMTProto(authkeyfile string) (*MTProto, error) {
+// Current API layer version
+const layer = 65
+
+func NewMTProto(authkeyfile string, appConfig appConfig) (*MTProto, error) {
 	var err error
+
+	err = appConfig.Check()
+	if err != nil {
+		return nil, err
+	}
+
 	m := new(MTProto)
 
 	m.f, err = os.OpenFile(authkeyfile, os.O_RDWR|os.O_CREATE, 0600)
@@ -66,6 +137,74 @@ func NewMTProto(authkeyfile string) (*MTProto, error) {
 }
 
 func (m *MTProto) Connect() error {
+	var err error
+	var tcpAddr *net.TCPAddr
+
+	// connect
+	tcpAddr, err = net.ResolveTCPAddr("tcp", m.addr)
+	if err != nil {
+		return err
+	}
+	m.conn, err = net.DialTCP("tcp", nil, tcpAddr)
+	if err != nil {
+		return err
+	}
+	// Packet length is encoded by a single byte (see: https://core.telegram.org/mtproto)
+	_, err = m.conn.Write([]byte{0xef})
+	if err != nil {
+		return err
+	}
+	// get new authKey if need
+	if !m.encrypted {
+		err = m.makeAuthKey()
+		if err != nil {
+			return err
+		}
+	}
+
+	// start goroutines
+	m.queueSend = make(chan packetToSend, 64)
+	m.stopSend = make(chan struct{}, 1)
+	m.stopRead = make(chan struct{}, 1)
+	m.stopPing = make(chan struct{}, 1)
+	m.allDone = make(chan struct{}, 3)
+	m.msgsIdToAck = make(map[int64]packetToSend)
+	m.msgsIdToResp = make(map[int64]chan TL)
+	m.mutex = &sync.Mutex{}
+	go m.sendRoutine()
+	go m.readRoutine()
+
+	// (help_getConfig)
+	resp := make(chan TL, 1)
+	m.queueSend <- packetToSend{
+		msg: TL_invokeWithLayer{
+			layer: layer,
+			query: TL_initConnection{
+				api_id:         m.appConfig.id,
+				device_model:   m.appConfig.deviceModel,
+				system_version: m.appConfig.systemVersion,
+				app_version:    m.appConfig.version,
+				lang_code:      m.appConfig.language,
+				query:          TL_help_getConfig{},
+			},
+		},
+		resp: resp,
+	}
+	x := <-resp
+	switch x.(type) {
+	case TL_config:
+		m.dclist = make(map[int32]string, 5)
+		for _, v := range x.(TL_config).dc_options {
+			v := v.(TL_dcOption)
+			m.dclist[v.id] = fmt.Sprintf("%s:%d", v.ip_address, v.port)
+		}
+	default:
+		return fmt.Errorf("Connection error: got: %T", x)
+	}
+
+	// start keep alive ping
+	go m.pingRoutine()
+
 	return nil
 }
 

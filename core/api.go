@@ -58,7 +58,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		}
 		date := m.Int()
 		expires := m.Int()
-		test_mode := m.ObjectGenerated(m.UInt())
+		test_mode := m.Object()
 		this_dc := m.Int()
 		dc_options := m.Vector()
 		chat_size_max := m.Int()
@@ -122,7 +122,29 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			disabled_features:        disabled_features,
 		}
 	case crc_dcOption:
-		// TODO: TL_dcOption
+		flags := m.Int()
+		var ipv6, media_only, tcpo_only bool
+		if flags & (1 << 0) {
+			ipv6 = true
+		}
+		if flags & (1 << 1) {
+			media_only = true
+		}
+		if flags & (1 << 2) {
+			tcpo_only = true
+		}
+		id := m.Int()
+		ip_address := m.String()
+		port := m.Int()
+		r = TL_dcOption{
+			flags:      flags,
+			ipv6:       ipv6,
+			media_only: media_only,
+			tcpo_only:  tcpo_only,
+			id:         id,
+			ip_address: ip_address,
+			port:       port,
+		}
 	default:
 		m.err = fmt.Errorf("Unknown constructor: \u002508x", constructor)
 		return nil
@@ -228,9 +250,9 @@ const crc_dcOption = 0x5d8c6cc
 
 type TL_dcOption struct {
 	flags      int32
-	ipv6       TL // ipv6:flags.0?true TODO: TL_true
-	media_only TL // media_only:flags.1?true TODO: TL_true
-	tcpo_only  TL // tcpo_only:flags.2?true TODO: TL_true
+	ipv6       bool // ipv6:flags.0?true TODO: TL_true
+	media_only bool // media_only:flags.1?true TODO: TL_true
+	tcpo_only  bool // tcpo_only:flags.2?true TODO: TL_true
 	id         int32
 	ip_address string
 	port       int32

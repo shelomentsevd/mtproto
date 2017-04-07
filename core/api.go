@@ -53,7 +53,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 	case crc_config:
 		flags := m.Int()
 		phonecalls_enabled := false
-		if flags & ( 1 << 1 ) {
+		if flags & (1 << 1) {
 			phonecalls_enabled = true
 		}
 		date := m.Int()
@@ -89,37 +89,37 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		me_url_prefix := m.String()
 		disabled_features := m.Vector()
 		r = TL_config{
-			flags: flags,
-			phonecalls_enabled: phonecalls_enabled,
-			date: date,
-			expires: expires,
-			test_mode: test_mode,
-			this_dc: this_dc,
-			dc_options: dc_options,
-			chat_size_max: chat_size_max,
-			megagroup_size_max: megagroup_size_max,
-			forwarded_count_max: forwarded_count_max,
-			online_update_period_ms: online_update_period_ms,
-			offline_blur_timeout_ms: offline_blur_timeout_ms,
-			offline_idle_timeout_ms: offline_idle_timeout_ms,
-			online_cloud_timeout_ms: online_cloud_timeout_ms,
-			notify_cloud_delay_ms: notify_cloud_delay_ms,
-			notify_default_delay_ms: notify_default_delay_ms,
-			chat_big_size: chat_big_size,
-			push_chat_period_ms: push_chat_period_ms,
-			push_chat_limit: push_chat_limit,
-			saved_gifs_limit: saved_gifs_limit,
-			edit_time_limit: edit_time_limit,
-			rating_e_decay: rating_e_decay,
-			stickers_recent_limit: stickers_recent_limit,
-			tmp_sessions: tmp_sessions,
+			flags:                    flags,
+			phonecalls_enabled:       phonecalls_enabled,
+			date:                     date,
+			expires:                  expires,
+			test_mode:                test_mode,
+			this_dc:                  this_dc,
+			dc_options:               dc_options,
+			chat_size_max:            chat_size_max,
+			megagroup_size_max:       megagroup_size_max,
+			forwarded_count_max:      forwarded_count_max,
+			online_update_period_ms:  online_update_period_ms,
+			offline_blur_timeout_ms:  offline_blur_timeout_ms,
+			offline_idle_timeout_ms:  offline_idle_timeout_ms,
+			online_cloud_timeout_ms:  online_cloud_timeout_ms,
+			notify_cloud_delay_ms:    notify_cloud_delay_ms,
+			notify_default_delay_ms:  notify_default_delay_ms,
+			chat_big_size:            chat_big_size,
+			push_chat_period_ms:      push_chat_period_ms,
+			push_chat_limit:          push_chat_limit,
+			saved_gifs_limit:         saved_gifs_limit,
+			edit_time_limit:          edit_time_limit,
+			rating_e_decay:           rating_e_decay,
+			stickers_recent_limit:    stickers_recent_limit,
+			tmp_sessions:             tmp_sessions,
 			pinned_dialogs_count_max: pinned_dialogs_count_max,
-			call_receive_timeout_ms: call_receive_timeout_ms,
-			call_ring_timeout_ms: call_ring_timeout_ms,
-			call_connect_timeout_ms: call_connect_timeout_ms,
-			call_packet_timeout_ms: call_packet_timeout_ms,
-			me_url_prefix: me_url_prefix,
-			disabled_features: disabled_features,
+			call_receive_timeout_ms:  call_receive_timeout_ms,
+			call_ring_timeout_ms:     call_ring_timeout_ms,
+			call_connect_timeout_ms:  call_connect_timeout_ms,
+			call_packet_timeout_ms:   call_packet_timeout_ms,
+			me_url_prefix:            me_url_prefix,
+			disabled_features:        disabled_features,
 		}
 	case crc_dcOption:
 		// TODO: TL_dcOption

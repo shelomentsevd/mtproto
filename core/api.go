@@ -53,7 +53,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 	case crc_config:
 		flags := m.Int()
 		phonecalls_enabled := false
-		if flags & (1 << 1) {
+		if flags & (1 << 1) != 0 {
 			phonecalls_enabled = true
 		}
 		date := m.Int()
@@ -78,7 +78,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		rating_e_decay := m.Int()
 		stickers_recent_limit := m.Int()
 		var tmp_sessions int32
-		if flags & (1 << 0) {
+		if flags & (1 << 0) != 0 {
 			tmp_sessions = m.Int()
 		}
 		pinned_dialogs_count_max := m.Int()
@@ -124,13 +124,13 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 	case crc_dcOption:
 		flags := m.Int()
 		var ipv6, media_only, tcpo_only bool
-		if flags & (1 << 0) {
+		if flags & (1 << 0) != 0 {
 			ipv6 = true
 		}
-		if flags & (1 << 1) {
+		if flags & (1 << 1) != 0 {
 			media_only = true
 		}
-		if flags & (1 << 2) {
+		if flags & (1 << 2) != 0 {
 			tcpo_only = true
 		}
 		id := m.Int()

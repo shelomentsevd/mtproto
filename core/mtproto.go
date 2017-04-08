@@ -44,6 +44,7 @@ type packetToSend struct {
 	resp chan TL
 }
 
+// TODO: Think about read this structure from JSON
 type appConfig struct {
 	id            int32
 	hash          string
@@ -65,20 +66,20 @@ func NewConfig(id int32, hash, version, deviceModel, systemVersion, language str
 	appConfig.hash = hash
 	appConfig.version = version
 
+	appConfig.deviceModel = deviceModel
 	if deviceModel == "" {
 		appConfig.deviceModel = "Unknown"
 	}
-	appConfig.deviceModel = deviceModel
 
+	appConfig.systemVersion = systemVersion
 	if systemVersion == "" {
 		appConfig.systemVersion = runtime.GOOS + "/" + runtime.GOARCH
 	}
-	appConfig.systemVersion = systemVersion
 
+	appConfig.language = language
 	if language == "" {
 		appConfig.language = "en"
 	}
-	appConfig.language = language
 
 	return appConfig, nil
 }
@@ -108,7 +109,7 @@ const telegramAddr = "149.154.167.50:443"
 // Current API layer version
 const layer = 65
 
-func NewMTProto(authkeyfile string, appConfig appConfig) (*MTProto, error) {
+func NewMTProto(authkeyfile string, appConfig *appConfig) (*MTProto, error) {
 	var err error
 
 	err = appConfig.Check()
@@ -117,6 +118,7 @@ func NewMTProto(authkeyfile string, appConfig appConfig) (*MTProto, error) {
 	}
 
 	m := new(MTProto)
+	m.appConfig = appConfig
 
 	m.f, err = os.OpenFile(authkeyfile, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {

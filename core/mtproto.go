@@ -215,7 +215,73 @@ func (m *MTProto) reconnect(newaddr string) error {
 }
 
 func (m *MTProto) Auth(phonenumber string) error {
-	return nil
+	var authSentCode TL_auth_sentCode
+	flag := true
+	for flag {
+		resp := make(chan TL, 1)
+		m.queueSend <- packetToSend{
+			msg: TL_auth_sendCode{
+				allow_flashcall: false,
+				phone_number: phonenumber,
+				api_id: m.appConfig.id,
+				api_hash: m.appConfig.hash,
+			},
+			resp: resp,
+		}
+		x := <-resp
+		switch x.(type) {
+		case TL_auth_sentCode:
+			authSentCode = x.(TL_auth_sentCode)
+			flag = false
+		case TL_rpc_error:
+			x := x.(TL_rpc_error)
+			if x.error_code != 303 {
+				return fmt.Errorf("RPC error_code: %d", x.error_code)
+			}
+			var newDc int32
+			n, _ := fmt.Sscanf(x.error_message, "PHONE_MIGRATE_%d", &newDc)
+			if n != 1 {
+				n, _ := fmt.Sscanf(x.error_message, "NETWORK_MIGRATE_%d", &newDc)
+				if n != 1 {
+					return fmt.Errorf("RPC error_string: %s", x.error_message)
+				}
+			}
+
+			newDcAddr, ok := m.dclist[newDc]
+			if !ok {
+				return fmt.Errorf("Wrong DC index: %d", newDc)
+			}
+			err := m.reconnect(newDcAddr)
+			if err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("Got: %T", x)
+		}
+	}
+
+	var code int
+
+	fmt.Printf("Enter code: ")
+	fmt.Scanf("%d", &code)
+
+	if authSentCode.phone_registered {
+		resp := make(chan TL, 1)
+		m.queueSend <- packetToSend {
+			msg: TL_auth_signIn{
+				phone_number: phonenumber,
+				phone_code_hash: authSentCode.phone_code_hash,
+				phone_code: fmt.Sprintf("%d", code),
+			},
+			resp: resp,
+		}
+		x := <-resp
+		auth, ok := x.(TL_auth_authorization)
+		if !ok {
+			return fmt.Errorf("RPC: %#v", x)
+		}
+		userSelf := auth.user.(TL_user)
+	}
 }
 
 func (m *MTProto) pingRoutine() {

@@ -145,6 +145,32 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			ip_address: ip_address,
 			port:       port,
 		}
+	case crc_auth_codeTypeSms:
+		// TODO
+	case crc_auth_codeTypeCall:
+		// TODO
+	case crc_auth_codeTypeFlashCall:
+		// TODO
+	case crc_auth_sentCodeTypeApp:
+		// TODO
+	case crc_auth_sentCodeTypeSms:
+		// TODO
+	case crc_auth_sentCodeTypeCall:
+		// TODO
+	case crc_auth_sentCodeTypeFlashCall:
+		// TODO
+	case crc_auth_sentCode:
+		// TODO
+	case crc_auth_sendCode:
+		// TODO
+	case crc_auth_signIn:
+		// TODO
+	case crc_auth_authorization:
+		// TODO
+	case crc_userEmpty:
+		// TODO
+	case crc_user:
+		// TODO
 	default:
 		m.err = fmt.Errorf("Unknown constructor: \u002508x", constructor)
 		return nil
@@ -259,3 +285,324 @@ type TL_dcOption struct {
 }
 
 func (e TL_dcOption) encode() []byte { return nil }
+
+//auth.codeTypeSms#72a3158c = auth.CodeType;
+const crc_auth_codeTypeSms = 0x72a3158c
+type TL_auth_codeTypeSms struct {}
+
+func (e TL_auth_codeTypeSms) encode() []byte {
+	x := NewEncodeBuf(4)
+	x.UInt(crc_auth_codeTypeSms)
+	return x.buf
+}
+//auth.codeTypeCall#741cd3e3 = auth.CodeType;
+const crc_auth_codeTypeCall = 0x741cd3e3
+type TL_auth_codeTypeCall struct {}
+
+func (e TL_auth_codeTypeCall) encode() []byte  {
+	x := NewEncodeBuf(4)
+	x.UInt(crc_auth_codeTypeCall)
+	return x.buf
+}
+//auth.codeTypeFlashCall#226ccefb = auth.CodeType;
+const crc_auth_codeTypeFlashCall = 0x226ccefb
+type TL_auth_codeTypeFlashCall struct {}
+
+func (e TL_auth_codeTypeFlashCall) encode() []byte {
+	x := NewEncodeBuf(4)
+	x.UInt(crc_auth_codeTypeFlashCall)
+	return x.buf
+}
+
+//auth.sentCodeTypeApp#3dbb5986 length:int = auth.SentCodeType;
+const crc_auth_sentCodeTypeApp = 0x3dbb5986
+type TL_auth_sentCodeTypeApp struct {}
+
+func (e TL_auth_sentCodeTypeApp) encode() []byte  {
+	x := NewEncodeBuf(4)
+	x.UInt(crc_auth_sentCodeTypeApp)
+	return x.buf
+}
+
+//auth.sentCodeTypeSms#c000bba2 length:int = auth.SentCodeType;
+const crc_auth_sentCodeTypeSms = 0xc000bba2
+type TL_auth_sentCodeTypeSms struct {}
+
+func (e TL_auth_sentCodeTypeSms) encode() []byte  {
+	x := NewEncodeBuf(4)
+	x.UInt(crc_auth_sentCodeTypeSms)
+	return x.buf
+}
+
+//auth.sentCodeTypeCall#5353e5a7 length:int = auth.SentCodeType;
+const crc_auth_sentCodeTypeCall = 0x5353e5a7
+type TL_auth_sentCodeTypeCall struct {}
+
+func (e TL_auth_sentCodeTypeCall) encode() []byte {
+	x := NewEncodeBuf(4)
+	x.UInt(crc_auth_sentCodeTypeCall)
+	return x.buf
+}
+
+//auth.sentCodeTypeFlashCall#ab03c6d9 pattern:string = auth.SentCodeType;
+const crc_auth_sentCodeTypeFlashCall = 0xab03c6d9
+type TL_auth_sentCodeTypeFlashCall struct {}
+
+func (e TL_auth_sentCodeTypeFlashCall) encode() []byte  {
+	x := NewEncodeBuf(4)
+	x.UInt(crc_auth_sentCodeTypeFlashCall)
+	return x.buf
+}
+
+// auth.sentCode#5e002502 flags:# phone_registered:flags.0?true type:auth.SentCodeType phone_code_hash:string next_type:flags.1?auth.CodeType timeout:flags.2?int = auth.SentCode;
+const crc_auth_sentCode = 0x5e002502
+type TL_auth_sentCode struct {
+	flags int32
+	phone_registered bool
+	code_type TL // type:auth.SentCodeType
+	phone_code_hash string
+	next_type TL
+	timeout int32
+}
+
+func (e TL_auth_sentCode) encode() []byte {
+	var flags int32
+	x := NewEncodeBuf(512)
+	x.UInt(crc_auth_sentCode)
+	// fill bits in flags
+	if e.phone_registered {
+		flags |= (1 << 0)
+	}
+	if _, ok := (e.next_type).(TL_null); !ok {
+		flags |= (1 << 1)
+	}
+	if e.timeout > 0 {
+		flags |= (1 << 2)
+	}
+	x.Int(flags)
+	x.Bytes(e.code_type.encode())
+	x.String(e.phone_code_hash)
+	if _, ok := (e.next_type).(TL_null); !ok {
+		x.Bytes(e.next_type.encode())
+	}
+	if e.timeout > 0 {
+		x.Int(e.timeout)
+	}
+	return x.buf
+}
+
+// auth.sendCode#86aef0ec flags:# allow_flashcall:flags.0?true phone_number:string current_number:flags.0?Bool api_id:int api_hash:string = auth.SentCode;
+const crc_auth_sendCode = 0x86aef0ec
+
+type TL_auth_sendCode struct {
+	flags int32
+	allow_flashcall bool // allow_flashcall:flags.0?true
+	phone_number string
+	current_number TL // current_number:flags.0?Bool
+	api_id int32
+	api_hash string
+}
+
+func (e TL_auth_sendCode) encode() []byte {
+	var flags int32
+	x := NewEncodeBuf(512)
+	x.UInt(crc_auth_sendCode)
+	if e.allow_flashcall {
+		flags |= (1 << 0)
+	}
+	x.Int(flags)
+	x.String(e.phone_number)
+	if e.allow_flashcall {
+		x.Bytes(e.current_number.encode())
+	}
+	x.Int(e.api_id)
+	x.String(e.api_hash)
+	return x.buf
+}
+
+// auth.signIn#bcd51581 phone_number:string phone_code_hash:string phone_code:string = auth.Authorization;
+const crc_auth_signIn = 0xbcd51581
+type TL_auth_signIn struct {
+	phone_number string
+	phone_code_hash string
+	phone_code string
+}
+
+func (e TL_auth_signIn) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_auth_signIn)
+	x.String(e.phone_number)
+	x.String(e.phone_code_hash)
+	x.String(e.phone_code)
+	return x.buf
+}
+
+// auth.authorization#cd050916 flags:# tmp_sessions:flags.0?int user:User = auth.Authorization;
+const crc_auth_authorization = 0xcd050916
+type TL_auth_authorization struct {
+	flags int32
+	tmp_sessions int32
+	user TL
+}
+
+func (e TL_auth_authorization) encode() []byte {
+	var flags int32
+	x := NewEncodeBuf(512)
+	x.UInt(crc_auth_authorization)
+	// TODO: I am not sure about this condition. Check how serialization works in other libraries
+	if e.tmp_sessions > 0 {
+		flags |= (1 << 0)
+	}
+	x.Int(flags)
+	if e.tmp_sessions > 0 {
+		x.Int(e.tmp_sessions)
+	}
+	x.Bytes(e.user.encode())
+	return x.buf
+}
+
+//userEmpty#200250ba id:int = User;
+const crc_userEmpty = 0x200250ba
+type TL_userEmpty struct {
+	id int32
+}
+
+func (e TL_userEmpty) encode() []byte {
+	x := NewEncodeBuf(8)
+	x.UInt(crc_userEmpty)
+	x.Int(e.id)
+
+	return x.buf
+}
+
+//user#d10d979a flags:# self:flags.10?true contact:flags.11?true mutual_contact:flags.12?true deleted:flags.13?true bot:flags.14?true bot_chat_history:flags.15?true bot_nochats:flags.16?true verified:flags.17?true restricted:flags.18?true min:flags.20?true bot_inline_geo:flags.21?true id:int access_hash:flags.0?long first_name:flags.1?string last_name:flags.2?string username:flags.3?string phone:flags.4?string photo:flags.5?UserProfilePhoto status:flags.6?UserStatus bot_info_version:flags.14?int restriction_reason:flags.18?string bot_inline_placeholder:flags.19?string = User;
+const crc_user = 0xd10d979a
+type TL_user struct {
+	flags int32
+	self bool// self:flags.10?true
+	contact bool // contact:flags.11?true
+	mutual_contact bool // mutual_contact:flags.12?true
+	deleted bool // deleted:flags.13?true
+	bot bool // bot:flags.14?true
+	bot_chat_history bool // bot_chat_history:flags.15?true
+	bot_nochats bool // bot_nochats:flags.16?true
+	verified bool // verified:flags.17?true
+	restricted bool // restricted:flags.18?true
+	min bool // min:flags.20?true
+	bot_inline_geo bool // bot_inline_geo:flags.21?true
+	id int32 // id:int
+	access_hash int64 // access_hash:flags.0?long
+	first_name string // first_name:flags.1?string
+	last_name string // last_name:flags.2?string
+	username string // username:flags.3?string
+	phone string // phone:flags.4?string
+	photo TL // photo:flags.5?UserProfilePhoto
+	status TL // status:flags.6?UserStatus
+	bot_info_version int32 // bot_info_version:flags.14?int
+	restriction_reason string // restriction_reason:flags.18?string
+	bot_inline_placeholder string // bot_inline_placeholder:flags.19?string
+}
+
+func (e TL_user) encode() []byte  {
+	var flags int32
+	// fill bits in flags
+	if e.self {
+		flags |= (1 << 10)
+	}
+	if e.contact {
+		flags |= (1 << 11)
+	}
+	if e.mutual_contact {
+		flags |= (1 << 12)
+	}
+	if e.deleted {
+		flags |= (1 << 13)
+	}
+	if e.bot {
+		flags |= (1 << 14)
+	}
+	if e.bot_chat_history {
+		flags |= (1 << 15)
+	}
+	if e.bot_nochats {
+		flags |= (1 << 16)
+	}
+	if e.verified {
+		flags |= (1 << 17)
+	}
+	if e.restricted {
+		flags |= (1 << 18)
+	}
+	if e.min {
+		flags |= (1 << 20)
+	}
+	if e.bot_inline_geo {
+		flags |= (1 << 21)
+	}
+	if e.access_hash > 0 {
+		flags |= (1 << 0)
+	}
+	if e.first_name != "" {
+		flags |= (1 << 1)
+	}
+	if e.last_name != "" {
+		flags |= (1 << 2)
+	}
+	if e.username != "" {
+		flags |= (1 << 3)
+	}
+	if e.phone != "" {
+		flags |= (1 << 4)
+	}
+	if _, ok := e.photo.(TL_UserProfilePhoto); ok {
+		flags |= (1 << 5)
+	}
+	if _, ok := e.status.(TL_null); !ok {
+		flags |= (1 << 6)
+	}
+	if e.bot_info_version > 0 {
+		flags |= (1 << 14)
+	}
+	if e.restriction_reason != "" {
+		flags |= (1 << 18)
+	}
+	if e.bot_inline_placeholder != "" {
+		flags |= (1 << 19)
+	}
+	x := NewEncodeBuf(512)
+	x.UInt(crc_user)
+	x.Int(flags)
+	x.Int(e.id)
+	if flags & (1 << 0) != 0 {
+		x.Long(e.access_hash)
+	}
+	if flags & (1 << 1) != 0 {
+		x.String(e.first_name)
+	}
+	if flags & (1 << 2) != 0 {
+		x.String(e.last_name)
+	}
+	if flags & (1 << 3) != 0 {
+		x.String(e.username)
+	}
+	if flags & (1 << 4) != 0 {
+		x.String(e.phone)
+	}
+	if flags & (1 << 5) != 0 {
+		x.Bytes(e.photo.encode())
+	}
+	if flags & (1 << 6) != 0 {
+		x.Bytes(e.status.encode())
+	}
+	if flags & (1 << 14) != 0 {
+		x.Int(e.bot_info_version)
+	}
+	if flags & (1 << 18) != 0 {
+		x.String(e.restriction_reason)
+	}
+	if flags & (1 << 19) != 0 {
+		x.String(e.bot_inline_placeholder)
+	}
+
+	return x.buf
+}

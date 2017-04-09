@@ -265,23 +265,28 @@ func (m *MTProto) Auth(phonenumber string) error {
 	fmt.Printf("Enter code: ")
 	fmt.Scanf("%d", &code)
 
-	if authSentCode.phone_registered {
-		resp := make(chan TL, 1)
-		m.queueSend <- packetToSend {
-			msg: TL_auth_signIn{
-				phone_number: phonenumber,
-				phone_code_hash: authSentCode.phone_code_hash,
-				phone_code: fmt.Sprintf("%d", code),
-			},
-			resp: resp,
-		}
-		x := <-resp
-		auth, ok := x.(TL_auth_authorization)
-		if !ok {
-			return fmt.Errorf("RPC: %#v", x)
-		}
-		userSelf := auth.user.(TL_user)
+	if !authSentCode.phone_registered {
+		return errors.New("Cannot sign up yet")
 	}
+
+	resp := make(chan TL, 1)
+	m.queueSend <- packetToSend {
+		msg: TL_auth_signIn{
+			phone_number: phonenumber,
+			phone_code_hash: authSentCode.phone_code_hash,
+			phone_code: fmt.Sprintf("%d", code),
+		},
+		resp: resp,
+	}
+	x := <-resp
+	auth, ok := x.(TL_auth_authorization)
+	if !ok {
+		return fmt.Errorf("RPC: %#v", x)
+	}
+	userSelf := auth.user.(TL_user)
+	fmt.Printf("Signed in: id %d name <%s %s>\n", userSelf.id, userSelf.first_name, userSelf.last_name)
+
+	return nil
 }
 
 func (m *MTProto) pingRoutine() {

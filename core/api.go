@@ -146,39 +146,231 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			port:       port,
 		}
 	case crc_auth_codeTypeSms:
-		// TODO
+		r = TL_auth_codeTypeSms{}
 	case crc_auth_codeTypeCall:
-		// TODO
+		r = TL_auth_codeTypeCall{}
 	case crc_auth_codeTypeFlashCall:
-		// TODO
+		r = TL_auth_codeTypeFlashCall{}
 	case crc_auth_sentCodeTypeApp:
-		// TODO
+		r = TL_auth_sentCodeTypeApp{}
 	case crc_auth_sentCodeTypeSms:
-		// TODO
+		r = TL_auth_sentCodeTypeSms{}
 	case crc_auth_sentCodeTypeCall:
-		// TODO
+		r = TL_auth_sentCodeTypeCall{}
 	case crc_auth_sentCodeTypeFlashCall:
-		// TODO
+		r = TL_auth_sentCodeTypeFlashCall{}
 	case crc_auth_sentCode:
-		// TODO
+		flags := m.Int()
+		phone_registered := false
+		if flags&(1<<0) != 0 {
+			phone_registered = true
+		}
+		code_type := m.Object()
+		phone_code_hash := m.String()
+		var next_type TL
+		next_type = TL_null{}
+		if flags&(1<<1) != 0 {
+			next_type = m.Object()
+		}
+		var timeout int32
+		if flags&(1<<2) != 0 {
+			timeout = m.Int()
+		}
+		r = TL_auth_sentCode{
+			flags:            flags,
+			phone_registered: phone_registered,
+			code_type:        code_type,
+			phone_code_hash:  phone_code_hash,
+			next_type:        next_type,
+			timeout:          timeout,
+		}
 	case crc_auth_sendCode:
-		// TODO
+		flags := m.Int()
+		allow_flashcall := false
+		if flags&(1<<0) != 0 {
+			allow_flashcall = true
+		}
+		phone_number := m.String()
+		var current_number TL
+		if flags&(1<<0) != 0 {
+			current_number = m.Object()
+		}
+		api_id := m.Int()
+		api_hash := m.String()
+		r = TL_auth_sendCode{
+			flags:           flags,
+			allow_flashcall: allow_flashcall,
+			phone_number:    phone_number,
+			current_number:  current_number,
+			api_id:          api_id,
+			api_hash:        api_hash,
+		}
 	case crc_auth_signIn:
-		// TODO
+		r = TL_auth_signIn{
+			phone_number:    m.String(),
+			phone_code_hash: m.String(),
+			phone_code:      m.String(),
+		}
 	case crc_auth_authorization:
-		// TODO
+		flags := m.Int()
+		var tmp_sessions int32
+		if flags&(1<<0) != 0 {
+			tmp_sessions = m.Int()
+		}
+		user := m.Object()
+		r = TL_auth_authorization{
+			flags:        flags,
+			tmp_sessions: tmp_sessions,
+			user:         user,
+		}
 	case crc_userEmpty:
-		// TODO
+		r = TL_user{
+			id: m.Int(),
+		}
 	case crc_user:
-		// TODO
+		flags := m.Int()
+		self := false
+		if flags&(1<<10) != 0 {
+			self = true
+		}
+		contact := false
+		if flags&(1<<11) != 0 {
+			contact = true
+		}
+		mutual_contact := false
+		if flags&(1<<12) != 0 {
+			mutual_contact = true
+		}
+		deleted := false
+		if flags&(1<<13) != 0 {
+			deleted = true
+		}
+		bot := false
+		if flags&(1<<14) != 0 {
+			bot = true
+		}
+		bot_chat_history := false
+		if flags&(1<<15) != 0 {
+			bot_chat_history = true
+		}
+		bot_nochats := false
+		if flags&(1<<16) != 0 {
+			bot_nochats = true
+		}
+		verified := false
+		if flags&(1<<17) != 0 {
+			verified = true
+		}
+		restricted := false
+		if flags&(1<<18) != 0 {
+			restricted = true
+		}
+		min := false
+		if flags&(1<<20) != 0 {
+			min = true
+		}
+		bot_inline_geo := false
+		if flags&(1<<21) != 0 {
+			bot_inline_geo = true
+		}
+		id := m.Int()
+		var access_hash int64
+		if flags&(1<<0) != 0 {
+			access_hash = m.Long()
+		}
+		var first_name, last_name, username, phone string
+		if flags&(1<<1) != 0 {
+			first_name = m.String()
+		}
+		if flags&(1<<2) != 0 {
+			last_name = m.String()
+		}
+		if flags&(1<<3) != 0 {
+			username = m.String()
+		}
+		if flags&(1<<4) != 0 {
+			phone = m.String()
+		}
+		var photo, status TL
+		if flags&(1<<5) != 0 {
+			photo = m.Object()
+		}
+		if flags&(1<<6) != 0 {
+			status = m.Object()
+		}
+		var bot_info_version int32
+		if flags&(1<<14) != 0 {
+			bot_info_version = m.Int()
+		}
+		var restriction_reason, bot_inline_placeholder string
+		if flags&(1<<18) != 0 {
+			restriction_reason = m.String()
+		}
+		if flags&(1<<19) != 0 {
+			bot_inline_placeholder = m.String()
+		}
+		r = TL_user{
+			flags:                  flags,
+			self:                   self,
+			contact:                contact,
+			mutual_contact:         mutual_contact,
+			deleted:                deleted,
+			bot:                    bot,
+			bot_chat_history:       bot_chat_history,
+			bot_nochats:            bot_nochats,
+			verified:               verified,
+			restricted:             restricted,
+			min:                    min,
+			bot_inline_geo:         bot_inline_geo,
+			id:                     id,
+			access_hash:            access_hash,
+			first_name:             first_name,
+			last_name:              last_name,
+			username:               username,
+			phone:                  phone,
+			photo:                  photo,
+			status:                 status,
+			bot_info_version:       bot_info_version,
+			restriction_reason:     restriction_reason,
+			bot_inline_placeholder: bot_inline_placeholder,
+		}
 	case crc_userProfilePhotoEmpty:
-		// TODO
+		r = TL_userProfilePhotoEmpty{}
 	case crc_userProfilePhoto:
-		// TODO
+		r = TL_userProfilePhoto{
+			photo_id:    m.Long(),
+			photo_small: m.Object(),
+			photo_big:   m.Object(),
+		}
 	case crc_fileLocationUnavailable:
-		// TODO
+		r = TL_fileLocationUnavailable{
+			volume_id: m.Long(),
+			local_id:  m.Int(),
+			secret:    m.Long(),
+		}
 	case crc_fileLocation:
-		// TODO
+		r = TL_fileLocation{
+			dc_id:     m.Int(),
+			volume_id: m.Long(),
+			local_id:  m.Int(),
+			secret:    m.Long(),
+		}
+	case crc_userStatusEmpty:
+		r = TL_userStatusEmpty{}
+	case crc_userStatusOnline:
+		r = TL_userStatusOnline{
+			expires: m.Int(),
+		}
+	case crc_userStatusOffline:
+		r = TL_userStatusOffline{
+			was_online: m.Int(),
+		}
+	case crc_userStatusRecently:
+		r = TL_userStatusRecently{}
+	case crc_userStatusLastWeek:
+		r = TL_userStatusLastWeek{}
+	case crc_userStatusLastMonth:
+		r = TL_userStatusLastMonth{}
 	default:
 		m.err = fmt.Errorf("Unknown constructor: \u002508x", constructor)
 		return nil
@@ -545,6 +737,78 @@ func (e TL_userProfilePhoto) encode() []byte {
 	x.Long(e.photo_id)
 	x.Bytes(e.photo_small.encode())
 	x.Bytes(e.photo_big.encode())
+	return x.buf
+}
+
+// userStatusEmpty#9d05049 = UserStatus;
+const crc_userStatusEmpty = 0x9d05049
+
+type TL_userStatusEmpty struct{}
+
+func (e TL_userStatusEmpty) encode() []byte {
+	x := NewEncodeBuf(4)
+	x.UInt(crc_userStatusEmpty)
+	return x.buf
+}
+
+// userStatusOnline#edb93949 expires:int = UserStatus;
+const crc_userStatusOnline = 0xedb93949
+
+type TL_userStatusOnline struct {
+	expires int32
+}
+
+func (e TL_userStatusOnline) encode() []byte {
+	x := NewEncodeBuf(8)
+	x.UInt(crc_userStatusOnline)
+	x.Int(e.expires)
+	return x.buf
+}
+
+// userStatusOffline#8c703f was_online:int = UserStatus;
+const crc_userStatusOffline = 0x8c703f
+
+type TL_userStatusOffline struct {
+	was_online int32
+}
+
+func (e TL_userStatusOffline) encode() []byte {
+	x := NewEncodeBuf(8)
+	x.UInt(crc_userStatusOffline)
+	x.Int(e.was_online)
+	return x.buf
+}
+
+// userStatusRecently#e26f42f1 = UserStatus;
+const crc_userStatusRecently = 0xe26f42f1
+
+type TL_userStatusRecently struct{}
+
+func (e TL_userStatusRecently) encode() []byte {
+	x := NewEncodeBuf(4)
+	x.UInt(crc_userStatusRecently)
+	return x.buf
+}
+
+// userStatusLastWeek#7bf09fc = UserStatus;
+const crc_userStatusLastWeek = 0x7bf09fc
+
+type TL_userStatusLastWeek struct{}
+
+func (e TL_userStatusLastWeek) encode() []byte {
+	x := NewEncodeBuf(4)
+	x.UInt(crc_userStatusLastWeek)
+	return x.buf
+}
+
+// userStatusLastMonth#77ebc742 = UserStatus;
+const crc_userStatusLastMonth = 0x77ebc742
+
+type TL_userStatusLastMonth struct{}
+
+func (e TL_userStatusLastMonth) encode() []byte {
+	x := NewEncodeBuf(4)
+	x.UInt(crc_userStatusLastMonth)
 	return x.buf
 }
 

@@ -152,13 +152,21 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 	case crc_auth_codeTypeFlashCall:
 		r = TL_auth_codeTypeFlashCall{}
 	case crc_auth_sentCodeTypeApp:
-		r = TL_auth_sentCodeTypeApp{}
+		r = TL_auth_sentCodeTypeApp{
+			length: m.Int(),
+		}
 	case crc_auth_sentCodeTypeSms:
-		r = TL_auth_sentCodeTypeSms{}
+		r = TL_auth_sentCodeTypeSms{
+			length: m.Int(),
+		}
 	case crc_auth_sentCodeTypeCall:
-		r = TL_auth_sentCodeTypeCall{}
+		r = TL_auth_sentCodeTypeCall{
+			length: m.Int(),
+		}
 	case crc_auth_sentCodeTypeFlashCall:
-		r = TL_auth_sentCodeTypeFlashCall{}
+		r = TL_auth_sentCodeTypeFlashCall{
+			pattern: m.String(),
+		}
 	case crc_auth_sentCode:
 		flags := m.Int()
 		phone_registered := false
@@ -372,7 +380,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 	case crc_userStatusLastMonth:
 		r = TL_userStatusLastMonth{}
 	default:
-		m.err = fmt.Errorf("Unknown constructor: \u002508x", constructor)
+		m.err = fmt.Errorf("Unknown constructor: %x", constructor)
 		return nil
 	}
 	return
@@ -522,44 +530,56 @@ func (e TL_auth_codeTypeFlashCall) encode() []byte {
 //auth.sentCodeTypeApp#3dbb5986 length:int = auth.SentCodeType;
 const crc_auth_sentCodeTypeApp = 0x3dbb5986
 
-type TL_auth_sentCodeTypeApp struct{}
+type TL_auth_sentCodeTypeApp struct {
+	length int32
+}
 
 func (e TL_auth_sentCodeTypeApp) encode() []byte {
-	x := NewEncodeBuf(4)
+	x := NewEncodeBuf(8)
 	x.UInt(crc_auth_sentCodeTypeApp)
+	x.Int(e.length)
 	return x.buf
 }
 
 //auth.sentCodeTypeSms#c000bba2 length:int = auth.SentCodeType;
 const crc_auth_sentCodeTypeSms = 0xc000bba2
 
-type TL_auth_sentCodeTypeSms struct{}
+type TL_auth_sentCodeTypeSms struct {
+	length int32
+}
 
 func (e TL_auth_sentCodeTypeSms) encode() []byte {
-	x := NewEncodeBuf(4)
+	x := NewEncodeBuf(8)
 	x.UInt(crc_auth_sentCodeTypeSms)
+	x.Int(e.length)
 	return x.buf
 }
 
 //auth.sentCodeTypeCall#5353e5a7 length:int = auth.SentCodeType;
 const crc_auth_sentCodeTypeCall = 0x5353e5a7
 
-type TL_auth_sentCodeTypeCall struct{}
+type TL_auth_sentCodeTypeCall struct {
+	length int32
+}
 
 func (e TL_auth_sentCodeTypeCall) encode() []byte {
-	x := NewEncodeBuf(4)
+	x := NewEncodeBuf(8)
 	x.UInt(crc_auth_sentCodeTypeCall)
+	x.Int(e.length)
 	return x.buf
 }
 
 //auth.sentCodeTypeFlashCall#ab03c6d9 pattern:string = auth.SentCodeType;
 const crc_auth_sentCodeTypeFlashCall = 0xab03c6d9
 
-type TL_auth_sentCodeTypeFlashCall struct{}
+type TL_auth_sentCodeTypeFlashCall struct {
+	pattern string
+}
 
 func (e TL_auth_sentCodeTypeFlashCall) encode() []byte {
-	x := NewEncodeBuf(4)
+	x := NewEncodeBuf(512)
 	x.UInt(crc_auth_sentCodeTypeFlashCall)
+	x.String(e.pattern)
 	return x.buf
 }
 

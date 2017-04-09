@@ -289,8 +289,8 @@ func (m *DecodeBuf) Object() (r TL) {
 		return nil
 	}
 
-	// fmt.Printf("[%08x]\n", constructor)
-	// m.dump()
+	fmt.Printf("[%08x]\n", constructor)
+	m.dump()
 
 	switch constructor {
 
@@ -364,7 +364,6 @@ func (m *DecodeBuf) Object() (r TL) {
 		}
 		d := NewDecodeBuf(obj)
 		r = d.Object()
-
 	default:
 		r = m.ObjectGenerated(constructor)
 

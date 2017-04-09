@@ -63,9 +63,9 @@ func main() {
 		os.Exit(2)
 	}
 
-	//switch os.Args[1] {
-	//case "auth":
-	//	err = m.Auth(os.Args[2])
+	switch os.Args[1] {
+	case "auth":
+		err = m.Auth(os.Args[2])
 	//case "msg":
 	//	user_id, _ := strconv.Atoi(os.Args[2])
 	//	err = m.SendMessage(int32(user_id), os.Args[3])
@@ -83,7 +83,9 @@ func main() {
 	//	// err = m.GetRecentGeochats(0, 1000)
 	//	// err = m.GetUsers(users)
 	//}
-	//}
+	default:
+		err = fmt.Errorf("Unknown command %s\n", os.Args[1])
+	}
 
 
 	if err != nil {

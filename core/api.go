@@ -171,6 +171,14 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		// TODO
 	case crc_user:
 		// TODO
+	case crc_userProfilePhotoEmpty:
+		// TODO
+	case crc_userProfilePhoto:
+		// TODO
+	case crc_fileLocationUnavailable:
+		// TODO
+	case crc_fileLocation:
+		// TODO
 	default:
 		m.err = fmt.Errorf("Unknown constructor: \u002508x", constructor)
 		return nil
@@ -461,6 +469,68 @@ func (e TL_auth_authorization) encode() []byte {
 	return x.buf
 }
 
+//fileLocationUnavailable#7c596b46 volume_id:long local_id:int secret:long = FileLocation;
+const crc_fileLocationUnavailable = 0x7c596b46
+
+type TL_fileLocationUnavailable struct {
+	volume_id int64
+	local_id int32
+	secret int64
+}
+
+func (e TL_fileLocationUnavailable) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_fileLocationUnavailable)
+	x.Long(e.volume_id)
+	x.Int(e.local_id)
+	x.Long(e.secret)
+	return x.buf
+}
+//fileLocation#53d69076 dc_id:int volume_id:long local_id:int secret:long = FileLocation;
+const crc_fileLocation = 0x53d69076
+type TL_fileLocation struct {
+	dc_id int32
+	volume_id int64
+	local_id int32
+	secret int64
+}
+
+func (e TL_fileLocation) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_fileLocation)
+	x.Int(e.dc_id)
+	x.Long(e.volume_id)
+	x.Int(e.local_id)
+	x.Long(e.secret)
+	return x.buf
+}
+//userProfilePhotoEmpty#4f11bae1 = UserProfilePhoto;
+const crc_userProfilePhotoEmpty = 0x4f11bae1
+type TL_userProfilePhotoEmpty struct {}
+
+func (e TL_userProfilePhotoEmpty) encode() []byte  {
+	x := NewEncodeBuf(4)
+	x.UInt(crc_userProfilePhotoEmpty)
+	return x.buf
+}
+
+//userProfilePhoto#d559d8c8 photo_id:long photo_small:FileLocation photo_big:FileLocation = UserProfilePhoto;
+const crc_userProfilePhoto = 0xd559d8c8
+type TL_userProfilePhoto struct {
+	photo_id int64
+	photo_small TL // FileLocation
+	photo_big TL // FileLocation
+}
+
+func (e TL_userProfilePhoto) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_userProfilePhoto)
+	x.Long(e.photo_id)
+	x.Bytes(e.photo_small.encode())
+	x.Bytes(e.photo_big.encode())
+	return x.buf
+}
+
 //userEmpty#200250ba id:int = User;
 const crc_userEmpty = 0x200250ba
 type TL_userEmpty struct {
@@ -554,7 +624,7 @@ func (e TL_user) encode() []byte  {
 	if e.phone != "" {
 		flags |= (1 << 4)
 	}
-	if _, ok := e.photo.(TL_UserProfilePhoto); ok {
+	if _, ok := e.photo.(TL_userProfilePhoto); ok {
 		flags |= (1 << 5)
 	}
 	if _, ok := e.status.(TL_null); !ok {

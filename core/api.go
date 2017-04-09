@@ -53,7 +53,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 	case crc_config:
 		flags := m.Int()
 		phonecalls_enabled := false
-		if flags & (1 << 1) != 0 {
+		if flags&(1<<1) != 0 {
 			phonecalls_enabled = true
 		}
 		date := m.Int()
@@ -78,7 +78,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		rating_e_decay := m.Int()
 		stickers_recent_limit := m.Int()
 		var tmp_sessions int32
-		if flags & (1 << 0) != 0 {
+		if flags&(1<<0) != 0 {
 			tmp_sessions = m.Int()
 		}
 		pinned_dialogs_count_max := m.Int()
@@ -124,13 +124,13 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 	case crc_dcOption:
 		flags := m.Int()
 		var ipv6, media_only, tcpo_only bool
-		if flags & (1 << 0) != 0 {
+		if flags&(1<<0) != 0 {
 			ipv6 = true
 		}
-		if flags & (1 << 1) != 0 {
+		if flags&(1<<1) != 0 {
 			media_only = true
 		}
-		if flags & (1 << 2) != 0 {
+		if flags&(1<<2) != 0 {
 			tcpo_only = true
 		}
 		id := m.Int()
@@ -296,25 +296,30 @@ func (e TL_dcOption) encode() []byte { return nil }
 
 //auth.codeTypeSms#72a3158c = auth.CodeType;
 const crc_auth_codeTypeSms = 0x72a3158c
-type TL_auth_codeTypeSms struct {}
+
+type TL_auth_codeTypeSms struct{}
 
 func (e TL_auth_codeTypeSms) encode() []byte {
 	x := NewEncodeBuf(4)
 	x.UInt(crc_auth_codeTypeSms)
 	return x.buf
 }
+
 //auth.codeTypeCall#741cd3e3 = auth.CodeType;
 const crc_auth_codeTypeCall = 0x741cd3e3
-type TL_auth_codeTypeCall struct {}
 
-func (e TL_auth_codeTypeCall) encode() []byte  {
+type TL_auth_codeTypeCall struct{}
+
+func (e TL_auth_codeTypeCall) encode() []byte {
 	x := NewEncodeBuf(4)
 	x.UInt(crc_auth_codeTypeCall)
 	return x.buf
 }
+
 //auth.codeTypeFlashCall#226ccefb = auth.CodeType;
 const crc_auth_codeTypeFlashCall = 0x226ccefb
-type TL_auth_codeTypeFlashCall struct {}
+
+type TL_auth_codeTypeFlashCall struct{}
 
 func (e TL_auth_codeTypeFlashCall) encode() []byte {
 	x := NewEncodeBuf(4)
@@ -324,9 +329,10 @@ func (e TL_auth_codeTypeFlashCall) encode() []byte {
 
 //auth.sentCodeTypeApp#3dbb5986 length:int = auth.SentCodeType;
 const crc_auth_sentCodeTypeApp = 0x3dbb5986
-type TL_auth_sentCodeTypeApp struct {}
 
-func (e TL_auth_sentCodeTypeApp) encode() []byte  {
+type TL_auth_sentCodeTypeApp struct{}
+
+func (e TL_auth_sentCodeTypeApp) encode() []byte {
 	x := NewEncodeBuf(4)
 	x.UInt(crc_auth_sentCodeTypeApp)
 	return x.buf
@@ -334,9 +340,10 @@ func (e TL_auth_sentCodeTypeApp) encode() []byte  {
 
 //auth.sentCodeTypeSms#c000bba2 length:int = auth.SentCodeType;
 const crc_auth_sentCodeTypeSms = 0xc000bba2
-type TL_auth_sentCodeTypeSms struct {}
 
-func (e TL_auth_sentCodeTypeSms) encode() []byte  {
+type TL_auth_sentCodeTypeSms struct{}
+
+func (e TL_auth_sentCodeTypeSms) encode() []byte {
 	x := NewEncodeBuf(4)
 	x.UInt(crc_auth_sentCodeTypeSms)
 	return x.buf
@@ -344,7 +351,8 @@ func (e TL_auth_sentCodeTypeSms) encode() []byte  {
 
 //auth.sentCodeTypeCall#5353e5a7 length:int = auth.SentCodeType;
 const crc_auth_sentCodeTypeCall = 0x5353e5a7
-type TL_auth_sentCodeTypeCall struct {}
+
+type TL_auth_sentCodeTypeCall struct{}
 
 func (e TL_auth_sentCodeTypeCall) encode() []byte {
 	x := NewEncodeBuf(4)
@@ -354,9 +362,10 @@ func (e TL_auth_sentCodeTypeCall) encode() []byte {
 
 //auth.sentCodeTypeFlashCall#ab03c6d9 pattern:string = auth.SentCodeType;
 const crc_auth_sentCodeTypeFlashCall = 0xab03c6d9
-type TL_auth_sentCodeTypeFlashCall struct {}
 
-func (e TL_auth_sentCodeTypeFlashCall) encode() []byte  {
+type TL_auth_sentCodeTypeFlashCall struct{}
+
+func (e TL_auth_sentCodeTypeFlashCall) encode() []byte {
 	x := NewEncodeBuf(4)
 	x.UInt(crc_auth_sentCodeTypeFlashCall)
 	return x.buf
@@ -364,13 +373,14 @@ func (e TL_auth_sentCodeTypeFlashCall) encode() []byte  {
 
 // auth.sentCode#5e002502 flags:# phone_registered:flags.0?true type:auth.SentCodeType phone_code_hash:string next_type:flags.1?auth.CodeType timeout:flags.2?int = auth.SentCode;
 const crc_auth_sentCode = 0x5e002502
+
 type TL_auth_sentCode struct {
-	flags int32
+	flags            int32
 	phone_registered bool
-	code_type TL // type:auth.SentCodeType
-	phone_code_hash string
-	next_type TL
-	timeout int32
+	code_type        TL // type:auth.SentCodeType
+	phone_code_hash  string
+	next_type        TL
+	timeout          int32
 }
 
 func (e TL_auth_sentCode) encode() []byte {
@@ -403,12 +413,12 @@ func (e TL_auth_sentCode) encode() []byte {
 const crc_auth_sendCode = 0x86aef0ec
 
 type TL_auth_sendCode struct {
-	flags int32
+	flags           int32
 	allow_flashcall bool // allow_flashcall:flags.0?true
-	phone_number string
-	current_number TL // current_number:flags.0?Bool
-	api_id int32
-	api_hash string
+	phone_number    string
+	current_number  TL // current_number:flags.0?Bool
+	api_id          int32
+	api_hash        string
 }
 
 func (e TL_auth_sendCode) encode() []byte {
@@ -430,10 +440,11 @@ func (e TL_auth_sendCode) encode() []byte {
 
 // auth.signIn#bcd51581 phone_number:string phone_code_hash:string phone_code:string = auth.Authorization;
 const crc_auth_signIn = 0xbcd51581
+
 type TL_auth_signIn struct {
-	phone_number string
+	phone_number    string
 	phone_code_hash string
-	phone_code string
+	phone_code      string
 }
 
 func (e TL_auth_signIn) encode() []byte {
@@ -447,10 +458,11 @@ func (e TL_auth_signIn) encode() []byte {
 
 // auth.authorization#cd050916 flags:# tmp_sessions:flags.0?int user:User = auth.Authorization;
 const crc_auth_authorization = 0xcd050916
+
 type TL_auth_authorization struct {
-	flags int32
+	flags        int32
 	tmp_sessions int32
-	user TL
+	user         TL
 }
 
 func (e TL_auth_authorization) encode() []byte {
@@ -474,8 +486,8 @@ const crc_fileLocationUnavailable = 0x7c596b46
 
 type TL_fileLocationUnavailable struct {
 	volume_id int64
-	local_id int32
-	secret int64
+	local_id  int32
+	secret    int64
 }
 
 func (e TL_fileLocationUnavailable) encode() []byte {
@@ -486,13 +498,15 @@ func (e TL_fileLocationUnavailable) encode() []byte {
 	x.Long(e.secret)
 	return x.buf
 }
+
 //fileLocation#53d69076 dc_id:int volume_id:long local_id:int secret:long = FileLocation;
 const crc_fileLocation = 0x53d69076
+
 type TL_fileLocation struct {
-	dc_id int32
+	dc_id     int32
 	volume_id int64
-	local_id int32
-	secret int64
+	local_id  int32
+	secret    int64
 }
 
 func (e TL_fileLocation) encode() []byte {
@@ -504,11 +518,13 @@ func (e TL_fileLocation) encode() []byte {
 	x.Long(e.secret)
 	return x.buf
 }
+
 //userProfilePhotoEmpty#4f11bae1 = UserProfilePhoto;
 const crc_userProfilePhotoEmpty = 0x4f11bae1
-type TL_userProfilePhotoEmpty struct {}
 
-func (e TL_userProfilePhotoEmpty) encode() []byte  {
+type TL_userProfilePhotoEmpty struct{}
+
+func (e TL_userProfilePhotoEmpty) encode() []byte {
 	x := NewEncodeBuf(4)
 	x.UInt(crc_userProfilePhotoEmpty)
 	return x.buf
@@ -516,10 +532,11 @@ func (e TL_userProfilePhotoEmpty) encode() []byte  {
 
 //userProfilePhoto#d559d8c8 photo_id:long photo_small:FileLocation photo_big:FileLocation = UserProfilePhoto;
 const crc_userProfilePhoto = 0xd559d8c8
+
 type TL_userProfilePhoto struct {
-	photo_id int64
+	photo_id    int64
 	photo_small TL // FileLocation
-	photo_big TL // FileLocation
+	photo_big   TL // FileLocation
 }
 
 func (e TL_userProfilePhoto) encode() []byte {
@@ -533,6 +550,7 @@ func (e TL_userProfilePhoto) encode() []byte {
 
 //userEmpty#200250ba id:int = User;
 const crc_userEmpty = 0x200250ba
+
 type TL_userEmpty struct {
 	id int32
 }
@@ -547,33 +565,34 @@ func (e TL_userEmpty) encode() []byte {
 
 //user#d10d979a flags:# self:flags.10?true contact:flags.11?true mutual_contact:flags.12?true deleted:flags.13?true bot:flags.14?true bot_chat_history:flags.15?true bot_nochats:flags.16?true verified:flags.17?true restricted:flags.18?true min:flags.20?true bot_inline_geo:flags.21?true id:int access_hash:flags.0?long first_name:flags.1?string last_name:flags.2?string username:flags.3?string phone:flags.4?string photo:flags.5?UserProfilePhoto status:flags.6?UserStatus bot_info_version:flags.14?int restriction_reason:flags.18?string bot_inline_placeholder:flags.19?string = User;
 const crc_user = 0xd10d979a
+
 type TL_user struct {
-	flags int32
-	self bool// self:flags.10?true
-	contact bool // contact:flags.11?true
-	mutual_contact bool // mutual_contact:flags.12?true
-	deleted bool // deleted:flags.13?true
-	bot bool // bot:flags.14?true
-	bot_chat_history bool // bot_chat_history:flags.15?true
-	bot_nochats bool // bot_nochats:flags.16?true
-	verified bool // verified:flags.17?true
-	restricted bool // restricted:flags.18?true
-	min bool // min:flags.20?true
-	bot_inline_geo bool // bot_inline_geo:flags.21?true
-	id int32 // id:int
-	access_hash int64 // access_hash:flags.0?long
-	first_name string // first_name:flags.1?string
-	last_name string // last_name:flags.2?string
-	username string // username:flags.3?string
-	phone string // phone:flags.4?string
-	photo TL // photo:flags.5?UserProfilePhoto
-	status TL // status:flags.6?UserStatus
-	bot_info_version int32 // bot_info_version:flags.14?int
-	restriction_reason string // restriction_reason:flags.18?string
+	flags                  int32
+	self                   bool   // self:flags.10?true
+	contact                bool   // contact:flags.11?true
+	mutual_contact         bool   // mutual_contact:flags.12?true
+	deleted                bool   // deleted:flags.13?true
+	bot                    bool   // bot:flags.14?true
+	bot_chat_history       bool   // bot_chat_history:flags.15?true
+	bot_nochats            bool   // bot_nochats:flags.16?true
+	verified               bool   // verified:flags.17?true
+	restricted             bool   // restricted:flags.18?true
+	min                    bool   // min:flags.20?true
+	bot_inline_geo         bool   // bot_inline_geo:flags.21?true
+	id                     int32  // id:int
+	access_hash            int64  // access_hash:flags.0?long
+	first_name             string // first_name:flags.1?string
+	last_name              string // last_name:flags.2?string
+	username               string // username:flags.3?string
+	phone                  string // phone:flags.4?string
+	photo                  TL     // photo:flags.5?UserProfilePhoto
+	status                 TL     // status:flags.6?UserStatus
+	bot_info_version       int32  // bot_info_version:flags.14?int
+	restriction_reason     string // restriction_reason:flags.18?string
 	bot_inline_placeholder string // bot_inline_placeholder:flags.19?string
 }
 
-func (e TL_user) encode() []byte  {
+func (e TL_user) encode() []byte {
 	var flags int32
 	// fill bits in flags
 	if e.self {
@@ -643,34 +662,34 @@ func (e TL_user) encode() []byte  {
 	x.UInt(crc_user)
 	x.Int(flags)
 	x.Int(e.id)
-	if flags & (1 << 0) != 0 {
+	if flags&(1<<0) != 0 {
 		x.Long(e.access_hash)
 	}
-	if flags & (1 << 1) != 0 {
+	if flags&(1<<1) != 0 {
 		x.String(e.first_name)
 	}
-	if flags & (1 << 2) != 0 {
+	if flags&(1<<2) != 0 {
 		x.String(e.last_name)
 	}
-	if flags & (1 << 3) != 0 {
+	if flags&(1<<3) != 0 {
 		x.String(e.username)
 	}
-	if flags & (1 << 4) != 0 {
+	if flags&(1<<4) != 0 {
 		x.String(e.phone)
 	}
-	if flags & (1 << 5) != 0 {
+	if flags&(1<<5) != 0 {
 		x.Bytes(e.photo.encode())
 	}
-	if flags & (1 << 6) != 0 {
+	if flags&(1<<6) != 0 {
 		x.Bytes(e.status.encode())
 	}
-	if flags & (1 << 14) != 0 {
+	if flags&(1<<14) != 0 {
 		x.Int(e.bot_info_version)
 	}
-	if flags & (1 << 18) != 0 {
+	if flags&(1<<18) != 0 {
 		x.String(e.restriction_reason)
 	}
-	if flags & (1 << 19) != 0 {
+	if flags&(1<<19) != 0 {
 		x.String(e.bot_inline_placeholder)
 	}
 

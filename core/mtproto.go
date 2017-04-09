@@ -222,9 +222,9 @@ func (m *MTProto) Auth(phonenumber string) error {
 		m.queueSend <- packetToSend{
 			msg: TL_auth_sendCode{
 				allow_flashcall: false,
-				phone_number: phonenumber,
-				api_id: m.appConfig.id,
-				api_hash: m.appConfig.hash,
+				phone_number:    phonenumber,
+				api_id:          m.appConfig.id,
+				api_hash:        m.appConfig.hash,
 			},
 			resp: resp,
 		}
@@ -270,11 +270,11 @@ func (m *MTProto) Auth(phonenumber string) error {
 	}
 
 	resp := make(chan TL, 1)
-	m.queueSend <- packetToSend {
+	m.queueSend <- packetToSend{
 		msg: TL_auth_signIn{
-			phone_number: phonenumber,
+			phone_number:    phonenumber,
 			phone_code_hash: authSentCode.phone_code_hash,
-			phone_code: fmt.Sprintf("%d", code),
+			phone_code:      fmt.Sprintf("%d", code),
 		},
 		resp: resp,
 	}

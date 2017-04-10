@@ -17,15 +17,15 @@ type TL_boolTrue struct {
 const crc_error = 0xc4b9f9bb
 
 type TL_error struct {
-	code int32
-	text string
+	Code int32
+	Text string
 }
 
 func (e TL_error) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_error)
-	x.Int(e.code)
-	x.String(e.text)
+	x.Int(e.Code)
+	x.String(e.Text)
 	return x.buf
 }
 
@@ -89,37 +89,37 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		me_url_prefix := m.String()
 		disabled_features := m.Vector()
 		r = TL_config{
-			flags:                    flags,
-			phonecalls_enabled:       phonecalls_enabled,
-			date:                     date,
-			expires:                  expires,
-			test_mode:                test_mode,
-			this_dc:                  this_dc,
-			dc_options:               dc_options,
-			chat_size_max:            chat_size_max,
-			megagroup_size_max:       megagroup_size_max,
-			forwarded_count_max:      forwarded_count_max,
-			online_update_period_ms:  online_update_period_ms,
-			offline_blur_timeout_ms:  offline_blur_timeout_ms,
-			offline_idle_timeout_ms:  offline_idle_timeout_ms,
-			online_cloud_timeout_ms:  online_cloud_timeout_ms,
-			notify_cloud_delay_ms:    notify_cloud_delay_ms,
-			notify_default_delay_ms:  notify_default_delay_ms,
-			chat_big_size:            chat_big_size,
-			push_chat_period_ms:      push_chat_period_ms,
-			push_chat_limit:          push_chat_limit,
-			saved_gifs_limit:         saved_gifs_limit,
-			edit_time_limit:          edit_time_limit,
-			rating_e_decay:           rating_e_decay,
-			stickers_recent_limit:    stickers_recent_limit,
-			tmp_sessions:             tmp_sessions,
-			pinned_dialogs_count_max: pinned_dialogs_count_max,
-			call_receive_timeout_ms:  call_receive_timeout_ms,
-			call_ring_timeout_ms:     call_ring_timeout_ms,
-			call_connect_timeout_ms:  call_connect_timeout_ms,
-			call_packet_timeout_ms:   call_packet_timeout_ms,
-			me_url_prefix:            me_url_prefix,
-			disabled_features:        disabled_features,
+			Flags:                    flags,
+			Phonecalls_enabled:       phonecalls_enabled,
+			Date:                     date,
+			Expires:                  expires,
+			Test_mode:                test_mode,
+			This_dc:                  this_dc,
+			Dc_options:               dc_options,
+			Chat_size_max:            chat_size_max,
+			Megagroup_size_max:       megagroup_size_max,
+			Forwarded_count_max:      forwarded_count_max,
+			Online_update_period_ms:  online_update_period_ms,
+			Offline_blur_timeout_ms:  offline_blur_timeout_ms,
+			Offline_idle_timeout_ms:  offline_idle_timeout_ms,
+			Online_cloud_timeout_ms:  online_cloud_timeout_ms,
+			Notify_cloud_delay_ms:    notify_cloud_delay_ms,
+			Notify_default_delay_ms:  notify_default_delay_ms,
+			Chat_big_size:            chat_big_size,
+			Push_chat_period_ms:      push_chat_period_ms,
+			Push_chat_limit:          push_chat_limit,
+			Saved_gifs_limit:         saved_gifs_limit,
+			Edit_time_limit:          edit_time_limit,
+			Rating_e_decay:           rating_e_decay,
+			Stickers_recent_limit:    stickers_recent_limit,
+			Tmp_sessions:             tmp_sessions,
+			Pinned_dialogs_count_max: pinned_dialogs_count_max,
+			Call_receive_timeout_ms:  call_receive_timeout_ms,
+			Call_ring_timeout_ms:     call_ring_timeout_ms,
+			Call_connect_timeout_ms:  call_connect_timeout_ms,
+			Call_packet_timeout_ms:   call_packet_timeout_ms,
+			Me_url_prefix:            me_url_prefix,
+			Disabled_features:        disabled_features,
 		}
 	case crc_dcOption:
 		flags := m.Int()
@@ -137,13 +137,13 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		ip_address := m.String()
 		port := m.Int()
 		r = TL_dcOption{
-			flags:      flags,
-			ipv6:       ipv6,
-			media_only: media_only,
-			tcpo_only:  tcpo_only,
-			id:         id,
-			ip_address: ip_address,
-			port:       port,
+			Flags:      flags,
+			Ipv6:       ipv6,
+			Media_only: media_only,
+			Tcpo_only:  tcpo_only,
+			Id:         id,
+			Ip_address: ip_address,
+			Port:       port,
 		}
 	case crc_auth_codeTypeSms:
 		r = TL_auth_codeTypeSms{}
@@ -153,19 +153,19 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		r = TL_auth_codeTypeFlashCall{}
 	case crc_auth_sentCodeTypeApp:
 		r = TL_auth_sentCodeTypeApp{
-			length: m.Int(),
+			Length: m.Int(),
 		}
 	case crc_auth_sentCodeTypeSms:
 		r = TL_auth_sentCodeTypeSms{
-			length: m.Int(),
+			Length: m.Int(),
 		}
 	case crc_auth_sentCodeTypeCall:
 		r = TL_auth_sentCodeTypeCall{
-			length: m.Int(),
+			Length: m.Int(),
 		}
 	case crc_auth_sentCodeTypeFlashCall:
 		r = TL_auth_sentCodeTypeFlashCall{
-			pattern: m.String(),
+			Pattern: m.String(),
 		}
 	case crc_auth_sentCode:
 		flags := m.Int()
@@ -185,12 +185,12 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			timeout = m.Int()
 		}
 		r = TL_auth_sentCode{
-			flags:            flags,
-			phone_registered: phone_registered,
-			code_type:        code_type,
-			phone_code_hash:  phone_code_hash,
-			next_type:        next_type,
-			timeout:          timeout,
+			Flags:            flags,
+			Phone_registered: phone_registered,
+			Code_type:        code_type,
+			Phone_code_hash:  phone_code_hash,
+			Next_type:        next_type,
+			Timeout:          timeout,
 		}
 	case crc_auth_sendCode:
 		flags := m.Int()
@@ -206,18 +206,18 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		api_id := m.Int()
 		api_hash := m.String()
 		r = TL_auth_sendCode{
-			flags:           flags,
-			allow_flashcall: allow_flashcall,
-			phone_number:    phone_number,
-			current_number:  current_number,
-			api_id:          api_id,
-			api_hash:        api_hash,
+			Flags:           flags,
+			Allow_flashcall: allow_flashcall,
+			Phone_number:    phone_number,
+			Current_number:  current_number,
+			Api_id:          api_id,
+			Api_hash:        api_hash,
 		}
 	case crc_auth_signIn:
 		r = TL_auth_signIn{
-			phone_number:    m.String(),
-			phone_code_hash: m.String(),
-			phone_code:      m.String(),
+			Phone_number:    m.String(),
+			Phone_code_hash: m.String(),
+			Phone_code:      m.String(),
 		}
 	case crc_auth_authorization:
 		flags := m.Int()
@@ -227,13 +227,13 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		}
 		user := m.Object()
 		r = TL_auth_authorization{
-			flags:        flags,
-			tmp_sessions: tmp_sessions,
-			user:         user,
+			Flags:        flags,
+			Tmp_sessions: tmp_sessions,
+			User:         user,
 		}
 	case crc_userEmpty:
 		r = TL_user{
-			id: m.Int(),
+			Id: m.Int(),
 		}
 	case crc_user:
 		flags := m.Int()
@@ -318,60 +318,60 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			bot_inline_placeholder = m.String()
 		}
 		r = TL_user{
-			flags:                  flags,
-			self:                   self,
-			contact:                contact,
-			mutual_contact:         mutual_contact,
-			deleted:                deleted,
-			bot:                    bot,
-			bot_chat_history:       bot_chat_history,
-			bot_nochats:            bot_nochats,
-			verified:               verified,
-			restricted:             restricted,
-			min:                    min,
-			bot_inline_geo:         bot_inline_geo,
-			id:                     id,
-			access_hash:            access_hash,
-			first_name:             first_name,
-			last_name:              last_name,
-			username:               username,
-			phone:                  phone,
-			photo:                  photo,
-			status:                 status,
-			bot_info_version:       bot_info_version,
-			restriction_reason:     restriction_reason,
-			bot_inline_placeholder: bot_inline_placeholder,
+			Flags:                  flags,
+			Self:                   self,
+			Contact:                contact,
+			Mutual_contact:         mutual_contact,
+			Deleted:                deleted,
+			Bot:                    bot,
+			Bot_chat_history:       bot_chat_history,
+			Bot_nochats:            bot_nochats,
+			Verified:               verified,
+			Restricted:             restricted,
+			Min:                    min,
+			Bot_inline_geo:         bot_inline_geo,
+			Id:                     id,
+			Access_hash:            access_hash,
+			First_name:             first_name,
+			Last_name:              last_name,
+			Username:               username,
+			Phone:                  phone,
+			Photo:                  photo,
+			Status:                 status,
+			Bot_info_version:       bot_info_version,
+			Restriction_reason:     restriction_reason,
+			Bot_inline_placeholder: bot_inline_placeholder,
 		}
 	case crc_userProfilePhotoEmpty:
 		r = TL_userProfilePhotoEmpty{}
 	case crc_userProfilePhoto:
 		r = TL_userProfilePhoto{
-			photo_id:    m.Long(),
-			photo_small: m.Object(),
-			photo_big:   m.Object(),
+			Photo_id:    m.Long(),
+			Photo_small: m.Object(),
+			Photo_big:   m.Object(),
 		}
 	case crc_fileLocationUnavailable:
 		r = TL_fileLocationUnavailable{
-			volume_id: m.Long(),
-			local_id:  m.Int(),
-			secret:    m.Long(),
+			Volume_id: m.Long(),
+			Local_id:  m.Int(),
+			Secret:    m.Long(),
 		}
 	case crc_fileLocation:
 		r = TL_fileLocation{
-			dc_id:     m.Int(),
-			volume_id: m.Long(),
-			local_id:  m.Int(),
-			secret:    m.Long(),
+			Dc_id:     m.Int(),
+			Volume_id: m.Long(),
+			Local_id:  m.Int(),
+			Secret:    m.Long(),
 		}
 	case crc_userStatusEmpty:
 		r = TL_userStatusEmpty{}
 	case crc_userStatusOnline:
 		r = TL_userStatusOnline{
-			expires: m.Int(),
+			Expires: m.Int(),
 		}
 	case crc_userStatusOffline:
 		r = TL_userStatusOffline{
-			was_online: m.Int(),
+			Was_online: m.Int(),
 		}
 	case crc_userStatusRecently:
 		r = TL_userStatusRecently{}
@@ -386,45 +386,45 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 	return
 }
 
-// invokeWithLayer#da9b0d0d {X:Type} layer:int query:!X = X;
+// invokeWithLayer#da9b0d0d {X:Type} Layer:int Query:!X = X;
 const crc_invokeWithLayer = 0xda9b0d0d
 
 type TL_invokeWithLayer struct {
-	layer int32
-	query TL
+	Layer int32
+	Query TL
 }
 
 func (e TL_invokeWithLayer) encode() []byte {
 	// TODO: 512 is a magic number
 	x := NewEncodeBuf(512)
 	x.UInt(crc_invokeWithLayer)
-	x.Int(e.layer)
-	x.Bytes(e.query.encode())
-	// TODO: Should I shrink a buffer to his actual size or not?
+	x.Int(e.Layer)
+	x.Bytes(e.Query.encode())
+	// TODO: Should I shrink a buffer to his actual Size or not?
 	return x.buf
 }
 
-// initConnection#69796de9 {X:Type} api_id:int device_model:string system_version:string app_version:string lang_code:string query:!X = X;
+// initConnection#69796de9 {X:Type} Api_id:int Device_model:string System_version:string App_version:string Lang_code:string Query:!X = X;
 const crc_initConnection = 0x69796de9
 
 type TL_initConnection struct {
-	api_id         int32
-	device_model   string
-	system_version string
-	app_version    string
-	lang_code      string
-	query          TL
+	Api_id         int32
+	Device_model   string
+	System_version string
+	App_version    string
+	Lang_code      string
+	Query          TL
 }
 
 func (e TL_initConnection) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_initConnection)
-	x.Int(e.api_id)
-	x.String(e.device_model)
-	x.String(e.system_version)
-	x.String(e.app_version)
-	x.String(e.lang_code)
-	x.Bytes(e.query.encode())
+	x.Int(e.Api_id)
+	x.String(e.Device_model)
+	x.String(e.System_version)
+	x.String(e.App_version)
+	x.String(e.Lang_code)
+	x.Bytes(e.Query.encode())
 	return x.buf
 }
 
@@ -440,56 +440,56 @@ func (e TL_help_getConfig) encode() []byte {
 	return x.buf
 }
 
-// config#cb601684 flags:# phonecalls_enabled:flags.1?true date:int expires:int test_mode:Bool this_dc:int dc_options:Vector<DcOption> chat_size_max:int megagroup_size_max:int forwarded_count_max:int online_update_period_ms:int offline_blur_timeout_ms:int offline_idle_timeout_ms:int online_cloud_timeout_ms:int notify_cloud_delay_ms:int notify_default_delay_ms:int chat_big_size:int push_chat_period_ms:int push_chat_limit:int saved_gifs_limit:int edit_time_limit:int rating_e_decay:int stickers_recent_limit:int tmp_sessions:flags.0?int pinned_dialogs_count_max:int call_receive_timeout_ms:int call_ring_timeout_ms:int call_connect_timeout_ms:int call_packet_timeout_ms:int me_url_prefix:string disabled_features:Vector<DisabledFeature> = Config;
+// config#cb601684 Flags:# Phonecalls_enabled:Flags.1?true Date:int Expires:int Test_mode:Bool This_dc:int Dc_options:Vector<DcOption> Chat_size_max:int Megagroup_size_max:int Forwarded_count_max:int Online_update_period_ms:int Offline_blur_timeout_ms:int Offline_idle_timeout_ms:int Online_cloud_timeout_ms:int Notify_cloud_delay_ms:int Notify_default_delay_ms:int Chat_big_size:int Push_chat_period_ms:int Push_chat_limit:int Saved_gifs_limit:int Edit_time_limit:int Rating_e_decay:int Stickers_recent_limit:int Tmp_sessions:Flags.0?int Pinned_dialogs_count_max:int Call_receive_timeout_ms:int Call_ring_timeout_ms:int Call_connect_timeout_ms:int Call_packet_timeout_ms:int Me_url_prefix:string Disabled_features:Vector<DisabledFeature> = Config;
 const crc_config = 0xcb601684
 
 type TL_config struct {
-	flags                    int32
-	phonecalls_enabled       bool // flags.1?true TODO: TL_true
-	date                     int32
-	expires                  int32
-	test_mode                TL // TL_boolFalse or TL_boolTrue
-	this_dc                  int32
-	dc_options               []TL // DcOption
-	chat_size_max            int32
-	megagroup_size_max       int32
-	forwarded_count_max      int32
-	online_update_period_ms  int32
-	offline_blur_timeout_ms  int32
-	offline_idle_timeout_ms  int32
-	online_cloud_timeout_ms  int32
-	notify_cloud_delay_ms    int32
-	notify_default_delay_ms  int32
-	chat_big_size            int32
-	push_chat_period_ms      int32
-	push_chat_limit          int32
-	saved_gifs_limit         int32
-	edit_time_limit          int32
-	rating_e_decay           int32
-	stickers_recent_limit    int32
-	tmp_sessions             int32 // flags.0?int
-	pinned_dialogs_count_max int32
-	call_receive_timeout_ms  int32
-	call_ring_timeout_ms     int32
-	call_connect_timeout_ms  int32
-	call_packet_timeout_ms   int32
-	me_url_prefix            string
-	disabled_features        []TL // DisabledFeature
+	Flags                    int32
+	Phonecalls_enabled       bool // Flags.1?true TODO: TL_true
+	Date                     int32
+	Expires                  int32
+	Test_mode                TL // TL_boolFalse or TL_boolTrue
+	This_dc                  int32
+	Dc_options               []TL // DcOption
+	Chat_size_max            int32
+	Megagroup_size_max       int32
+	Forwarded_count_max      int32
+	Online_update_period_ms  int32
+	Offline_blur_timeout_ms  int32
+	Offline_idle_timeout_ms  int32
+	Online_cloud_timeout_ms  int32
+	Notify_cloud_delay_ms    int32
+	Notify_default_delay_ms  int32
+	Chat_big_size            int32
+	Push_chat_period_ms      int32
+	Push_chat_limit          int32
+	Saved_gifs_limit         int32
+	Edit_time_limit          int32
+	Rating_e_decay           int32
+	Stickers_recent_limit    int32
+	Tmp_sessions             int32 // Flags.0?int
+	Pinned_dialogs_count_max int32
+	Call_receive_timeout_ms  int32
+	Call_ring_timeout_ms     int32
+	Call_connect_timeout_ms  int32
+	Call_packet_timeout_ms   int32
+	Me_url_prefix            string
+	Disabled_features        []TL // DisabledFeature
 }
 
 func (e TL_config) encode() []byte { return nil }
 
-// dcOption#5d8c6cc flags:# ipv6:flags.0?true media_only:flags.1?true tcpo_only:flags.2?true id:int ip_address:string port:int = DcOption;
+// dcOption#5d8c6cc Flags:# Ipv6:Flags.0?true Media_only:Flags.1?true Tcpo_only:Flags.2?true Id:int Ip_address:string Port:int = DcOption;
 const crc_dcOption = 0x5d8c6cc
 
 type TL_dcOption struct {
-	flags      int32
-	ipv6       bool // ipv6:flags.0?true TODO: TL_true
-	media_only bool // media_only:flags.1?true TODO: TL_true
-	tcpo_only  bool // tcpo_only:flags.2?true TODO: TL_true
-	id         int32
-	ip_address string
-	port       int32
+	Flags      int32
+	Ipv6       bool // Ipv6:Flags.0?true TODO: TL_true
+	Media_only bool // Media_only:Flags.1?true TODO: TL_true
+	Tcpo_only  bool // Tcpo_only:Flags.2?true TODO: TL_true
+	Id         int32
+	Ip_address string
+	Port       int32
 }
 
 func (e TL_dcOption) encode() []byte { return nil }
@@ -527,154 +527,154 @@ func (e TL_auth_codeTypeFlashCall) encode() []byte {
 	return x.buf
 }
 
-//auth.sentCodeTypeApp#3dbb5986 length:int = auth.SentCodeType;
+//auth.sentCodeTypeApp#3dbb5986 Length:int = auth.SentCodeType;
 const crc_auth_sentCodeTypeApp = 0x3dbb5986
 
 type TL_auth_sentCodeTypeApp struct {
-	length int32
+	Length int32
 }
 
 func (e TL_auth_sentCodeTypeApp) encode() []byte {
 	x := NewEncodeBuf(8)
 	x.UInt(crc_auth_sentCodeTypeApp)
-	x.Int(e.length)
+	x.Int(e.Length)
 	return x.buf
 }
 
-//auth.sentCodeTypeSms#c000bba2 length:int = auth.SentCodeType;
+//auth.sentCodeTypeSms#c000bba2 Length:int = auth.SentCodeType;
 const crc_auth_sentCodeTypeSms = 0xc000bba2
 
 type TL_auth_sentCodeTypeSms struct {
-	length int32
+	Length int32
 }
 
 func (e TL_auth_sentCodeTypeSms) encode() []byte {
 	x := NewEncodeBuf(8)
 	x.UInt(crc_auth_sentCodeTypeSms)
-	x.Int(e.length)
+	x.Int(e.Length)
 	return x.buf
 }
 
-//auth.sentCodeTypeCall#5353e5a7 length:int = auth.SentCodeType;
+//auth.sentCodeTypeCall#5353e5a7 Length:int = auth.SentCodeType;
 const crc_auth_sentCodeTypeCall = 0x5353e5a7
 
 type TL_auth_sentCodeTypeCall struct {
-	length int32
+	Length int32
 }
 
 func (e TL_auth_sentCodeTypeCall) encode() []byte {
 	x := NewEncodeBuf(8)
 	x.UInt(crc_auth_sentCodeTypeCall)
-	x.Int(e.length)
+	x.Int(e.Length)
 	return x.buf
 }
 
-//auth.sentCodeTypeFlashCall#ab03c6d9 pattern:string = auth.SentCodeType;
+//auth.sentCodeTypeFlashCall#ab03c6d9 Pattern:string = auth.SentCodeType;
 const crc_auth_sentCodeTypeFlashCall = 0xab03c6d9
 
 type TL_auth_sentCodeTypeFlashCall struct {
-	pattern string
+	Pattern string
 }
 
 func (e TL_auth_sentCodeTypeFlashCall) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_auth_sentCodeTypeFlashCall)
-	x.String(e.pattern)
+	x.String(e.Pattern)
 	return x.buf
 }
 
-// auth.sentCode#5e002502 flags:# phone_registered:flags.0?true type:auth.SentCodeType phone_code_hash:string next_type:flags.1?auth.CodeType timeout:flags.2?int = auth.SentCode;
+// auth.sentCode#5e002502 Flags:# Phone_registered:Flags.0?true type:auth.SentCodeType Phone_code_hash:string Next_type:Flags.1?auth.CodeType timeout:Flags.2?int = auth.SentCode;
 const crc_auth_sentCode = 0x5e002502
 
 type TL_auth_sentCode struct {
-	flags            int32
-	phone_registered bool
-	code_type        TL // type:auth.SentCodeType
-	phone_code_hash  string
-	next_type        TL
-	timeout          int32
+	Flags            int32
+	Phone_registered bool
+	Code_type        TL // type:auth.SentCodeType
+	Phone_code_hash  string
+	Next_type        TL
+	Timeout          int32
 }
 
 func (e TL_auth_sentCode) encode() []byte {
 	var flags int32
 	x := NewEncodeBuf(512)
 	x.UInt(crc_auth_sentCode)
-	// fill bits in flags
-	if e.phone_registered {
+	// fill bits in Flags
+	if e.Phone_registered {
 		flags |= (1 << 0)
 	}
-	if _, ok := (e.next_type).(TL_null); !ok {
+	if _, ok := (e.Next_type).(TL_null); !ok {
 		flags |= (1 << 1)
 	}
-	if e.timeout > 0 {
+	if e.Timeout > 0 {
 		flags |= (1 << 2)
 	}
 	x.Int(flags)
-	x.Bytes(e.code_type.encode())
-	x.String(e.phone_code_hash)
-	if _, ok := (e.next_type).(TL_null); !ok {
-		x.Bytes(e.next_type.encode())
+	x.Bytes(e.Code_type.encode())
+	x.String(e.Phone_code_hash)
+	if _, ok := (e.Next_type).(TL_null); !ok {
+		x.Bytes(e.Next_type.encode())
 	}
-	if e.timeout > 0 {
-		x.Int(e.timeout)
+	if e.Timeout > 0 {
+		x.Int(e.Timeout)
 	}
 	return x.buf
 }
 
-// auth.sendCode#86aef0ec flags:# allow_flashcall:flags.0?true phone_number:string current_number:flags.0?Bool api_id:int api_hash:string = auth.SentCode;
+// auth.sendCode#86aef0ec Flags:# Allow_flashcall:Flags.0?true Phone_number:string Current_number:Flags.0?Bool Api_id:int Api_hash:string = auth.SentCode;
 const crc_auth_sendCode = 0x86aef0ec
 
 type TL_auth_sendCode struct {
-	flags           int32
-	allow_flashcall bool // allow_flashcall:flags.0?true
-	phone_number    string
-	current_number  TL // current_number:flags.0?Bool
-	api_id          int32
-	api_hash        string
+	Flags           int32
+	Allow_flashcall bool // Allow_flashcall:Flags.0?true
+	Phone_number    string
+	Current_number  TL // Current_number:Flags.0?Bool
+	Api_id          int32
+	Api_hash        string
 }
 
 func (e TL_auth_sendCode) encode() []byte {
 	var flags int32
 	x := NewEncodeBuf(512)
 	x.UInt(crc_auth_sendCode)
-	if e.allow_flashcall {
+	if e.Allow_flashcall {
 		flags |= (1 << 0)
 	}
 	x.Int(flags)
-	x.String(e.phone_number)
-	if e.allow_flashcall {
-		x.Bytes(e.current_number.encode())
+	x.String(e.Phone_number)
+	if e.Allow_flashcall {
+		x.Bytes(e.Current_number.encode())
 	}
-	x.Int(e.api_id)
-	x.String(e.api_hash)
+	x.Int(e.Api_id)
+	x.String(e.Api_hash)
 	return x.buf
 }
 
-// auth.signIn#bcd51581 phone_number:string phone_code_hash:string phone_code:string = auth.Authorization;
+// auth.signIn#bcd51581 Phone_number:string Phone_code_hash:string Phone_code:string = auth.Authorization;
 const crc_auth_signIn = 0xbcd51581
 
 type TL_auth_signIn struct {
-	phone_number    string
-	phone_code_hash string
-	phone_code      string
+	Phone_number    string
+	Phone_code_hash string
+	Phone_code      string
 }
 
 func (e TL_auth_signIn) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_auth_signIn)
-	x.String(e.phone_number)
-	x.String(e.phone_code_hash)
-	x.String(e.phone_code)
+	x.String(e.Phone_number)
+	x.String(e.Phone_code_hash)
+	x.String(e.Phone_code)
 	return x.buf
 }
 
-// auth.authorization#cd050916 flags:# tmp_sessions:flags.0?int user:User = auth.Authorization;
+// auth.authorization#cd050916 Flags:# Tmp_sessions:Flags.0?int User:User = auth.Authorization;
 const crc_auth_authorization = 0xcd050916
 
 type TL_auth_authorization struct {
-	flags        int32
-	tmp_sessions int32
-	user         TL
+	Flags        int32
+	Tmp_sessions int32
+	User         TL
 }
 
 func (e TL_auth_authorization) encode() []byte {
@@ -682,52 +682,52 @@ func (e TL_auth_authorization) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_auth_authorization)
 	// TODO: I am not sure about this condition. Check how serialization works in other libraries
-	if e.tmp_sessions > 0 {
+	if e.Tmp_sessions > 0 {
 		flags |= (1 << 0)
 	}
 	x.Int(flags)
-	if e.tmp_sessions > 0 {
-		x.Int(e.tmp_sessions)
+	if e.Tmp_sessions > 0 {
+		x.Int(e.Tmp_sessions)
 	}
-	x.Bytes(e.user.encode())
+	x.Bytes(e.User.encode())
 	return x.buf
 }
 
-//fileLocationUnavailable#7c596b46 volume_id:long local_id:int secret:long = FileLocation;
+//fileLocationUnavailable#7c596b46 Volume_id:long Local_id:int Secret:long = FileLocation;
 const crc_fileLocationUnavailable = 0x7c596b46
 
 type TL_fileLocationUnavailable struct {
-	volume_id int64
-	local_id  int32
-	secret    int64
+	Volume_id int64
+	Local_id  int32
+	Secret    int64
 }
 
 func (e TL_fileLocationUnavailable) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_fileLocationUnavailable)
-	x.Long(e.volume_id)
-	x.Int(e.local_id)
-	x.Long(e.secret)
+	x.Long(e.Volume_id)
+	x.Int(e.Local_id)
+	x.Long(e.Secret)
 	return x.buf
 }
 
-//fileLocation#53d69076 dc_id:int volume_id:long local_id:int secret:long = FileLocation;
+//fileLocation#53d69076 Dc_id:int Volume_id:long Local_id:int Secret:long = FileLocation;
 const crc_fileLocation = 0x53d69076
 
 type TL_fileLocation struct {
-	dc_id     int32
-	volume_id int64
-	local_id  int32
-	secret    int64
+	Dc_id     int32
+	Volume_id int64
+	Local_id  int32
+	Secret    int64
 }
 
 func (e TL_fileLocation) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_fileLocation)
-	x.Int(e.dc_id)
-	x.Long(e.volume_id)
-	x.Int(e.local_id)
-	x.Long(e.secret)
+	x.Int(e.Dc_id)
+	x.Long(e.Volume_id)
+	x.Int(e.Local_id)
+	x.Long(e.Secret)
 	return x.buf
 }
 
@@ -742,21 +742,21 @@ func (e TL_userProfilePhotoEmpty) encode() []byte {
 	return x.buf
 }
 
-//userProfilePhoto#d559d8c8 photo_id:long photo_small:FileLocation photo_big:FileLocation = UserProfilePhoto;
+//userProfilePhoto#d559d8c8 Photo_id:long Photo_small:FileLocation Photo_big:FileLocation = UserProfilePhoto;
 const crc_userProfilePhoto = 0xd559d8c8
 
 type TL_userProfilePhoto struct {
-	photo_id    int64
-	photo_small TL // FileLocation
-	photo_big   TL // FileLocation
+	Photo_id    int64
+	Photo_small TL // FileLocation
+	Photo_big   TL // FileLocation
 }
 
 func (e TL_userProfilePhoto) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_userProfilePhoto)
-	x.Long(e.photo_id)
-	x.Bytes(e.photo_small.encode())
-	x.Bytes(e.photo_big.encode())
+	x.Long(e.Photo_id)
+	x.Bytes(e.Photo_small.encode())
+	x.Bytes(e.Photo_big.encode())
 	return x.buf
 }
 
@@ -771,31 +771,31 @@ func (e TL_userStatusEmpty) encode() []byte {
 	return x.buf
 }
 
-// userStatusOnline#edb93949 expires:int = UserStatus;
+// userStatusOnline#edb93949 Expires:int = UserStatus;
 const crc_userStatusOnline = 0xedb93949
 
 type TL_userStatusOnline struct {
-	expires int32
+	Expires int32
 }
 
 func (e TL_userStatusOnline) encode() []byte {
 	x := NewEncodeBuf(8)
 	x.UInt(crc_userStatusOnline)
-	x.Int(e.expires)
+	x.Int(e.Expires)
 	return x.buf
 }
 
-// userStatusOffline#8c703f was_online:int = UserStatus;
+// userStatusOffline#8c703f Was_online:int = UserStatus;
 const crc_userStatusOffline = 0x8c703f
 
 type TL_userStatusOffline struct {
-	was_online int32
+	Was_online int32
 }
 
 func (e TL_userStatusOffline) encode() []byte {
 	x := NewEncodeBuf(8)
 	x.UInt(crc_userStatusOffline)
-	x.Int(e.was_online)
+	x.Int(e.Was_online)
 	return x.buf
 }
 
@@ -832,149 +832,149 @@ func (e TL_userStatusLastMonth) encode() []byte {
 	return x.buf
 }
 
-//userEmpty#200250ba id:int = User;
+//userEmpty#200250ba Id:int = User;
 const crc_userEmpty = 0x200250ba
 
 type TL_userEmpty struct {
-	id int32
+	Id int32
 }
 
 func (e TL_userEmpty) encode() []byte {
 	x := NewEncodeBuf(8)
 	x.UInt(crc_userEmpty)
-	x.Int(e.id)
+	x.Int(e.Id)
 
 	return x.buf
 }
 
-//user#d10d979a flags:# self:flags.10?true contact:flags.11?true mutual_contact:flags.12?true deleted:flags.13?true bot:flags.14?true bot_chat_history:flags.15?true bot_nochats:flags.16?true verified:flags.17?true restricted:flags.18?true min:flags.20?true bot_inline_geo:flags.21?true id:int access_hash:flags.0?long first_name:flags.1?string last_name:flags.2?string username:flags.3?string phone:flags.4?string photo:flags.5?UserProfilePhoto status:flags.6?UserStatus bot_info_version:flags.14?int restriction_reason:flags.18?string bot_inline_placeholder:flags.19?string = User;
+//User#d10d979a Flags:# Self:Flags.10?true Contact:Flags.11?true Mutual_contact:Flags.12?true Deleted:Flags.13?true Bot:Flags.14?true Bot_chat_history:Flags.15?true Bot_nochats:Flags.16?true Verified:Flags.17?true Restricted:Flags.18?true Min:Flags.20?true Bot_inline_geo:Flags.21?true Id:int Access_hash:Flags.0?long First_name:Flags.1?string Last_name:Flags.2?string Username:Flags.3?string Phone:Flags.4?string Photo:Flags.5?UserProfilePhoto Status:Flags.6?UserStatus Bot_info_version:Flags.14?int Restriction_reason:Flags.18?string Bot_inline_placeholder:Flags.19?string = User;
 const crc_user = 0xd10d979a
 
 type TL_user struct {
-	flags                  int32
-	self                   bool   // self:flags.10?true
-	contact                bool   // contact:flags.11?true
-	mutual_contact         bool   // mutual_contact:flags.12?true
-	deleted                bool   // deleted:flags.13?true
-	bot                    bool   // bot:flags.14?true
-	bot_chat_history       bool   // bot_chat_history:flags.15?true
-	bot_nochats            bool   // bot_nochats:flags.16?true
-	verified               bool   // verified:flags.17?true
-	restricted             bool   // restricted:flags.18?true
-	min                    bool   // min:flags.20?true
-	bot_inline_geo         bool   // bot_inline_geo:flags.21?true
-	id                     int32  // id:int
-	access_hash            int64  // access_hash:flags.0?long
-	first_name             string // first_name:flags.1?string
-	last_name              string // last_name:flags.2?string
-	username               string // username:flags.3?string
-	phone                  string // phone:flags.4?string
-	photo                  TL     // photo:flags.5?UserProfilePhoto
-	status                 TL     // status:flags.6?UserStatus
-	bot_info_version       int32  // bot_info_version:flags.14?int
-	restriction_reason     string // restriction_reason:flags.18?string
-	bot_inline_placeholder string // bot_inline_placeholder:flags.19?string
+	Flags                  int32
+	Self                   bool   // Self:Flags.10?true
+	Contact                bool   // Contact:Flags.11?true
+	Mutual_contact         bool   // Mutual_contact:Flags.12?true
+	Deleted                bool   // Deleted:Flags.13?true
+	Bot                    bool   // Bot:Flags.14?true
+	Bot_chat_history       bool   // Bot_chat_history:Flags.15?true
+	Bot_nochats            bool   // Bot_nochats:Flags.16?true
+	Verified               bool   // Verified:Flags.17?true
+	Restricted             bool   // Restricted:Flags.18?true
+	Min                    bool   // Min:Flags.20?true
+	Bot_inline_geo         bool   // Bot_inline_geo:Flags.21?true
+	Id                     int32  // Id:int
+	Access_hash            int64  // Access_hash:Flags.0?long
+	First_name             string // First_name:Flags.1?string
+	Last_name              string // Last_name:Flags.2?string
+	Username               string // Username:Flags.3?string
+	Phone                  string // Phone:Flags.4?string
+	Photo                  TL     // Photo:Flags.5?UserProfilePhoto
+	Status                 TL     // Status:Flags.6?UserStatus
+	Bot_info_version       int32  // Bot_info_version:Flags.14?int
+	Restriction_reason     string // Restriction_reason:Flags.18?string
+	Bot_inline_placeholder string // Bot_inline_placeholder:Flags.19?string
 }
 
 func (e TL_user) encode() []byte {
 	var flags int32
-	// fill bits in flags
-	if e.self {
+	// fill bits in Flags
+	if e.Self {
 		flags |= (1 << 10)
 	}
-	if e.contact {
+	if e.Contact {
 		flags |= (1 << 11)
 	}
-	if e.mutual_contact {
+	if e.Mutual_contact {
 		flags |= (1 << 12)
 	}
-	if e.deleted {
+	if e.Deleted {
 		flags |= (1 << 13)
 	}
-	if e.bot {
+	if e.Bot {
 		flags |= (1 << 14)
 	}
-	if e.bot_chat_history {
+	if e.Bot_chat_history {
 		flags |= (1 << 15)
 	}
-	if e.bot_nochats {
+	if e.Bot_nochats {
 		flags |= (1 << 16)
 	}
-	if e.verified {
+	if e.Verified {
 		flags |= (1 << 17)
 	}
-	if e.restricted {
+	if e.Restricted {
 		flags |= (1 << 18)
 	}
-	if e.min {
+	if e.Min {
 		flags |= (1 << 20)
 	}
-	if e.bot_inline_geo {
+	if e.Bot_inline_geo {
 		flags |= (1 << 21)
 	}
-	if e.access_hash > 0 {
+	if e.Access_hash > 0 {
 		flags |= (1 << 0)
 	}
-	if e.first_name != "" {
+	if e.First_name != "" {
 		flags |= (1 << 1)
 	}
-	if e.last_name != "" {
+	if e.Last_name != "" {
 		flags |= (1 << 2)
 	}
-	if e.username != "" {
+	if e.Username != "" {
 		flags |= (1 << 3)
 	}
-	if e.phone != "" {
+	if e.Phone != "" {
 		flags |= (1 << 4)
 	}
-	if _, ok := e.photo.(TL_userProfilePhoto); ok {
+	if _, ok := e.Photo.(TL_userProfilePhoto); ok {
 		flags |= (1 << 5)
 	}
-	if _, ok := e.status.(TL_null); !ok {
+	if _, ok := e.Status.(TL_null); !ok {
 		flags |= (1 << 6)
 	}
-	if e.bot_info_version > 0 {
+	if e.Bot_info_version > 0 {
 		flags |= (1 << 14)
 	}
-	if e.restriction_reason != "" {
+	if e.Restriction_reason != "" {
 		flags |= (1 << 18)
 	}
-	if e.bot_inline_placeholder != "" {
+	if e.Bot_inline_placeholder != "" {
 		flags |= (1 << 19)
 	}
 	x := NewEncodeBuf(512)
 	x.UInt(crc_user)
 	x.Int(flags)
-	x.Int(e.id)
+	x.Int(e.Id)
 	if flags&(1<<0) != 0 {
-		x.Long(e.access_hash)
+		x.Long(e.Access_hash)
 	}
 	if flags&(1<<1) != 0 {
-		x.String(e.first_name)
+		x.String(e.First_name)
 	}
 	if flags&(1<<2) != 0 {
-		x.String(e.last_name)
+		x.String(e.Last_name)
 	}
 	if flags&(1<<3) != 0 {
-		x.String(e.username)
+		x.String(e.Username)
 	}
 	if flags&(1<<4) != 0 {
-		x.String(e.phone)
+		x.String(e.Phone)
 	}
 	if flags&(1<<5) != 0 {
-		x.Bytes(e.photo.encode())
+		x.Bytes(e.Photo.encode())
 	}
 	if flags&(1<<6) != 0 {
-		x.Bytes(e.status.encode())
+		x.Bytes(e.Status.encode())
 	}
 	if flags&(1<<14) != 0 {
-		x.Int(e.bot_info_version)
+		x.Int(e.Bot_info_version)
 	}
 	if flags&(1<<18) != 0 {
-		x.String(e.restriction_reason)
+		x.String(e.Restriction_reason)
 	}
 	if flags&(1<<19) != 0 {
-		x.String(e.bot_inline_placeholder)
+		x.String(e.Bot_inline_placeholder)
 	}
 
 	return x.buf

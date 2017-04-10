@@ -68,14 +68,14 @@ const (
 const appConfigError = "App configuration error: %s"
 const telegramAddr = "149.154.167.50:443"
 
-// Current API layer version
+// Current API Layer version
 const layer = 65
 
 func NewConfig(id int32, hash, version, deviceModel, systemVersion, language string) (*appConfig, error) {
 	appConfig := new(appConfig)
 
 	if id == 0 || hash == "" || version == "" {
-		return nil, fmt.Errorf(appConfigError, "Fields id, hash or version are empty")
+		return nil, fmt.Errorf(appConfigError, "Fields Id, hash or version are empty")
 	}
 	appConfig.id = id
 	appConfig.hash = hash
@@ -101,7 +101,7 @@ func NewConfig(id int32, hash, version, deviceModel, systemVersion, language str
 
 func (appConfig appConfig) Check() error {
 	if appConfig.id == 0 || appConfig.hash == "" || appConfig.version == "" {
-		return fmt.Errorf(appConfigError, "appConfig.id, appConfig.hash or appConfig.version are empty")
+		return fmt.Errorf(appConfigError, "appConfig.Id, appConfig.hash or appConfig.version are empty")
 	}
 
 	if appConfig.deviceModel == "" {
@@ -161,7 +161,7 @@ func (m *MTProto) Connect() error {
 	if err != nil {
 		return err
 	}
-	// Packet length is encoded by a single byte (see: https://core.telegram.org/mtproto)
+	// Packet Length is encoded by a single byte (see: https://core.telegram.org/mtproto)
 	_, err = m.conn.Write([]byte{0xef})
 	if err != nil {
 		return err
@@ -190,14 +190,14 @@ func (m *MTProto) Connect() error {
 	resp := make(chan TL, 1)
 	m.queueSend <- packetToSend{
 		msg: TL_invokeWithLayer{
-			layer: layer,
-			query: TL_initConnection{
-				api_id:         m.appConfig.id,
-				device_model:   m.appConfig.deviceModel,
-				system_version: m.appConfig.systemVersion,
-				app_version:    m.appConfig.version,
-				lang_code:      m.appConfig.language,
-				query:          TL_help_getConfig{},
+			Layer: layer,
+			Query: TL_initConnection{
+				Api_id:         m.appConfig.id,
+				Device_model:   m.appConfig.deviceModel,
+				System_version: m.appConfig.systemVersion,
+				App_version:    m.appConfig.version,
+				Lang_code:      m.appConfig.language,
+				Query:          TL_help_getConfig{},
 			},
 		},
 		resp: resp,
@@ -206,9 +206,9 @@ func (m *MTProto) Connect() error {
 	switch x.(type) {
 	case TL_config:
 		m.dclist = make(map[int32]string, 5)
-		for _, v := range x.(TL_config).dc_options {
+		for _, v := range x.(TL_config).Dc_options {
 			v := v.(TL_dcOption)
-			m.dclist[v.id] = fmt.Sprintf("%s:%d", v.ip_address, v.port)
+			m.dclist[v.Id] = fmt.Sprintf("%s:%d", v.Ip_address, v.Port)
 		}
 	default:
 		return fmt.Errorf("Connection error: got: %T", x)
@@ -255,17 +255,17 @@ func (m *MTProto) reconnect(newaddr string) error {
 	return err
 }
 
-func (m *MTProto) Auth(phonenumber string) error {
+func (m *MTProto) AuthSendCode(phonenumber string) (error, *TL_auth_sentCode) {
 	var authSentCode TL_auth_sentCode
 	flag := true
 	for flag {
 		resp := make(chan TL, 1)
 		m.queueSend <- packetToSend{
 			msg: TL_auth_sendCode{
-				allow_flashcall: false,
-				phone_number:    phonenumber,
-				api_id:          m.appConfig.id,
-				api_hash:        m.appConfig.hash,
+				Allow_flashcall: false,
+				Phone_number:    phonenumber,
+				Api_id:          m.appConfig.id,
+				Api_hash:        m.appConfig.hash,
 			},
 			resp: resp,
 		}
@@ -276,59 +276,56 @@ func (m *MTProto) Auth(phonenumber string) error {
 			flag = false
 		case TL_rpc_error:
 			x := x.(TL_rpc_error)
-			if x.error_code != errorSeeOther {
-				return fmt.Errorf("RPC error_code: %d", x.error_code)
+			if x.Error_code != errorSeeOther {
+				return fmt.Errorf("RPC Error_code: %d", x.Error_code), nil
 			}
 			var newDc int32
-			n, _ := fmt.Sscanf(x.error_message, "PHONE_MIGRATE_%d", &newDc)
+			n, _ := fmt.Sscanf(x.Error_message, "PHONE_MIGRATE_%d", &newDc)
 			if n != 1 {
-				n, _ := fmt.Sscanf(x.error_message, "NETWORK_MIGRATE_%d", &newDc)
+				n, _ := fmt.Sscanf(x.Error_message, "NETWORK_MIGRATE_%d", &newDc)
 				if n != 1 {
-					return fmt.Errorf("RPC error_string: %s", x.error_message)
+					return fmt.Errorf("RPC error_string: %s", x.Error_message), nil
 				}
 			}
 
 			newDcAddr, ok := m.dclist[newDc]
 			if !ok {
-				return fmt.Errorf("Wrong DC index: %d", newDc)
+				return fmt.Errorf("Wrong DC index: %d", newDc), nil
 			}
 			err := m.reconnect(newDcAddr)
 			if err != nil {
-				return err
+				return err, nil
 			}
 		default:
-			return fmt.Errorf("Got: %T", x)
+			return fmt.Errorf("Got: %T", x), nil
 		}
 	}
 
-	var code int
+	return nil, &authSentCode
+}
 
-	// TODO: Make method independet from Scanf import. Probably we need to split Auth in two function or rewrite it.
-	fmt.Printf("Enter code: ")
-	fmt.Scanf("%d", &code)
-
-	if !authSentCode.phone_registered {
-		return errors.New("Cannot sign up yet")
+func (m *MTProto) AuthSignIn(phoneNumber, phoneCode, phoneCodeHash string) (error, *TL_auth_authorization) {
+	if phoneNumber == "" || phoneCode == "" || phoneCodeHash == "" {
+		return errors.New("MRProto::AuthSignIn one of function parameters is empty"), nil
 	}
 
 	resp := make(chan TL, 1)
 	m.queueSend <- packetToSend{
 		msg: TL_auth_signIn{
-			phone_number:    phonenumber,
-			phone_code_hash: authSentCode.phone_code_hash,
-			phone_code:      fmt.Sprintf("%d", code),
+			Phone_number:    phoneNumber,
+			Phone_code_hash: phoneCodeHash,
+			Phone_code:      phoneCode,
 		},
 		resp: resp,
 	}
 	x := <-resp
 	auth, ok := x.(TL_auth_authorization)
-	if !ok {
-		return fmt.Errorf("RPC: %#v", x)
-	}
-	userSelf := auth.user.(TL_user)
-	fmt.Printf("Signed in: id %d name <%s %s>\n", userSelf.id, userSelf.first_name, userSelf.last_name)
 
-	return nil
+	if !ok {
+		return fmt.Errorf("RPC: %#v", x), nil
+	}
+
+	return nil, &auth
 }
 
 func (m *MTProto) pingRoutine() {
@@ -374,14 +371,14 @@ func (m *MTProto) readRoutine() {
 func (m *MTProto) process(msgId int64, seqNo int32, data interface{}) interface{} {
 	switch data.(type) {
 	case TL_msg_container:
-		data := data.(TL_msg_container).items
+		data := data.(TL_msg_container).Items
 		for _, v := range data {
-			m.process(v.msg_id, v.seq_no, v.data)
+			m.process(v.Msg_id, v.Seq_no, v.Data)
 		}
 
 	case TL_bad_server_salt:
 		data := data.(TL_bad_server_salt)
-		m.serverSalt = data.new_server_salt
+		m.serverSalt = data.New_server_salt
 		_ = m.saveData()
 		m.mutex.Lock()
 		for k, v := range m.msgsIdToAck {
@@ -392,12 +389,12 @@ func (m *MTProto) process(msgId int64, seqNo int32, data interface{}) interface{
 
 	case TL_new_session_created:
 		data := data.(TL_new_session_created)
-		m.serverSalt = data.server_salt
+		m.serverSalt = data.Server_salt
 		_ = m.saveData()
 
 	case TL_ping:
 		data := data.(TL_ping)
-		m.queueSend <- packetToSend{TL_pong{msgId, data.ping_id}, nil}
+		m.queueSend <- packetToSend{TL_pong{msgId, data.Ping_id}, nil}
 
 	case TL_pong:
 		// ignore
@@ -405,22 +402,22 @@ func (m *MTProto) process(msgId int64, seqNo int32, data interface{}) interface{
 	case TL_msgs_ack:
 		data := data.(TL_msgs_ack)
 		m.mutex.Lock()
-		for _, v := range data.msgIds {
+		for _, v := range data.MsgIds {
 			delete(m.msgsIdToAck, v)
 		}
 		m.mutex.Unlock()
 
 	case TL_rpc_result:
 		data := data.(TL_rpc_result)
-		x := m.process(msgId, seqNo, data.obj)
+		x := m.process(msgId, seqNo, data.Obj)
 		m.mutex.Lock()
-		v, ok := m.msgsIdToResp[data.req_msg_id]
+		v, ok := m.msgsIdToResp[data.Req_msg_id]
 		if ok {
 			v <- x.(TL)
 			close(v)
-			delete(m.msgsIdToResp, data.req_msg_id)
+			delete(m.msgsIdToResp, data.Req_msg_id)
 		}
-		delete(m.msgsIdToAck, data.req_msg_id)
+		delete(m.msgsIdToAck, data.Req_msg_id)
 		m.mutex.Unlock()
 
 	default:

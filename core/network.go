@@ -207,11 +207,11 @@ func (m *MTProto) makeAuthKey() error {
 	if !ok {
 		return errors.New("Handshake: Need resPQ")
 	}
-	if !bytes.Equal(nonceFirst, res.nonce) {
-		return errors.New("Handshake: Wrong nonce")
+	if !bytes.Equal(nonceFirst, res.Nonce) {
+		return errors.New("Handshake: Wrong Nonce")
 	}
 	found := false
-	for _, b := range res.fingerprints {
+	for _, b := range res.Fingerprints {
 		if uint64(b) == telegramPublicKey_FP {
 			found = true
 			break
@@ -222,10 +222,10 @@ func (m *MTProto) makeAuthKey() error {
 	}
 
 	// (encoding) p_q_inner_data
-	p, q := splitPQ(res.pq)
+	p, q := splitPQ(res.Pq)
 	nonceSecond := GenerateNonce(32)
-	nonceServer := res.server_nonce
-	innerData1 := (TL_p_q_inner_data{res.pq, p, q, nonceFirst, nonceServer, nonceSecond}).encode()
+	nonceServer := res.Server_nonce
+	innerData1 := (TL_p_q_inner_data{res.Pq, p, q, nonceFirst, nonceServer, nonceSecond}).encode()
 
 	x = make([]byte, 255)
 	copy(x[0:], sha1(innerData1))
@@ -247,11 +247,11 @@ func (m *MTProto) makeAuthKey() error {
 	if !ok {
 		return errors.New("Handshake: Need server_DH_params_ok")
 	}
-	if !bytes.Equal(nonceFirst, dh.nonce) {
-		return errors.New("Handshake: Wrong nonce")
+	if !bytes.Equal(nonceFirst, dh.Nonce) {
+		return errors.New("Handshake: Wrong Nonce")
 	}
-	if !bytes.Equal(nonceServer, dh.server_nonce) {
-		return errors.New("Handshake: Wrong server_nonce")
+	if !bytes.Equal(nonceServer, dh.Server_nonce) {
+		return errors.New("Handshake: Wrong Server_nonce")
 	}
 	t1 := make([]byte, 48)
 	copy(t1[0:], nonceSecond)
@@ -279,7 +279,7 @@ func (m *MTProto) makeAuthKey() error {
 	copy(tmpAESIV[28:], nonceSecond[0:4])
 
 	// (parse-thru) server_DH_inner_data
-	decodedData, err := doAES256IGEdecrypt(dh.encrypted_answer, tmpAESKey, tmpAESIV)
+	decodedData, err := doAES256IGEdecrypt(dh.Encrypted_answer, tmpAESKey, tmpAESIV)
 	if err != nil {
 		return err
 	}
@@ -292,14 +292,14 @@ func (m *MTProto) makeAuthKey() error {
 	if !ok {
 		return errors.New("Handshake: Need server_DH_inner_data")
 	}
-	if !bytes.Equal(nonceFirst, dhi.nonce) {
-		return errors.New("Handshake: Wrong nonce")
+	if !bytes.Equal(nonceFirst, dhi.Nonce) {
+		return errors.New("Handshake: Wrong Nonce")
 	}
-	if !bytes.Equal(nonceServer, dhi.server_nonce) {
-		return errors.New("Handshake: Wrong server_nonce")
+	if !bytes.Equal(nonceServer, dhi.Server_nonce) {
+		return errors.New("Handshake: Wrong Server_nonce")
 	}
 
-	_, g_b, g_ab := makeGAB(dhi.g, dhi.g_a, dhi.dh_prime)
+	_, g_b, g_ab := makeGAB(dhi.G, dhi.G_a, dhi.Dh_prime)
 	m.authKey = g_ab.Bytes()
 	if m.authKey[0] == 0 {
 		m.authKey = m.authKey[1:]
@@ -327,7 +327,7 @@ func (m *MTProto) makeAuthKey() error {
 		return err
 	}
 
-	// (parse) dh_gen_{ok, retry, fail}
+	// (parse) dh_gen_{ok, Retry, fail}
 	data, err = m.read(nil)
 	if err != nil {
 		return err
@@ -336,14 +336,14 @@ func (m *MTProto) makeAuthKey() error {
 	if !ok {
 		return errors.New("Handshake: Need dh_gen_ok")
 	}
-	if !bytes.Equal(nonceFirst, dhg.nonce) {
-		return errors.New("Handshake: Wrong nonce")
+	if !bytes.Equal(nonceFirst, dhg.Nonce) {
+		return errors.New("Handshake: Wrong Nonce")
 	}
-	if !bytes.Equal(nonceServer, dhg.server_nonce) {
-		return errors.New("Handshake: Wrong server_nonce")
+	if !bytes.Equal(nonceServer, dhg.Server_nonce) {
+		return errors.New("Handshake: Wrong Server_nonce")
 	}
-	if !bytes.Equal(nonceHash1, dhg.new_nonce_hash1) {
-		return errors.New("Handshake: Wrong new_nonce_hash1")
+	if !bytes.Equal(nonceHash1, dhg.New_nonce_hash1) {
+		return errors.New("Handshake: Wrong New_nonce_hash1")
 	}
 
 	// (all ok)

@@ -65,7 +65,27 @@ func main() {
 
 	switch os.Args[1] {
 	case "auth":
-		err = m.Auth(os.Args[2])
+		phonenumber := os.Args[2]
+		err, authSentCode := m.AuthSendCode(phonenumber)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(2)
+		}
+
+		if !authSentCode.Phone_registered {
+			fmt.Println("Cannot sign in: Phone isn't registered")
+			os.Exit(2)
+		}
+		var code string
+		fmt.Printf("Enter code: ")
+		fmt.Scanf("%s", &code)
+		err, auth := m.AuthSignIn(phonenumber, code, authSentCode.Phone_code_hash)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(2)
+		}
+		userSelf := auth.User.(core.TL_user)
+		fmt.Printf("Signed in: Id %d name <%s %s>\n", userSelf.Id, userSelf.First_name, userSelf.Last_name)
 	//case "msg":
 	//	user_id, _ := strconv.Atoi(os.Args[2])
 	//	err = m.SendMessage(int32(user_id), os.Args[3])
@@ -88,8 +108,8 @@ func main() {
 	}
 
 
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(2)
-	}
+	//if err != nil {
+	//	fmt.Println(err)
+	//	os.Exit(2)
+	//}
 }

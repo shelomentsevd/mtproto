@@ -181,10 +181,10 @@ func doAES256IGEencrypt(data, key, iv []byte) ([]byte, error) {
 		return nil, err
 	}
 	if len(data) < aes.BlockSize {
-		return nil, errors.New("AES256IGE: data too small to encrypt")
+		return nil, errors.New("AES256IGE: Data too small to encrypt")
 	}
 	if len(data)%aes.BlockSize != 0 {
-		return nil, errors.New("AES256IGE: data not divisible by block size")
+		return nil, errors.New("AES256IGE: Data not divisible by block Size")
 	}
 
 	t := make([]byte, aes.BlockSize)
@@ -213,10 +213,10 @@ func doAES256IGEdecrypt(data, key, iv []byte) ([]byte, error) {
 		return nil, err
 	}
 	if len(data) < aes.BlockSize {
-		return nil, errors.New("AES256IGE: data too small to decrypt")
+		return nil, errors.New("AES256IGE: Data too small to decrypt")
 	}
 	if len(data)%aes.BlockSize != 0 {
-		return nil, errors.New("AES256IGE: data not divisible by block size")
+		return nil, errors.New("AES256IGE: Data not divisible by block Size")
 	}
 
 	t := make([]byte, aes.BlockSize)

@@ -112,7 +112,7 @@ func (m *DecodeBuf) StringBytes() []byte {
 	}
 
 	if m.off+size > m.size {
-		m.err = errors.New("DecodeStringBytes: Wrong size")
+		m.err = errors.New("DecodeStringBytes: Wrong Size")
 		return nil
 	}
 	x := make([]byte, size)
@@ -163,7 +163,7 @@ func (m *DecodeBuf) VectorInt() []int32 {
 		return nil
 	}
 	if size < 0 {
-		m.err = errors.New("DecodeVectorInt: Wrong size")
+		m.err = errors.New("DecodeVectorInt: Wrong Size")
 		return nil
 	}
 	x := make([]int32, size)
@@ -193,7 +193,7 @@ func (m *DecodeBuf) VectorLong() []int64 {
 		return nil
 	}
 	if size < 0 {
-		m.err = errors.New("DecodeVectorLong: Wrong size")
+		m.err = errors.New("DecodeVectorLong: Wrong Size")
 		return nil
 	}
 	x := make([]int64, size)
@@ -223,7 +223,7 @@ func (m *DecodeBuf) VectorString() []string {
 		return nil
 	}
 	if size < 0 {
-		m.err = errors.New("DecodeVectorString: Wrong size")
+		m.err = errors.New("DecodeVectorString: Wrong Size")
 		return nil
 	}
 	x := make([]string, size)
@@ -267,7 +267,7 @@ func (m *DecodeBuf) Vector() []TL {
 		return nil
 	}
 	if size < 0 {
-		m.err = errors.New("DecodeVector: Wrong size")
+		m.err = errors.New("DecodeVector: Wrong Size")
 		return nil
 	}
 	x := make([]TL, size)

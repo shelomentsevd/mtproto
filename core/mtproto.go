@@ -221,7 +221,38 @@ func (m *MTProto) Connect() error {
 }
 
 func (m *MTProto) reconnect(newaddr string) error {
-	return nil
+	var err error
+
+	// stop ping routine
+	m.stopPing <- struct{}{}
+	close(m.stopPing)
+
+	// stop send routine
+	m.stopSend <- struct{}{}
+	close(m.stopSend)
+
+	// stop read routine
+	m.stopRead <- struct{}{}
+	close(m.stopRead)
+
+	<-m.allDone
+	<-m.allDone
+	<-m.allDone
+
+	// close send queue
+	close(m.queueSend)
+
+	// close connection
+	err = m.conn.Close()
+	if err != nil {
+		return err
+	}
+
+	// renew connection
+	m.encrypted = false
+	m.addr = newaddr
+	err = m.Connect()
+	return err
 }
 
 func (m *MTProto) Auth(phonenumber string) error {

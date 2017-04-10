@@ -272,6 +272,7 @@ func (m *MTProto) Auth(phonenumber string) error {
 
 	var code int
 
+	// TODO: Make method independet from Scanf import. Probably we need to split Auth in two function or rewrite it.
 	fmt.Printf("Enter code: ")
 	fmt.Scanf("%d", &code)
 

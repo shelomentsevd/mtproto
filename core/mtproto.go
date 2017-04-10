@@ -54,7 +54,22 @@ type appConfig struct {
 	language      string
 }
 
+// API Errors
+const (
+	errorSeeOther     = 303
+	errorBadRequest   = 400
+	errorUnauthorized = 401
+	errorForbidden    = 403
+	errorNotFound     = 404
+	errorFlood        = 420
+	errorInternal     = 500
+)
+
 const appConfigError = "App configuration error: %s"
+const telegramAddr = "149.154.167.50:443"
+
+// Current API layer version
+const layer = 65
 
 func NewConfig(id int32, hash, version, deviceModel, systemVersion, language string) (*appConfig, error) {
 	appConfig := new(appConfig)
@@ -103,11 +118,6 @@ func (appConfig appConfig) Check() error {
 
 	return nil
 }
-
-const telegramAddr = "149.154.167.50:443"
-
-// Current API layer version
-const layer = 65
 
 func NewMTProto(authkeyfile string, appConfig *appConfig) (*MTProto, error) {
 	var err error
@@ -235,7 +245,7 @@ func (m *MTProto) Auth(phonenumber string) error {
 			flag = false
 		case TL_rpc_error:
 			x := x.(TL_rpc_error)
-			if x.error_code != 303 {
+			if x.error_code != errorSeeOther {
 				return fmt.Errorf("RPC error_code: %d", x.error_code)
 			}
 			var newDc int32

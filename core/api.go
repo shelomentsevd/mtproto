@@ -379,6 +379,47 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		r = TL_userStatusLastWeek{}
 	case crc_userStatusLastMonth:
 		r = TL_userStatusLastMonth{}
+	case crc_contacts_topPeersNotModified:
+		r = TL_contacts_topPeersNotModified{}
+	case crc_contacts_topPeers:
+		r = TL_contacts_topPeers{
+			Categories: m.Vector(),
+			Chats:      m.Vector(),
+			Users:      m.Vector(),
+		}
+	case crc_topPeerCategoryPeers:
+		r = TL_topPeerCategoryPeers{
+			Categories: m.Vector(),
+			Count:      m.Int(),
+			Peers:      m.Vector(),
+		}
+	case crc_topPeer:
+		r = TL_topPeer{
+			Peer:   m.Object(),
+			Rating: m.Double(),
+		}
+	case crc_peerUser:
+		r = TL_peerUser{
+			User_id: m.Int(),
+		}
+	case crc_peerChat:
+		r = TL_peerChat{
+			Chat_id: m.Int(),
+		}
+	case crc_peerChannel:
+		r = TL_peerChannel{
+			Channel_id: m.Int(),
+		}
+	case crc_topPeerCategoryBotsPM:
+		r = TL_topPeerCategoryBotsPM{}
+	case crc_topPeerCategoryBotsInline:
+		r = TL_topPeerCategoryBotsInline{}
+	case crc_topPeerCategoryCorrespondents:
+		r = TL_topPeerCategoryCorrespondents{}
+	case crc_topPeerCategoryGroups:
+		r = TL_topPeerCategoryGroups{}
+	case crc_topPeerCategoryChannels:
+		r = TL_topPeerCategoryChannels{}
 	default:
 		m.err = fmt.Errorf("Unknown constructor: %x", constructor)
 		return nil
@@ -979,3 +1020,166 @@ func (e TL_user) encode() []byte {
 
 	return x.buf
 }
+
+//peerUser#9db1bc6d user_id:int = Peer;
+const crc_peerUser = 0x9db1bc6d
+
+type TL_peerUser struct {
+	User_id int32
+}
+
+func (e TL_peerUser) encode() []byte {
+	x := NewEncodeBuf(8)
+	x.UInt(crc_peerUser)
+	x.Int(e.User_id)
+	return x.buf
+}
+
+//peerChat#bad0e5bb chat_id:int = Peer;
+const crc_peerChat = 0xbad0e5bb
+
+type TL_peerChat struct {
+	Chat_id int32
+}
+
+func (e TL_peerChat) encode() []byte {
+	x := NewEncodeBuf(8)
+	x.UInt(crc_peerChat)
+	x.Int(e.Chat_id)
+	return x.buf
+}
+
+//peerChannel#bddde532 channel_id:int = Peer;
+const crc_peerChannel = 0xbddde532
+
+type TL_peerChannel struct {
+	Channel_id int32
+}
+
+func (e TL_peerChannel) encode() []byte {
+	x := NewEncodeBuf(8)
+	x.UInt(crc_peerChannel)
+	x.Int(e.Channel_id)
+	return x.buf
+}
+
+//topPeerCategoryBotsPM#ab661b5b = TopPeerCategory;
+const crc_topPeerCategoryBotsPM = 0xab661b5b
+
+type TL_topPeerCategoryBotsPM struct{}
+
+func (e TL_topPeerCategoryBotsPM) encode() []byte { return nil }
+
+//topPeerCategoryBotsInline#148677e2 = TopPeerCategory;
+const crc_topPeerCategoryBotsInline = 0x148677e2
+
+type TL_topPeerCategoryBotsInline struct{}
+
+func (e TL_topPeerCategoryBotsInline) encode() []byte { return nil }
+
+//topPeerCategoryCorrespondents#637b7ed = TopPeerCategory;
+const crc_topPeerCategoryCorrespondents = 0x637b7ed
+
+type TL_topPeerCategoryCorrespondents struct{}
+
+func (e TL_topPeerCategoryCorrespondents) encode() []byte { return nil }
+
+//topPeerCategoryGroups#bd17a14a = TopPeerCategory;
+const crc_topPeerCategoryGroups = 0xbd17a14a
+
+type TL_topPeerCategoryGroups struct{}
+
+func (e TL_topPeerCategoryGroups) encode() []byte { return nil }
+
+//topPeerCategoryChannels#161d9628 = TopPeerCategory;
+const crc_topPeerCategoryChannels = 0x161d9628
+
+type TL_topPeerCategoryChannels struct{}
+
+func (e TL_topPeerCategoryChannels) encode() []byte { return nil }
+
+//topPeer#edcdc05b peer:Peer rating:double = TopPeer;
+const crc_topPeer = 0xedcdc05b
+
+type TL_topPeer struct {
+	Peer   TL
+	Rating float64
+}
+
+func (e TL_topPeer) encode() []byte { return nil }
+
+//contacts.topPeersNotModified#de266ef5 = contacts.TopPeers;
+const crc_contacts_topPeersNotModified = 0xde266ef5
+
+type TL_contacts_topPeersNotModified struct{}
+
+func (e TL_contacts_topPeersNotModified) encode() []byte { return nil }
+
+//contacts.topPeers#70b772a8 categories:Vector<TopPeerCategoryPeers> chats:Vector<Chat> users:Vector<User> = contacts.TopPeers;
+const crc_contacts_topPeers = 0x70b772a8
+
+type TL_contacts_topPeers struct {
+	Categories []TL
+	Chats      []TL
+	Users      []TL
+}
+
+func (e TL_contacts_topPeers) encode() []byte { return nil }
+
+//topPeerCategoryPeers#fb834291 category:TopPeerCategory count:int peers:Vector<TopPeer> = TopPeerCategoryPeers;
+const crc_topPeerCategoryPeers = 0xfb834291
+
+type TL_topPeerCategoryPeers struct {
+	Categories []TL
+	Count      int32
+	Peers      []TL
+}
+
+func (e TL_topPeerCategoryPeers) encode() []byte { return nil }
+
+//contacts.getTopPeers#d4982db5 flags:# correspondents:flags.0?true bots_pm:flags.1?true bots_inline:flags.2?true groups:flags.10?true channels:flags.15?true offset:int limit:int hash:int = contacts.TopPeers;
+const crc_contacts_getTopPeers = 0xd4982db5
+
+type TL_contacts_getTopPeers struct {
+	Correspondents bool // flags.0?true
+	Bots_pm        bool // flags.1?true
+	Bots_inline    bool // flags.2?true
+	Groups         bool // flags.10?true
+	Channels       bool // flags.15?true
+	Offset         int32
+	Limit          int32
+	Hash           int32
+}
+
+func (e TL_contacts_getTopPeers) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_contacts_getTopPeers)
+	var flags int32
+	if e.Correspondents {
+		flags |= (1 << 0)
+	}
+	if e.Bots_pm {
+		flags |= (1 << 1)
+	}
+	if e.Bots_inline {
+		flags |= (1 << 2)
+	}
+	if e.Groups {
+		flags |= (1 << 10)
+	}
+	if e.Channels {
+		flags |= (1 << 15)
+	}
+	x.Int(flags)
+	x.Int(e.Offset)
+	x.Int(e.Limit)
+	x.Int(e.Hash)
+	return x.buf
+}
+
+// TODO: Implement chat structures
+//chatEmpty#9ba2d800 id:int = Chat;
+//chat#d91cdd54 flags:# creator:flags.0?true kicked:flags.1?true left:flags.2?true admins_enabled:flags.3?true admin:flags.4?true deactivated:flags.5?true id:int title:string photo:ChatPhoto participants_count:int date:int version:int migrated_to:flags.6?InputChannel = Chat;
+//chatForbidden#7328bdb id:int title:string = Chat;
+//channel#a14dca52 flags:# creator:flags.0?true kicked:flags.1?true left:flags.2?true editor:flags.3?true moderator:flags.4?true broadcast:flags.5?true verified:flags.7?true megagroup:flags.8?true restricted:flags.9?true democracy:flags.10?true signatures:flags.11?true min:flags.12?true id:int access_hash:flags.13?long title:string username:flags.6?string photo:ChatPhoto date:int version:int restriction_reason:flags.9?string = Chat;
+//channelForbidden#8537784f flags:# broadcast:flags.5?true megagroup:flags.8?true id:int access_hash:long title:string = Chat;

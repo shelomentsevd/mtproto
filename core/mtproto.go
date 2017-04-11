@@ -328,6 +328,10 @@ func (m *MTProto) AuthSignIn(phoneNumber, phoneCode, phoneCodeHash string) (erro
 	return nil, &auth
 }
 
+func (m *MTProto) GetTopPeers() (error, *TL_contacts_topPeers) {
+	return nil, nil
+}
+
 func (m *MTProto) pingRoutine() {
 	for {
 		select {

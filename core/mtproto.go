@@ -328,8 +328,31 @@ func (m *MTProto) AuthSignIn(phoneNumber, phoneCode, phoneCodeHash string) (erro
 	return nil, &auth
 }
 
-func (m *MTProto) GetTopPeers() (error, *TL_contacts_topPeers) {
-	return nil, nil
+func (m *MTProto) GetTopPeers(correspondents, botsPM, botsInline, groups, channels bool, offset, limit, hash int32) (error, *TL) {
+	resp := make(chan TL, 1)
+	m.queueSend <- packetToSend{
+		msg: TL_contacts_getTopPeers{
+			Correspondents: correspondents,
+			Bots_pm:        botsPM,
+			Bots_inline:    botsInline,
+			Groups:         groups,
+			Channels:       channels,
+			Offset:         offset,
+			Limit:          limit,
+			Hash:           hash,
+		},
+		resp: resp,
+	}
+	x := <-resp
+
+	switch x.(type) {
+	case TL_contacts_topPeersNotModified:
+	case TL_contacts_topPeers:
+	default:
+		return errors.New("MTProto::GetTopPeers error: Unknown type"), nil
+	}
+
+	return nil, &x
 }
 
 func (m *MTProto) pingRoutine() {
@@ -426,7 +449,6 @@ func (m *MTProto) process(msgId int64, seqNo int32, data interface{}) interface{
 
 	default:
 		return data
-
 	}
 
 	// TODO: Check why I should do this

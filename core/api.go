@@ -420,6 +420,133 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		r = TL_topPeerCategoryGroups{}
 	case crc_topPeerCategoryChannels:
 		r = TL_topPeerCategoryChannels{}
+	case crc_chatEmpty:
+		r = TL_chatEmpty{
+			Id: m.Int(),
+		}
+	case crc_chat:
+		flags := m.Int()
+		creator := flags&(1<<0) != 0
+		kicked := flags&(1<<1) != 0
+		left := flags&(1<<2) != 0
+		admins_enabled := flags&(1<<3) != 0
+		admin := flags&(1<<4) != 0
+		deactivated := flags&(1<<5) != 0
+		id := m.Int()
+		title := m.String()
+		photo := m.Object()
+		participants_count := m.Int()
+		date := m.Int()
+		version := m.Int()
+		var migrated_to TL
+		migrated_to = TL_null{}
+		if flags&(1<<6) != 0 {
+			migrated_to = m.Object()
+		}
+		r = TL_chat{
+			Flags:              flags,
+			Creator:            creator,
+			Kicked:             kicked,
+			Left:               left,
+			Admins_enabled:     admins_enabled,
+			Admin:              admin,
+			Deactivated:        deactivated,
+			Id:                 id,
+			Title:              title,
+			Photo:              photo,
+			Participants_count: participants_count,
+			Date:               date,
+			Version:            version,
+			Migrated_to:        migrated_to,
+		}
+	case crc_chatForbidden:
+		r = TL_chatForbidden{
+			Id:    m.Int(),
+			Title: m.String(),
+		}
+	case crc_chatPhotoEmpty:
+		r = TL_chatPhotoEmpty{}
+	case crc_chatPhoto:
+		r = TL_chatPhoto{
+			Photo_small: m.Object(),
+			Photo_big:   m.Object(),
+		}
+	case crc_channel:
+		flags := m.Int()
+		creator := flags&(1<<0) != 0
+		kicked := flags&(1<<1) != 0
+		left := flags&(1<<2) != 0
+		editor := flags&(1<<3) != 0
+		moderator := flags&(1<<4) != 0
+		broadcast := flags&(1<<5) != 0
+		verified := flags&(1<<7) != 0
+		megagroup := flags&(1<<8) != 0
+		restricted := flags&(1<<9) != 0
+		democracy := flags&(1<<10) != 0
+		signatures := flags&(1<<11) != 0
+		min := flags&(1<<12) != 0
+		id := m.Int()
+		var access_hash int64
+		if flags&(1<<13) != 0 {
+			access_hash = m.Long()
+		}
+		title := m.String()
+		var username string
+		if flags&(1<<6) != 0 {
+			username = m.String()
+		}
+		photo := m.Object()
+		date := m.Int()
+		version := m.Int()
+		var restriction_reason string
+		if flags&(1<<9) != 0 {
+			restriction_reason = m.String()
+		}
+		r = TL_channel{
+			Flags:              flags,
+			Creator:            creator,
+			Kicked:             kicked,
+			Left:               left,
+			Editor:             editor,
+			Moderator:          moderator,
+			Broadcast:          broadcast,
+			Verified:           verified,
+			Megagroup:          megagroup,
+			Restricted:         restricted,
+			Democracy:          democracy,
+			Signatures:         signatures,
+			Min:                min,
+			Id:                 id,
+			Access_hash:        access_hash,
+			Title:              title,
+			Username:           username,
+			Photo:              photo,
+			Date:               date,
+			Version:            version,
+			Restriction_reason: restriction_reason,
+		}
+	case crc_channelForbidden:
+		flags := m.Int()
+		broadcast := flags&(1<<5) != 0
+		megagroup := flags&(1<<8) != 0
+		id := m.Int()
+		access_hash := m.Long()
+		title := m.String()
+		r = TL_channelForbidden{
+			Flags:       flags,
+			Broadcast:   broadcast,
+			Megagroup:   megagroup,
+			Id:          id,
+			Access_hash: access_hash,
+			Title:       title,
+		}
+	case crc_inputChannelEmpty:
+		r = TL_inputChannelEmpty{}
+	case crc_inputChannel:
+		r = TL_inputChannel{
+			Channel_id:  m.Int(),
+			Access_hash: m.Long(),
+		}
 	default:
 		m.err = fmt.Errorf("Unknown constructor: %x", constructor)
 		return nil
@@ -1177,9 +1304,161 @@ func (e TL_contacts_getTopPeers) encode() []byte {
 	return x.buf
 }
 
-// TODO: Implement chat structures
+//chatPhotoEmpty#37c1011c = ChatPhoto;
+const crc_chatPhotoEmpty = 0x37c1011c
+
+type TL_chatPhotoEmpty struct{}
+
+func (e TL_chatPhotoEmpty) encode() []byte {
+	x := NewEncodeBuf(4)
+	x.UInt(crc_chatPhotoEmpty)
+	return x.buf
+}
+
+//chatPhoto#6153276a photo_small:FileLocation photo_big:FileLocation = ChatPhoto;
+const crc_chatPhoto = 0x6153276a
+
+type TL_chatPhoto struct {
+	Photo_small TL
+	Photo_big   TL
+}
+
+func (e TL_chatPhoto) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_chatPhoto)
+	x.Bytes(e.Photo_small.encode())
+	x.Bytes(e.Photo_big.encode())
+	return x.buf
+}
+
 //chatEmpty#9ba2d800 id:int = Chat;
+const crc_chatEmpty = 0x9ba2d800
+
+type TL_chatEmpty struct {
+	Id int32
+}
+
+func (e TL_chatEmpty) encode() []byte {
+	x := NewEncodeBuf(8)
+	x.UInt(crc_chatEmpty)
+	x.Int(e.Id)
+	return x.buf
+}
+
 //chat#d91cdd54 flags:# creator:flags.0?true kicked:flags.1?true left:flags.2?true admins_enabled:flags.3?true admin:flags.4?true deactivated:flags.5?true id:int title:string photo:ChatPhoto participants_count:int date:int version:int migrated_to:flags.6?InputChannel = Chat;
+const crc_chat = 0xd91cdd54
+
+type TL_chat struct {
+	Flags              int32
+	Creator            bool // flags.0?true
+	Kicked             bool // flags.1?true
+	Left               bool // flags.2?true
+	Admins_enabled     bool // flags.3?true
+	Admin              bool // flags.4?true
+	Deactivated        bool // flags.5?true
+	Id                 int32
+	Title              string
+	Photo              TL
+	Participants_count int32
+	Date               int32
+	Version            int32
+	Migrated_to        TL // flags6?InputChannel
+}
+
+func (e TL_chat) encode() []byte { return nil }
+
 //chatForbidden#7328bdb id:int title:string = Chat;
+const crc_chatForbidden = 0x7328bdb
+
+type TL_chatForbidden struct {
+	Id    int32
+	Title string
+}
+
+func (e TL_chatForbidden) encode() []byte { return nil }
+
 //channel#a14dca52 flags:# creator:flags.0?true kicked:flags.1?true left:flags.2?true editor:flags.3?true moderator:flags.4?true broadcast:flags.5?true verified:flags.7?true megagroup:flags.8?true restricted:flags.9?true democracy:flags.10?true signatures:flags.11?true min:flags.12?true id:int access_hash:flags.13?long title:string username:flags.6?string photo:ChatPhoto date:int version:int restriction_reason:flags.9?string = Chat;
+const crc_channel = 0xa14dca52
+
+type TL_channel struct {
+	Flags              int32
+	Creator            bool // flags.0?true
+	Kicked             bool // flags.1?true
+	Left               bool // flags.2?true
+	Editor             bool // flags.3?true
+	Moderator          bool // flags.4?true
+	Broadcast          bool // flags.5?true
+	Verified           bool // flags.7?true
+	Megagroup          bool // flags.8?true
+	Restricted         bool // flags.9?true
+	Democracy          bool // flags.10?true
+	Signatures         bool // flags.11?true
+	Min                bool // flags.12?true
+	Id                 int32
+	Access_hash        int64 // flags.13?true
+	Title              string
+	Username           string // flags.6?true
+	Photo              TL     // ChatPhoto
+	Date               int32
+	Version            int32
+	Restriction_reason string // // flags.9?true
+}
+
+func (e TL_channel) encode() []byte { return nil }
+
 //channelForbidden#8537784f flags:# broadcast:flags.5?true megagroup:flags.8?true id:int access_hash:long title:string = Chat;
+const crc_channelForbidden = 0x8537784f
+
+type TL_channelForbidden struct {
+	Flags       int32
+	Broadcast   bool // flags.5?true
+	Megagroup   bool // flags.8?true
+	Id          int32
+	Access_hash int64
+	Title       string
+}
+
+func (e TL_channelForbidden) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_chatForbidden)
+	var flags int32
+	if e.Broadcast {
+		flags |= (1 << 5)
+	}
+	if e.Megagroup {
+		flags |= (1 << 8)
+	}
+	x.Int(flags)
+	x.Int(e.Id)
+	x.Long(e.Access_hash)
+	x.String(e.Title)
+	return x.buf
+}
+
+//inputChannelEmpty#ee8c1e86 = InputChannel;
+const crc_inputChannelEmpty = 0xee8c1e86
+
+type TL_inputChannelEmpty struct{}
+
+func (e TL_inputChannelEmpty) encode() []byte {
+	x := NewEncodeBuf(4)
+	x.UInt(crc_inputChannelEmpty)
+	return x.buf
+}
+
+//inputChannel#afeb712e channel_id:int access_hash:long = InputChannel;
+
+const crc_inputChannel = 0xafeb712e
+
+type TL_inputChannel struct {
+	Channel_id  int32
+	Access_hash int64
+}
+
+func (e TL_inputChannel) encode() []byte {
+	x := NewEncodeBuf(16)
+	x.UInt(crc_inputChannel)
+	x.Int(e.Channel_id)
+	x.Long(e.Access_hash)
+	return x.buf
+}

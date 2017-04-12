@@ -232,7 +232,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			User:         user,
 		}
 	case crc_userEmpty:
-		r = TL_user{
+		r = TL_userEmpty{
 			Id: m.Int(),
 		}
 	case crc_user:
@@ -389,9 +389,9 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		}
 	case crc_topPeerCategoryPeers:
 		r = TL_topPeerCategoryPeers{
-			Categories: m.Vector(),
-			Count:      m.Int(),
-			Peers:      m.Vector(),
+			Category: m.Object(),
+			Count:    m.Int(),
+			Peers:    m.Vector(),
 		}
 	case crc_topPeer:
 		r = TL_topPeer{
@@ -1257,9 +1257,9 @@ func (e TL_contacts_topPeers) encode() []byte { return nil }
 const crc_topPeerCategoryPeers = 0xfb834291
 
 type TL_topPeerCategoryPeers struct {
-	Categories []TL
-	Count      int32
-	Peers      []TL
+	Category TL
+	Count    int32
+	Peers    []TL
 }
 
 func (e TL_topPeerCategoryPeers) encode() []byte { return nil }

@@ -547,6 +547,16 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Channel_id:  m.Int(),
 			Access_hash: m.Long(),
 		}
+	case crc_messageEmpty:
+		// TODO
+	case crc_messages_messages:
+		// TODO
+	case crc_messages_messagesSlice:
+		// TODO
+	case crc_messages_channelMessages:
+		// TODO
+	case crc_messages_getHistory:
+		// TODO
 	default:
 		m.err = fmt.Errorf("Unknown constructor: %x", constructor)
 		return nil
@@ -1460,5 +1470,134 @@ func (e TL_inputChannel) encode() []byte {
 	x.UInt(crc_inputChannel)
 	x.Int(e.Channel_id)
 	x.Long(e.Access_hash)
+	return x.buf
+}
+
+//replyKeyboardHide#a03e5b85 flags:# selective:flags.2?true = ReplyMarkup;
+//replyKeyboardForceReply#f4108aa0 flags:# single_use:flags.1?true selective:flags.2?true = ReplyMarkup;
+//replyKeyboardMarkup#3502758c flags:# resize:flags.0?true single_use:flags.1?true selective:flags.2?true rows:Vector<KeyboardButtonRow> = ReplyMarkup;
+//replyInlineMarkup#48a30254 rows:Vector<KeyboardButtonRow> = ReplyMarkup;
+
+//messageMediaEmpty#3ded6320 = MessageMedia;
+//messageMediaPhoto#3d8ce53d photo:Photo caption:string = MessageMedia;
+//messageMediaGeo#56e0d474 geo:GeoPoint = MessageMedia;
+//messageMediaContact#5e7d2f39 phone_number:string first_name:string last_name:string user_id:int = MessageMedia;
+//messageMediaUnsupported#9f84f49e = MessageMedia;
+//messageMediaDocument#f3e02ea8 document:Document caption:string = MessageMedia;
+//messageMediaWebPage#a32dd600 webpage:WebPage = MessageMedia;
+//messageMediaVenue#7912b71f geo:GeoPoint title:string address:string provider:string venue_id:string = MessageMedia;
+//messageMediaGame#fdb19008 game:Game = MessageMedia;
+//messageMediaInvoice#84551347 flags:# shipping_address_requested:flags.1?true test:flags.3?true title:string description:string photo:flags.0?WebDocument receipt_msg_id:flags.2?int currency:string total_amount:long start_param:string = MessageMedia;
+
+//messageFwdHeader#c786ddcb flags:# from_id:flags.0?int date:int channel_id:flags.1?int channel_post:flags.2?int = MessageFwdHeader;
+
+//messageEmpty#83e5de54 id:int = Message;
+const crc_messageEmpty = 0x83e5de54
+
+type TL_messageEmpty struct {
+	Id int32
+}
+
+func (e TL_messageEmpty) encode() []byte {
+	x := NewEncodeBuf(8)
+	x.UInt(crc_messageEmpty)
+	x.Int(e.Id)
+
+	return x.buf
+}
+
+//message#c09be45f flags:# out:flags.1?true mentioned:flags.4?true media_unread:flags.5?true silent:flags.13?true post:flags.14?true id:int from_id:flags.8?int to_id:Peer fwd_from:flags.2?MessageFwdHeader via_bot_id:flags.11?int reply_to_msg_id:flags.3?int date:int message:string media:flags.9?MessageMedia reply_markup:flags.6?ReplyMarkup entities:flags.7?Vector<MessageEntity> views:flags.10?int edit_date:flags.15?int = Message;
+//messageService#9e19a1f6 flags:# out:flags.1?true mentioned:flags.4?true media_unread:flags.5?true silent:flags.13?true post:flags.14?true id:int from_id:flags.8?int to_id:Peer reply_to_msg_id:flags.3?int date:int action:MessageAction = Message;
+
+//messages.messages#8c718e87 messages:Vector<Message> chats:Vector<Chat> users:Vector<User> = messages.Messages;
+const crc_messages_messages = 0x8c718e87
+
+type TL_messages_messages struct {
+	Messages []TL
+	Chats    []TL
+	Users    []TL
+}
+
+func (e TL_messages_messages) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_messages_messages)
+	x.Vector(e.Messages)
+	x.Vector(e.Chats)
+	x.Vector(e.Users)
+	return x.buf
+}
+
+//messages.messagesSlice#b446ae3 count:int messages:Vector<Message> chats:Vector<Chat> users:Vector<User> = messages.Messages;
+
+const crc_messages_messagesSlice = 0xb446ae3
+
+type TL_messages_messagesSlice struct {
+	Count    int32
+	Messages []TL
+	Chats    []TL
+	Users    []TL
+}
+
+func (e TL_messages_messagesSlice) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_messages_messagesSlice)
+	x.Int(e.Count)
+	x.Vector(e.Messages)
+	x.Vector(e.Chats)
+	x.Vector(e.Users)
+
+	return x.buf
+}
+
+//messages.channelMessages#99262e37 flags:# pts:int count:int messages:Vector<Message> chats:Vector<Chat> users:Vector<User> = messages.Messages;
+const crc_messages_channelMessages = 0x99262e37
+
+type TL_messages_channelMessages struct {
+	Flags    int32
+	Pts      int32
+	Count    int32
+	Messages []TL
+	Chats    []TL
+	Users    []TL
+}
+
+func (e TL_messages_channelMessages) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_messages_channelMessages)
+	var flags int32
+	x.Int(flags)
+	x.Int(e.Pts)
+	x.Int(e.Count)
+	x.Vector(e.Messages)
+	x.Vector(e.Chats)
+	x.Vector(e.Users)
+	return x.buf
+}
+
+//messages.getHistory#afa92846 peer:InputPeer offset_id:int offset_date:int add_offset:int limit:int max_id:int min_id:int = messages.Messages;
+
+const crc_messages_getHistory = 0xafa92846
+
+type TL_messages_getHistory struct {
+	Peer        TL
+	Offset_id   int32
+	Offset_date int32
+	Add_offset  int32
+	Limit       int32
+	Max_id      int32
+	Min_id      int32
+}
+
+func (e TL_messages_getHistory) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_messages_getHistory)
+	x.Bytes(e.Peer.encode())
+	x.Int(e.Offset_id)
+	x.Int(e.Offset_date)
+	x.Int(e.Add_offset)
+	x.Int(e.Limit)
+	x.Int(e.Max_id)
+	x.Int(e.Min_id)
+
 	return x.buf
 }

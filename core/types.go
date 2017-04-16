@@ -167,3 +167,5 @@ type TL_pong struct {
 	Msg_id  int64
 	Ping_id int64
 }
+
+const crc_gzip_packed = 0x3072cfa1

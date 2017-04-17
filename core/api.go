@@ -2555,7 +2555,7 @@ type TL_photoCachedSize struct {
 	Location  TL     // location:FileLocation
 	W         int32  // w:int
 	H         int32  // h:int
-	Bytes     TL     // bytes:bytes
+	Bytes     []byte // bytes:bytes
 }
 
 // Encoding TL_photoCachedSize
@@ -2566,7 +2566,7 @@ func (e TL_photoCachedSize) encode() []byte {
 	x.Bytes(e.Location.encode())
 	x.Int(e.W)
 	x.Int(e.H)
-	x.Bytes(e.Bytes.encode())
+	x.Bytes(e.Bytes)
 	return x.buf
 }
 
@@ -16702,7 +16702,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Location:  m.Object(),
 			W:         m.Int(),
 			H:         m.Int(),
-			Bytes:     m.Object(),
+			Bytes:     m.StringBytes(),
 		}
 	case crc_geoPointEmpty:
 		r = TL_geoPointEmpty{}

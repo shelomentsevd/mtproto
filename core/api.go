@@ -529,7 +529,7 @@ type TL_inputMediaInvoice struct {
 	Description string // description:string
 	Photo       TL     // photo:flags.0?InputWebDocument
 	Invoice     TL     // invoice:Invoice
-	Payload     TL     // payload:bytes
+	Payload     []byte // payload:bytes
 	Provider    string // provider:string
 	Start_param string // start_param:string
 }
@@ -549,7 +549,7 @@ func (e TL_inputMediaInvoice) encode() []byte {
 		x.Bytes(e.Photo.encode())
 	}
 	x.Bytes(e.Invoice.encode())
-	x.Bytes(e.Payload.encode())
+	x.Bytes(e.Payload)
 	x.String(e.Provider)
 	x.String(e.Start_param)
 	return x.buf
@@ -2332,7 +2332,7 @@ type TL_messageActionPaymentSentMe struct {
 	Flags              int32
 	Currency           string // currency:string
 	Total_amount       int64  // total_amount:long
-	Payload            TL     // payload:bytes
+	Payload            []byte // payload:bytes
 	Info               TL     // info:flags.0?PaymentRequestedInfo
 	Shipping_option_id string // shipping_option_id:flags.1?string
 	Charge             TL     // charge:PaymentCharge
@@ -2352,7 +2352,7 @@ func (e TL_messageActionPaymentSentMe) encode() []byte {
 	x.Int(flags)
 	x.String(e.Currency)
 	x.Long(e.Total_amount)
-	x.Bytes(e.Payload.encode())
+	x.Bytes(e.Payload)
 	if flags&(1<<0) != 0 {
 		x.Bytes(e.Info.encode())
 	}
@@ -2688,8 +2688,8 @@ func (e TL_auth_authorization) encode() []byte {
 const crc_auth_exportedAuthorization = 0xdf969c2d
 
 type TL_auth_exportedAuthorization struct {
-	Id    int32 // id:int
-	Bytes TL    // bytes:bytes
+	Id    int32  // id:int
+	Bytes []byte // bytes:bytes
 }
 
 // Encoding TL_auth_exportedAuthorization
@@ -2697,7 +2697,7 @@ func (e TL_auth_exportedAuthorization) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_auth_exportedAuthorization)
 	x.Int(e.Id)
-	x.Bytes(e.Bytes.encode())
+	x.Bytes(e.Bytes)
 	return x.buf
 }
 
@@ -4499,7 +4499,7 @@ type TL_updateBotCallbackQuery struct {
 	Peer            TL     // peer:Peer
 	Msg_id          int32  // msg_id:int
 	Chat_instance   int64  // chat_instance:long
-	Data            TL     // data:flags.0?bytes
+	Data            []byte // data:flags.0?bytes
 	Game_short_name string // game_short_name:flags.1?string
 }
 
@@ -4508,7 +4508,7 @@ func (e TL_updateBotCallbackQuery) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_updateBotCallbackQuery)
 	var flags int32
-	if _, ok := (e.Data).(TL_null); !ok {
+	if len(e.Data) != 0 {
 		flags |= (1 << 0)
 	}
 	if e.Game_short_name != "" {
@@ -4521,7 +4521,7 @@ func (e TL_updateBotCallbackQuery) encode() []byte {
 	x.Int(e.Msg_id)
 	x.Long(e.Chat_instance)
 	if flags&(1<<0) != 0 {
-		x.Bytes(e.Data.encode())
+		x.Bytes(e.Data)
 	}
 	if flags&(1<<1) != 0 {
 		x.String(e.Game_short_name)
@@ -4559,7 +4559,7 @@ type TL_updateInlineBotCallbackQuery struct {
 	User_id         int32  // user_id:int
 	Msg_id          TL     // msg_id:InputBotInlineMessageID
 	Chat_instance   int64  // chat_instance:long
-	Data            TL     // data:flags.0?bytes
+	Data            []byte // data:flags.0?bytes
 	Game_short_name string // game_short_name:flags.1?string
 }
 
@@ -4568,7 +4568,7 @@ func (e TL_updateInlineBotCallbackQuery) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_updateInlineBotCallbackQuery)
 	var flags int32
-	if _, ok := (e.Data).(TL_null); !ok {
+	if len(e.Data) != 0 {
 		flags |= (1 << 0)
 	}
 	if e.Game_short_name != "" {
@@ -4580,7 +4580,7 @@ func (e TL_updateInlineBotCallbackQuery) encode() []byte {
 	x.Bytes(e.Msg_id.encode())
 	x.Long(e.Chat_instance)
 	if flags&(1<<0) != 0 {
-		x.Bytes(e.Data.encode())
+		x.Bytes(e.Data)
 	}
 	if flags&(1<<1) != 0 {
 		x.String(e.Game_short_name)
@@ -4790,10 +4790,10 @@ func (e TL_updateBotWebhookJSONQuery) encode() []byte {
 const crc_updateBotShippingQuery = 0xe0cdc940
 
 type TL_updateBotShippingQuery struct {
-	Query_id         int64 // query_id:long
-	User_id          int32 // user_id:int
-	Payload          TL    // payload:bytes
-	Shipping_address TL    // shipping_address:PostAddress
+	Query_id         int64  // query_id:long
+	User_id          int32  // user_id:int
+	Payload          []byte // payload:bytes
+	Shipping_address TL     // shipping_address:PostAddress
 }
 
 // Encoding TL_updateBotShippingQuery
@@ -4802,7 +4802,7 @@ func (e TL_updateBotShippingQuery) encode() []byte {
 	x.UInt(crc_updateBotShippingQuery)
 	x.Long(e.Query_id)
 	x.Int(e.User_id)
-	x.Bytes(e.Payload.encode())
+	x.Bytes(e.Payload)
 	x.Bytes(e.Shipping_address.encode())
 	return x.buf
 }
@@ -4815,7 +4815,7 @@ type TL_updateBotPrecheckoutQuery struct {
 	Flags              int32
 	Query_id           int64  // query_id:long
 	User_id            int32  // user_id:int
-	Payload            TL     // payload:bytes
+	Payload            []byte // payload:bytes
 	Info               TL     // info:flags.0?PaymentRequestedInfo
 	Shipping_option_id string // shipping_option_id:flags.1?string
 	Currency           string // currency:string
@@ -4836,7 +4836,7 @@ func (e TL_updateBotPrecheckoutQuery) encode() []byte {
 	x.Int(flags)
 	x.Long(e.Query_id)
 	x.Int(e.User_id)
-	x.Bytes(e.Payload.encode())
+	x.Bytes(e.Payload)
 	if flags&(1<<0) != 0 {
 		x.Bytes(e.Info.encode())
 	}
@@ -5308,9 +5308,9 @@ func (e TL_photos_photo) encode() []byte {
 const crc_upload_file = 0x96a18d5
 
 type TL_upload_file struct {
-	Code_type TL    // type:storage.FileType
-	Mtime     int32 // mtime:int
-	Bytes     TL    // bytes:bytes
+	Code_type TL     // type:storage.FileType
+	Mtime     int32  // mtime:int
+	Bytes     []byte // bytes:bytes
 }
 
 // Encoding TL_upload_file
@@ -5319,7 +5319,7 @@ func (e TL_upload_file) encode() []byte {
 	x.UInt(crc_upload_file)
 	x.Bytes(e.Code_type.encode())
 	x.Int(e.Mtime)
-	x.Bytes(e.Bytes.encode())
+	x.Bytes(e.Bytes)
 	return x.buf
 }
 
@@ -5559,12 +5559,12 @@ func (e TL_encryptedChatWaiting) encode() []byte {
 const crc_encryptedChatRequested = 0xc878527e
 
 type TL_encryptedChatRequested struct {
-	Id             int32 // id:int
-	Access_hash    int64 // access_hash:long
-	Date           int32 // date:int
-	Admin_id       int32 // admin_id:int
-	Participant_id int32 // participant_id:int
-	G_a            TL    // g_a:bytes
+	Id             int32  // id:int
+	Access_hash    int64  // access_hash:long
+	Date           int32  // date:int
+	Admin_id       int32  // admin_id:int
+	Participant_id int32  // participant_id:int
+	G_a            []byte // g_a:bytes
 }
 
 // Encoding TL_encryptedChatRequested
@@ -5576,7 +5576,7 @@ func (e TL_encryptedChatRequested) encode() []byte {
 	x.Int(e.Date)
 	x.Int(e.Admin_id)
 	x.Int(e.Participant_id)
-	x.Bytes(e.G_a.encode())
+	x.Bytes(e.G_a)
 	return x.buf
 }
 
@@ -5585,13 +5585,13 @@ func (e TL_encryptedChatRequested) encode() []byte {
 const crc_encryptedChat = 0xfa56ce36
 
 type TL_encryptedChat struct {
-	Id              int32 // id:int
-	Access_hash     int64 // access_hash:long
-	Date            int32 // date:int
-	Admin_id        int32 // admin_id:int
-	Participant_id  int32 // participant_id:int
-	G_a_or_b        TL    // g_a_or_b:bytes
-	Key_fingerprint int64 // key_fingerprint:long
+	Id              int32  // id:int
+	Access_hash     int64  // access_hash:long
+	Date            int32  // date:int
+	Admin_id        int32  // admin_id:int
+	Participant_id  int32  // participant_id:int
+	G_a_or_b        []byte // g_a_or_b:bytes
+	Key_fingerprint int64  // key_fingerprint:long
 }
 
 // Encoding TL_encryptedChat
@@ -5603,7 +5603,7 @@ func (e TL_encryptedChat) encode() []byte {
 	x.Int(e.Date)
 	x.Int(e.Admin_id)
 	x.Int(e.Participant_id)
-	x.Bytes(e.G_a_or_b.encode())
+	x.Bytes(e.G_a_or_b)
 	x.Long(e.Key_fingerprint)
 	return x.buf
 }
@@ -5759,11 +5759,11 @@ func (e TL_inputEncryptedFileBigUploaded) encode() []byte {
 const crc_encryptedMessage = 0xed18c118
 
 type TL_encryptedMessage struct {
-	Random_id int64 // random_id:long
-	Chat_id   int32 // chat_id:int
-	Date      int32 // date:int
-	Bytes     TL    // bytes:bytes
-	File      TL    // file:EncryptedFile
+	Random_id int64  // random_id:long
+	Chat_id   int32  // chat_id:int
+	Date      int32  // date:int
+	Bytes     []byte // bytes:bytes
+	File      TL     // file:EncryptedFile
 }
 
 // Encoding TL_encryptedMessage
@@ -5773,7 +5773,7 @@ func (e TL_encryptedMessage) encode() []byte {
 	x.Long(e.Random_id)
 	x.Int(e.Chat_id)
 	x.Int(e.Date)
-	x.Bytes(e.Bytes.encode())
+	x.Bytes(e.Bytes)
 	x.Bytes(e.File.encode())
 	return x.buf
 }
@@ -5783,10 +5783,10 @@ func (e TL_encryptedMessage) encode() []byte {
 const crc_encryptedMessageService = 0x23734b06
 
 type TL_encryptedMessageService struct {
-	Random_id int64 // random_id:long
-	Chat_id   int32 // chat_id:int
-	Date      int32 // date:int
-	Bytes     TL    // bytes:bytes
+	Random_id int64  // random_id:long
+	Chat_id   int32  // chat_id:int
+	Date      int32  // date:int
+	Bytes     []byte // bytes:bytes
 }
 
 // Encoding TL_encryptedMessageService
@@ -5796,7 +5796,7 @@ func (e TL_encryptedMessageService) encode() []byte {
 	x.Long(e.Random_id)
 	x.Int(e.Chat_id)
 	x.Int(e.Date)
-	x.Bytes(e.Bytes.encode())
+	x.Bytes(e.Bytes)
 	return x.buf
 }
 
@@ -5805,14 +5805,14 @@ func (e TL_encryptedMessageService) encode() []byte {
 const crc_messages_dhConfigNotModified = 0xc0e24635
 
 type TL_messages_dhConfigNotModified struct {
-	Random TL // random:bytes
+	Random []byte // random:bytes
 }
 
 // Encoding TL_messages_dhConfigNotModified
 func (e TL_messages_dhConfigNotModified) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_messages_dhConfigNotModified)
-	x.Bytes(e.Random.encode())
+	x.Bytes(e.Random)
 	return x.buf
 }
 
@@ -5821,10 +5821,10 @@ func (e TL_messages_dhConfigNotModified) encode() []byte {
 const crc_messages_dhConfig = 0x2c221edd
 
 type TL_messages_dhConfig struct {
-	G       int32 // g:int
-	P       TL    // p:bytes
-	Version int32 // version:int
-	Random  TL    // random:bytes
+	G       int32  // g:int
+	P       []byte // p:bytes
+	Version int32  // version:int
+	Random  []byte // random:bytes
 }
 
 // Encoding TL_messages_dhConfig
@@ -5832,9 +5832,9 @@ func (e TL_messages_dhConfig) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_messages_dhConfig)
 	x.Int(e.G)
-	x.Bytes(e.P.encode())
+	x.Bytes(e.P)
 	x.Int(e.Version)
-	x.Bytes(e.Random.encode())
+	x.Bytes(e.Random)
 	return x.buf
 }
 
@@ -6598,7 +6598,7 @@ type TL_documentAttributeAudio struct {
 	Duration  int32  // duration:int
 	Title     string // title:flags.0?string
 	Performer string // performer:flags.1?string
-	Waveform  TL     // waveform:flags.2?bytes
+	Waveform  []byte // waveform:flags.2?bytes
 }
 
 // Encoding TL_documentAttributeAudio
@@ -6615,7 +6615,7 @@ func (e TL_documentAttributeAudio) encode() []byte {
 	if e.Performer != "" {
 		flags |= (1 << 1)
 	}
-	if _, ok := (e.Waveform).(TL_null); !ok {
+	if len(e.Waveform) != 0 {
 		flags |= (1 << 2)
 	}
 	x.Int(flags)
@@ -6627,7 +6627,7 @@ func (e TL_documentAttributeAudio) encode() []byte {
 		x.String(e.Performer)
 	}
 	if flags&(1<<2) != 0 {
-		x.Bytes(e.Waveform.encode())
+		x.Bytes(e.Waveform)
 	}
 	return x.buf
 }
@@ -7061,7 +7061,7 @@ func (e TL_account_authorizations) encode() []byte {
 const crc_account_noPassword = 0x96dabc18
 
 type TL_account_noPassword struct {
-	New_salt                  TL     // new_salt:bytes
+	New_salt                  []byte // new_salt:bytes
 	Email_unconfirmed_pattern string // email_unconfirmed_pattern:string
 }
 
@@ -7069,7 +7069,7 @@ type TL_account_noPassword struct {
 func (e TL_account_noPassword) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_account_noPassword)
-	x.Bytes(e.New_salt.encode())
+	x.Bytes(e.New_salt)
 	x.String(e.Email_unconfirmed_pattern)
 	return x.buf
 }
@@ -7079,8 +7079,8 @@ func (e TL_account_noPassword) encode() []byte {
 const crc_account_password = 0x7c18141c
 
 type TL_account_password struct {
-	Current_salt              TL     // current_salt:bytes
-	New_salt                  TL     // new_salt:bytes
+	Current_salt              []byte // current_salt:bytes
+	New_salt                  []byte // new_salt:bytes
 	Hint                      string // hint:string
 	Has_recovery              TL     // has_recovery:Bool
 	Email_unconfirmed_pattern string // email_unconfirmed_pattern:string
@@ -7090,8 +7090,8 @@ type TL_account_password struct {
 func (e TL_account_password) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_account_password)
-	x.Bytes(e.Current_salt.encode())
-	x.Bytes(e.New_salt.encode())
+	x.Bytes(e.Current_salt)
+	x.Bytes(e.New_salt)
 	x.String(e.Hint)
 	x.Bytes(e.Has_recovery.encode())
 	x.String(e.Email_unconfirmed_pattern)
@@ -7120,8 +7120,8 @@ const crc_account_passwordInputSettings = 0x86916deb
 
 type TL_account_passwordInputSettings struct {
 	Flags             int32
-	New_salt          TL     // new_salt:flags.0?bytes
-	New_password_hash TL     // new_password_hash:flags.0?bytes
+	New_salt          []byte // new_salt:flags.0?bytes
+	New_password_hash []byte // new_password_hash:flags.0?bytes
 	Hint              string // hint:flags.0?string
 	Email             string // email:flags.1?string
 }
@@ -7131,10 +7131,10 @@ func (e TL_account_passwordInputSettings) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_account_passwordInputSettings)
 	var flags int32
-	if _, ok := (e.New_salt).(TL_null); !ok {
+	if len(e.New_salt) != 0 {
 		flags |= (1 << 0)
 	}
-	if _, ok := (e.New_password_hash).(TL_null); !ok {
+	if len(e.New_password_hash) != 0 {
 		flags |= (1 << 0)
 	}
 	if e.Hint != "" {
@@ -7145,10 +7145,10 @@ func (e TL_account_passwordInputSettings) encode() []byte {
 	}
 	x.Int(flags)
 	if flags&(1<<0) != 0 {
-		x.Bytes(e.New_salt.encode())
+		x.Bytes(e.New_salt)
 	}
 	if flags&(1<<0) != 0 {
-		x.Bytes(e.New_password_hash.encode())
+		x.Bytes(e.New_password_hash)
 	}
 	if flags&(1<<0) != 0 {
 		x.String(e.Hint)
@@ -7476,7 +7476,7 @@ const crc_keyboardButtonCallback = 0x683a5e46
 
 type TL_keyboardButtonCallback struct {
 	Text string // text:string
-	Data TL     // data:bytes
+	Data []byte // data:bytes
 }
 
 // Encoding TL_keyboardButtonCallback
@@ -7484,7 +7484,7 @@ func (e TL_keyboardButtonCallback) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_keyboardButtonCallback)
 	x.String(e.Text)
-	x.Bytes(e.Data.encode())
+	x.Bytes(e.Data)
 	return x.buf
 }
 
@@ -10909,7 +10909,7 @@ type TL_upload_webFile struct {
 	Mime_type string // mime_type:string
 	File_type TL     // file_type:storage.FileType
 	Mtime     int32  // mtime:int
-	Bytes     TL     // bytes:bytes
+	Bytes     []byte // bytes:bytes
 }
 
 // Encoding TL_upload_webFile
@@ -10920,7 +10920,7 @@ func (e TL_upload_webFile) encode() []byte {
 	x.String(e.Mime_type)
 	x.Bytes(e.File_type.encode())
 	x.Int(e.Mtime)
-	x.Bytes(e.Bytes.encode())
+	x.Bytes(e.Bytes)
 	return x.buf
 }
 
@@ -11131,7 +11131,7 @@ const crc_inputPaymentCredentialsSaved = 0xc10eb2cf
 
 type TL_inputPaymentCredentialsSaved struct {
 	Id           string // id:string
-	Tmp_password TL     // tmp_password:bytes
+	Tmp_password []byte // tmp_password:bytes
 }
 
 // Encoding TL_inputPaymentCredentialsSaved
@@ -11139,7 +11139,7 @@ func (e TL_inputPaymentCredentialsSaved) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_inputPaymentCredentialsSaved)
 	x.String(e.Id)
-	x.Bytes(e.Tmp_password.encode())
+	x.Bytes(e.Tmp_password)
 	return x.buf
 }
 
@@ -11171,15 +11171,15 @@ func (e TL_inputPaymentCredentials) encode() []byte {
 const crc_account_tmpPassword = 0xdb64fd34
 
 type TL_account_tmpPassword struct {
-	Tmp_password TL    // tmp_password:bytes
-	Valid_until  int32 // valid_until:int
+	Tmp_password []byte // tmp_password:bytes
+	Valid_until  int32  // valid_until:int
 }
 
 // Encoding TL_account_tmpPassword
 func (e TL_account_tmpPassword) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_account_tmpPassword)
-	x.Bytes(e.Tmp_password.encode())
+	x.Bytes(e.Tmp_password)
 	x.Int(e.Valid_until)
 	return x.buf
 }
@@ -11279,13 +11279,13 @@ func (e TL_phoneCallWaiting) encode() []byte {
 const crc_phoneCallRequested = 0x83761ce4
 
 type TL_phoneCallRequested struct {
-	Id             int64 // id:long
-	Access_hash    int64 // access_hash:long
-	Date           int32 // date:int
-	Admin_id       int32 // admin_id:int
-	Participant_id int32 // participant_id:int
-	G_a_hash       TL    // g_a_hash:bytes
-	Protocol       TL    // protocol:PhoneCallProtocol
+	Id             int64  // id:long
+	Access_hash    int64  // access_hash:long
+	Date           int32  // date:int
+	Admin_id       int32  // admin_id:int
+	Participant_id int32  // participant_id:int
+	G_a_hash       []byte // g_a_hash:bytes
+	Protocol       TL     // protocol:PhoneCallProtocol
 }
 
 // Encoding TL_phoneCallRequested
@@ -11297,7 +11297,7 @@ func (e TL_phoneCallRequested) encode() []byte {
 	x.Int(e.Date)
 	x.Int(e.Admin_id)
 	x.Int(e.Participant_id)
-	x.Bytes(e.G_a_hash.encode())
+	x.Bytes(e.G_a_hash)
 	x.Bytes(e.Protocol.encode())
 	return x.buf
 }
@@ -11307,13 +11307,13 @@ func (e TL_phoneCallRequested) encode() []byte {
 const crc_phoneCallAccepted = 0x6d003d3f
 
 type TL_phoneCallAccepted struct {
-	Id             int64 // id:long
-	Access_hash    int64 // access_hash:long
-	Date           int32 // date:int
-	Admin_id       int32 // admin_id:int
-	Participant_id int32 // participant_id:int
-	G_b            TL    // g_b:bytes
-	Protocol       TL    // protocol:PhoneCallProtocol
+	Id             int64  // id:long
+	Access_hash    int64  // access_hash:long
+	Date           int32  // date:int
+	Admin_id       int32  // admin_id:int
+	Participant_id int32  // participant_id:int
+	G_b            []byte // g_b:bytes
+	Protocol       TL     // protocol:PhoneCallProtocol
 }
 
 // Encoding TL_phoneCallAccepted
@@ -11325,7 +11325,7 @@ func (e TL_phoneCallAccepted) encode() []byte {
 	x.Int(e.Date)
 	x.Int(e.Admin_id)
 	x.Int(e.Participant_id)
-	x.Bytes(e.G_b.encode())
+	x.Bytes(e.G_b)
 	x.Bytes(e.Protocol.encode())
 	return x.buf
 }
@@ -11335,17 +11335,17 @@ func (e TL_phoneCallAccepted) encode() []byte {
 const crc_phoneCall = 0xffe6ab67
 
 type TL_phoneCall struct {
-	Id                      int64 // id:long
-	Access_hash             int64 // access_hash:long
-	Date                    int32 // date:int
-	Admin_id                int32 // admin_id:int
-	Participant_id          int32 // participant_id:int
-	G_a_or_b                TL    // g_a_or_b:bytes
-	Key_fingerprint         int64 // key_fingerprint:long
-	Protocol                TL    // protocol:PhoneCallProtocol
-	Connection              TL    // connection:PhoneConnection
-	Alternative_connections []TL  // alternative_connections:Vector<PhoneConnection>
-	Start_date              int32 // start_date:int
+	Id                      int64  // id:long
+	Access_hash             int64  // access_hash:long
+	Date                    int32  // date:int
+	Admin_id                int32  // admin_id:int
+	Participant_id          int32  // participant_id:int
+	G_a_or_b                []byte // g_a_or_b:bytes
+	Key_fingerprint         int64  // key_fingerprint:long
+	Protocol                TL     // protocol:PhoneCallProtocol
+	Connection              TL     // connection:PhoneConnection
+	Alternative_connections []TL   // alternative_connections:Vector<PhoneConnection>
+	Start_date              int32  // start_date:int
 }
 
 // Encoding TL_phoneCall
@@ -11357,7 +11357,7 @@ func (e TL_phoneCall) encode() []byte {
 	x.Int(e.Date)
 	x.Int(e.Admin_id)
 	x.Int(e.Participant_id)
-	x.Bytes(e.G_a_or_b.encode())
+	x.Bytes(e.G_a_or_b)
 	x.Long(e.Key_fingerprint)
 	x.Bytes(e.Protocol.encode())
 	x.Bytes(e.Connection.encode())
@@ -11416,7 +11416,7 @@ type TL_phoneConnection struct {
 	Ip       string // ip:string
 	Ipv6     string // ipv6:string
 	Port     int32  // port:int
-	Peer_tag TL     // peer_tag:bytes
+	Peer_tag []byte // peer_tag:bytes
 }
 
 // Encoding TL_phoneConnection
@@ -11427,7 +11427,7 @@ func (e TL_phoneConnection) encode() []byte {
 	x.String(e.Ip)
 	x.String(e.Ipv6)
 	x.Int(e.Port)
-	x.Bytes(e.Peer_tag.encode())
+	x.Bytes(e.Peer_tag)
 	return x.buf
 }
 
@@ -11735,8 +11735,8 @@ func (e TL_auth_exportAuthorization) encode() []byte {
 const crc_auth_importAuthorization = 0xe3ef9613
 
 type TL_auth_importAuthorization struct {
-	Id    int32 // id:int
-	Bytes TL    // bytes:bytes
+	Id    int32  // id:int
+	Bytes []byte // bytes:bytes
 }
 
 // Encoding TL_auth_importAuthorization
@@ -11744,7 +11744,7 @@ func (e TL_auth_importAuthorization) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_auth_importAuthorization)
 	x.Int(e.Id)
-	x.Bytes(e.Bytes.encode())
+	x.Bytes(e.Bytes)
 	return x.buf
 }
 
@@ -11753,10 +11753,10 @@ func (e TL_auth_importAuthorization) encode() []byte {
 const crc_auth_bindTempAuthKey = 0xcdd42a05
 
 type TL_auth_bindTempAuthKey struct {
-	Perm_auth_key_id  int64 // perm_auth_key_id:long
-	Nonce             int64 // nonce:long
-	Expires_at        int32 // expires_at:int
-	Encrypted_message TL    // encrypted_message:bytes
+	Perm_auth_key_id  int64  // perm_auth_key_id:long
+	Nonce             int64  // nonce:long
+	Expires_at        int32  // expires_at:int
+	Encrypted_message []byte // encrypted_message:bytes
 }
 
 // Encoding TL_auth_bindTempAuthKey
@@ -11766,7 +11766,7 @@ func (e TL_auth_bindTempAuthKey) encode() []byte {
 	x.Long(e.Perm_auth_key_id)
 	x.Long(e.Nonce)
 	x.Int(e.Expires_at)
-	x.Bytes(e.Encrypted_message.encode())
+	x.Bytes(e.Encrypted_message)
 	return x.buf
 }
 
@@ -11797,14 +11797,14 @@ func (e TL_auth_importBotAuthorization) encode() []byte {
 const crc_auth_checkPassword = 0xa63011e
 
 type TL_auth_checkPassword struct {
-	Password_hash TL // password_hash:bytes
+	Password_hash []byte // password_hash:bytes
 }
 
 // Encoding TL_auth_checkPassword
 func (e TL_auth_checkPassword) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_auth_checkPassword)
-	x.Bytes(e.Password_hash.encode())
+	x.Bytes(e.Password_hash)
 	return x.buf
 }
 
@@ -12287,14 +12287,14 @@ func (e TL_account_getPassword) encode() []byte {
 const crc_account_getPasswordSettings = 0xbc8d11bb
 
 type TL_account_getPasswordSettings struct {
-	Current_password_hash TL // current_password_hash:bytes
+	Current_password_hash []byte // current_password_hash:bytes
 }
 
 // Encoding TL_account_getPasswordSettings
 func (e TL_account_getPasswordSettings) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_account_getPasswordSettings)
-	x.Bytes(e.Current_password_hash.encode())
+	x.Bytes(e.Current_password_hash)
 	return x.buf
 }
 
@@ -12303,15 +12303,15 @@ func (e TL_account_getPasswordSettings) encode() []byte {
 const crc_account_updatePasswordSettings = 0xfa7c4b86
 
 type TL_account_updatePasswordSettings struct {
-	Current_password_hash TL // current_password_hash:bytes
-	New_settings          TL // new_settings:account.PasswordInputSettings
+	Current_password_hash []byte // current_password_hash:bytes
+	New_settings          TL     // new_settings:account.PasswordInputSettings
 }
 
 // Encoding TL_account_updatePasswordSettings
 func (e TL_account_updatePasswordSettings) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_account_updatePasswordSettings)
-	x.Bytes(e.Current_password_hash.encode())
+	x.Bytes(e.Current_password_hash)
 	x.Bytes(e.New_settings.encode())
 	return x.buf
 }
@@ -12369,15 +12369,15 @@ func (e TL_account_confirmPhone) encode() []byte {
 const crc_account_getTmpPassword = 0x4a82327e
 
 type TL_account_getTmpPassword struct {
-	Password_hash TL    // password_hash:bytes
-	Period        int32 // period:int
+	Password_hash []byte // password_hash:bytes
+	Period        int32  // period:int
 }
 
 // Encoding TL_account_getTmpPassword
 func (e TL_account_getTmpPassword) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_account_getTmpPassword)
-	x.Bytes(e.Password_hash.encode())
+	x.Bytes(e.Password_hash)
 	x.Int(e.Period)
 	return x.buf
 }
@@ -13236,9 +13236,9 @@ func (e TL_messages_getDhConfig) encode() []byte {
 const crc_messages_requestEncryption = 0xf64daf43
 
 type TL_messages_requestEncryption struct {
-	User_id   TL    // user_id:InputUser
-	Random_id int32 // random_id:int
-	G_a       TL    // g_a:bytes
+	User_id   TL     // user_id:InputUser
+	Random_id int32  // random_id:int
+	G_a       []byte // g_a:bytes
 }
 
 // Encoding TL_messages_requestEncryption
@@ -13247,7 +13247,7 @@ func (e TL_messages_requestEncryption) encode() []byte {
 	x.UInt(crc_messages_requestEncryption)
 	x.Bytes(e.User_id.encode())
 	x.Int(e.Random_id)
-	x.Bytes(e.G_a.encode())
+	x.Bytes(e.G_a)
 	return x.buf
 }
 
@@ -13256,9 +13256,9 @@ func (e TL_messages_requestEncryption) encode() []byte {
 const crc_messages_acceptEncryption = 0x3dbc0415
 
 type TL_messages_acceptEncryption struct {
-	Peer            TL    // peer:InputEncryptedChat
-	G_b             TL    // g_b:bytes
-	Key_fingerprint int64 // key_fingerprint:long
+	Peer            TL     // peer:InputEncryptedChat
+	G_b             []byte // g_b:bytes
+	Key_fingerprint int64  // key_fingerprint:long
 }
 
 // Encoding TL_messages_acceptEncryption
@@ -13266,7 +13266,7 @@ func (e TL_messages_acceptEncryption) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_messages_acceptEncryption)
 	x.Bytes(e.Peer.encode())
-	x.Bytes(e.G_b.encode())
+	x.Bytes(e.G_b)
 	x.Long(e.Key_fingerprint)
 	return x.buf
 }
@@ -13328,9 +13328,9 @@ func (e TL_messages_readEncryptedHistory) encode() []byte {
 const crc_messages_sendEncrypted = 0xa9776773
 
 type TL_messages_sendEncrypted struct {
-	Peer      TL    // peer:InputEncryptedChat
-	Random_id int64 // random_id:long
-	Data      TL    // data:bytes
+	Peer      TL     // peer:InputEncryptedChat
+	Random_id int64  // random_id:long
+	Data      []byte // data:bytes
 }
 
 // Encoding TL_messages_sendEncrypted
@@ -13339,7 +13339,7 @@ func (e TL_messages_sendEncrypted) encode() []byte {
 	x.UInt(crc_messages_sendEncrypted)
 	x.Bytes(e.Peer.encode())
 	x.Long(e.Random_id)
-	x.Bytes(e.Data.encode())
+	x.Bytes(e.Data)
 	return x.buf
 }
 
@@ -13348,10 +13348,10 @@ func (e TL_messages_sendEncrypted) encode() []byte {
 const crc_messages_sendEncryptedFile = 0x9a901b66
 
 type TL_messages_sendEncryptedFile struct {
-	Peer      TL    // peer:InputEncryptedChat
-	Random_id int64 // random_id:long
-	Data      TL    // data:bytes
-	File      TL    // file:InputEncryptedFile
+	Peer      TL     // peer:InputEncryptedChat
+	Random_id int64  // random_id:long
+	Data      []byte // data:bytes
+	File      TL     // file:InputEncryptedFile
 }
 
 // Encoding TL_messages_sendEncryptedFile
@@ -13360,7 +13360,7 @@ func (e TL_messages_sendEncryptedFile) encode() []byte {
 	x.UInt(crc_messages_sendEncryptedFile)
 	x.Bytes(e.Peer.encode())
 	x.Long(e.Random_id)
-	x.Bytes(e.Data.encode())
+	x.Bytes(e.Data)
 	x.Bytes(e.File.encode())
 	return x.buf
 }
@@ -13370,9 +13370,9 @@ func (e TL_messages_sendEncryptedFile) encode() []byte {
 const crc_messages_sendEncryptedService = 0x32d439a4
 
 type TL_messages_sendEncryptedService struct {
-	Peer      TL    // peer:InputEncryptedChat
-	Random_id int64 // random_id:long
-	Data      TL    // data:bytes
+	Peer      TL     // peer:InputEncryptedChat
+	Random_id int64  // random_id:long
+	Data      []byte // data:bytes
 }
 
 // Encoding TL_messages_sendEncryptedService
@@ -13381,7 +13381,7 @@ func (e TL_messages_sendEncryptedService) encode() []byte {
 	x.UInt(crc_messages_sendEncryptedService)
 	x.Bytes(e.Peer.encode())
 	x.Long(e.Random_id)
-	x.Bytes(e.Data.encode())
+	x.Bytes(e.Data)
 	return x.buf
 }
 
@@ -13711,7 +13711,7 @@ func (e TL_messages_reorderStickerSets) encode() []byte {
 const crc_messages_getDocumentByHash = 0x338e2464
 
 type TL_messages_getDocumentByHash struct {
-	Sha256    TL     // sha256:bytes
+	Sha256    []byte // sha256:bytes
 	Size      int32  // size:int
 	Mime_type string // mime_type:string
 }
@@ -13720,7 +13720,7 @@ type TL_messages_getDocumentByHash struct {
 func (e TL_messages_getDocumentByHash) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_messages_getDocumentByHash)
-	x.Bytes(e.Sha256.encode())
+	x.Bytes(e.Sha256)
 	x.Int(e.Size)
 	x.String(e.Mime_type)
 	return x.buf
@@ -14013,10 +14013,10 @@ const crc_messages_getBotCallbackAnswer = 0x810a9fec
 
 type TL_messages_getBotCallbackAnswer struct {
 	Flags  int32
-	Game   bool  // game:flags.1?true
-	Peer   TL    // peer:InputPeer
-	Msg_id int32 // msg_id:int
-	Data   TL    // data:flags.0?bytes
+	Game   bool   // game:flags.1?true
+	Peer   TL     // peer:InputPeer
+	Msg_id int32  // msg_id:int
+	Data   []byte // data:flags.0?bytes
 }
 
 // Encoding TL_messages_getBotCallbackAnswer
@@ -14027,14 +14027,14 @@ func (e TL_messages_getBotCallbackAnswer) encode() []byte {
 	if e.Game {
 		flags |= (1 << 1)
 	}
-	if _, ok := (e.Data).(TL_null); !ok {
+	if len(e.Data) != 0 {
 		flags |= (1 << 0)
 	}
 	x.Int(flags)
 	x.Bytes(e.Peer.encode())
 	x.Int(e.Msg_id)
 	if flags&(1<<0) != 0 {
-		x.Bytes(e.Data.encode())
+		x.Bytes(e.Data)
 	}
 	return x.buf
 }
@@ -14732,9 +14732,9 @@ func (e TL_photos_getUserPhotos) encode() []byte {
 const crc_upload_saveFilePart = 0xb304a621
 
 type TL_upload_saveFilePart struct {
-	File_id   int64 // file_id:long
-	File_part int32 // file_part:int
-	Bytes     TL    // bytes:bytes
+	File_id   int64  // file_id:long
+	File_part int32  // file_part:int
+	Bytes     []byte // bytes:bytes
 }
 
 // Encoding TL_upload_saveFilePart
@@ -14743,7 +14743,7 @@ func (e TL_upload_saveFilePart) encode() []byte {
 	x.UInt(crc_upload_saveFilePart)
 	x.Long(e.File_id)
 	x.Int(e.File_part)
-	x.Bytes(e.Bytes.encode())
+	x.Bytes(e.Bytes)
 	return x.buf
 }
 
@@ -14772,10 +14772,10 @@ func (e TL_upload_getFile) encode() []byte {
 const crc_upload_saveBigFilePart = 0xde7b673d
 
 type TL_upload_saveBigFilePart struct {
-	File_id          int64 // file_id:long
-	File_part        int32 // file_part:int
-	File_total_parts int32 // file_total_parts:int
-	Bytes            TL    // bytes:bytes
+	File_id          int64  // file_id:long
+	File_part        int32  // file_part:int
+	File_total_parts int32  // file_total_parts:int
+	Bytes            []byte // bytes:bytes
 }
 
 // Encoding TL_upload_saveBigFilePart
@@ -14785,7 +14785,7 @@ func (e TL_upload_saveBigFilePart) encode() []byte {
 	x.Long(e.File_id)
 	x.Int(e.File_part)
 	x.Int(e.File_total_parts)
-	x.Bytes(e.Bytes.encode())
+	x.Bytes(e.Bytes)
 	return x.buf
 }
 
@@ -15627,10 +15627,10 @@ func (e TL_phone_getCallConfig) encode() []byte {
 const crc_phone_requestCall = 0x5b95b3d4
 
 type TL_phone_requestCall struct {
-	User_id   TL    // user_id:InputUser
-	Random_id int32 // random_id:int
-	G_a_hash  TL    // g_a_hash:bytes
-	Protocol  TL    // protocol:PhoneCallProtocol
+	User_id   TL     // user_id:InputUser
+	Random_id int32  // random_id:int
+	G_a_hash  []byte // g_a_hash:bytes
+	Protocol  TL     // protocol:PhoneCallProtocol
 }
 
 // Encoding TL_phone_requestCall
@@ -15639,7 +15639,7 @@ func (e TL_phone_requestCall) encode() []byte {
 	x.UInt(crc_phone_requestCall)
 	x.Bytes(e.User_id.encode())
 	x.Int(e.Random_id)
-	x.Bytes(e.G_a_hash.encode())
+	x.Bytes(e.G_a_hash)
 	x.Bytes(e.Protocol.encode())
 	return x.buf
 }
@@ -15649,9 +15649,9 @@ func (e TL_phone_requestCall) encode() []byte {
 const crc_phone_acceptCall = 0x3bd2b4a0
 
 type TL_phone_acceptCall struct {
-	Peer     TL // peer:InputPhoneCall
-	G_b      TL // g_b:bytes
-	Protocol TL // protocol:PhoneCallProtocol
+	Peer     TL     // peer:InputPhoneCall
+	G_b      []byte // g_b:bytes
+	Protocol TL     // protocol:PhoneCallProtocol
 }
 
 // Encoding TL_phone_acceptCall
@@ -15659,7 +15659,7 @@ func (e TL_phone_acceptCall) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_phone_acceptCall)
 	x.Bytes(e.Peer.encode())
-	x.Bytes(e.G_b.encode())
+	x.Bytes(e.G_b)
 	x.Bytes(e.Protocol.encode())
 	return x.buf
 }
@@ -15669,10 +15669,10 @@ func (e TL_phone_acceptCall) encode() []byte {
 const crc_phone_confirmCall = 0x2efe1722
 
 type TL_phone_confirmCall struct {
-	Peer            TL    // peer:InputPhoneCall
-	G_a             TL    // g_a:bytes
-	Key_fingerprint int64 // key_fingerprint:long
-	Protocol        TL    // protocol:PhoneCallProtocol
+	Peer            TL     // peer:InputPhoneCall
+	G_a             []byte // g_a:bytes
+	Key_fingerprint int64  // key_fingerprint:long
+	Protocol        TL     // protocol:PhoneCallProtocol
 }
 
 // Encoding TL_phone_confirmCall
@@ -15680,7 +15680,7 @@ func (e TL_phone_confirmCall) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_phone_confirmCall)
 	x.Bytes(e.Peer.encode())
-	x.Bytes(e.G_a.encode())
+	x.Bytes(e.G_a)
 	x.Long(e.Key_fingerprint)
 	x.Bytes(e.Protocol.encode())
 	return x.buf
@@ -15933,7 +15933,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			photo = m.Object()
 		}
 		invoice := m.Object()
-		payload := m.Object()
+		payload := m.StringBytes()
 		provider := m.String()
 		start_param := m.String()
 		r = TL_inputMediaInvoice{
@@ -16595,7 +16595,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		flags := m.Int()
 		currency := m.String()
 		total_amount := m.Long()
-		payload := m.Object()
+		payload := m.StringBytes()
 		var info TL
 		if flags&(1<<0) != 0 {
 			info = m.Object()
@@ -16751,7 +16751,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 	case crc_auth_exportedAuthorization:
 		r = TL_auth_exportedAuthorization{
 			Id:    m.Int(),
-			Bytes: m.Object(),
+			Bytes: m.StringBytes(),
 		}
 	case crc_inputNotifyPeer:
 		r = TL_inputNotifyPeer{
@@ -17300,9 +17300,9 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		peer := m.Object()
 		msg_id := m.Int()
 		chat_instance := m.Long()
-		var data TL
+		var data []byte
 		if flags&(1<<0) != 0 {
-			data = m.Object()
+			data = m.StringBytes()
 		}
 		var game_short_name string
 		if flags&(1<<1) != 0 {
@@ -17330,9 +17330,9 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		user_id := m.Int()
 		msg_id := m.Object()
 		chat_instance := m.Long()
-		var data TL
+		var data []byte
 		if flags&(1<<0) != 0 {
-			data = m.Object()
+			data = m.StringBytes()
 		}
 		var game_short_name string
 		if flags&(1<<1) != 0 {
@@ -17405,14 +17405,14 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		r = TL_updateBotShippingQuery{
 			Query_id:         m.Long(),
 			User_id:          m.Int(),
-			Payload:          m.Object(),
+			Payload:          m.StringBytes(),
 			Shipping_address: m.Object(),
 		}
 	case crc_updateBotPrecheckoutQuery:
 		flags := m.Int()
 		query_id := m.Long()
 		user_id := m.Int()
-		payload := m.Object()
+		payload := m.StringBytes()
 		var info TL
 		if flags&(1<<0) != 0 {
 			info = m.Object()
@@ -17633,7 +17633,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		r = TL_upload_file{
 			Code_type: m.Object(),
 			Mtime:     m.Int(),
-			Bytes:     m.Object(),
+			Bytes:     m.StringBytes(),
 		}
 	case crc_dcOption:
 		flags := m.Int()
@@ -17758,7 +17758,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Date:           m.Int(),
 			Admin_id:       m.Int(),
 			Participant_id: m.Int(),
-			G_a:            m.Object(),
+			G_a:            m.StringBytes(),
 		}
 	case crc_encryptedChat:
 		r = TL_encryptedChat{
@@ -17767,7 +17767,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Date:            m.Int(),
 			Admin_id:        m.Int(),
 			Participant_id:  m.Int(),
-			G_a_or_b:        m.Object(),
+			G_a_or_b:        m.StringBytes(),
 			Key_fingerprint: m.Long(),
 		}
 	case crc_encryptedChatDiscarded:
@@ -17814,7 +17814,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Random_id: m.Long(),
 			Chat_id:   m.Int(),
 			Date:      m.Int(),
-			Bytes:     m.Object(),
+			Bytes:     m.StringBytes(),
 			File:      m.Object(),
 		}
 	case crc_encryptedMessageService:
@@ -17822,18 +17822,18 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Random_id: m.Long(),
 			Chat_id:   m.Int(),
 			Date:      m.Int(),
-			Bytes:     m.Object(),
+			Bytes:     m.StringBytes(),
 		}
 	case crc_messages_dhConfigNotModified:
 		r = TL_messages_dhConfigNotModified{
-			Random: m.Object(),
+			Random: m.StringBytes(),
 		}
 	case crc_messages_dhConfig:
 		r = TL_messages_dhConfig{
 			G:       m.Int(),
-			P:       m.Object(),
+			P:       m.StringBytes(),
 			Version: m.Int(),
-			Random:  m.Object(),
+			Random:  m.StringBytes(),
 		}
 	case crc_messages_sentEncryptedMessage:
 		r = TL_messages_sentEncryptedMessage{
@@ -18012,9 +18012,9 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		if flags&(1<<1) != 0 {
 			performer = m.String()
 		}
-		var waveform TL
+		var waveform []byte
 		if flags&(1<<2) != 0 {
-			waveform = m.Object()
+			waveform = m.StringBytes()
 		}
 		r = TL_documentAttributeAudio{
 			Flags:     flags,
@@ -18178,13 +18178,13 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		}
 	case crc_account_noPassword:
 		r = TL_account_noPassword{
-			New_salt:                  m.Object(),
+			New_salt:                  m.StringBytes(),
 			Email_unconfirmed_pattern: m.String(),
 		}
 	case crc_account_password:
 		r = TL_account_password{
-			Current_salt:              m.Object(),
-			New_salt:                  m.Object(),
+			Current_salt:              m.StringBytes(),
+			New_salt:                  m.StringBytes(),
 			Hint:                      m.String(),
 			Has_recovery:              m.Object(),
 			Email_unconfirmed_pattern: m.String(),
@@ -18195,13 +18195,13 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		}
 	case crc_account_passwordInputSettings:
 		flags := m.Int()
-		var new_salt TL
+		var new_salt []byte
 		if flags&(1<<0) != 0 {
-			new_salt = m.Object()
+			new_salt = m.StringBytes()
 		}
-		var new_password_hash TL
+		var new_password_hash []byte
 		if flags&(1<<0) != 0 {
-			new_password_hash = m.Object()
+			new_password_hash = m.StringBytes()
 		}
 		var hint string
 		if flags&(1<<0) != 0 {
@@ -18326,7 +18326,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 	case crc_keyboardButtonCallback:
 		r = TL_keyboardButtonCallback{
 			Text: m.String(),
-			Data: m.Object(),
+			Data: m.StringBytes(),
 		}
 	case crc_keyboardButtonRequestPhone:
 		r = TL_keyboardButtonRequestPhone{
@@ -19545,7 +19545,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Mime_type: m.String(),
 			File_type: m.Object(),
 			Mtime:     m.Int(),
-			Bytes:     m.Object(),
+			Bytes:     m.StringBytes(),
 		}
 	case crc_payments_paymentForm:
 		flags := m.Int()
@@ -19655,7 +19655,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 	case crc_inputPaymentCredentialsSaved:
 		r = TL_inputPaymentCredentialsSaved{
 			Id:           m.String(),
-			Tmp_password: m.Object(),
+			Tmp_password: m.StringBytes(),
 		}
 	case crc_inputPaymentCredentials:
 		flags := m.Int()
@@ -19668,7 +19668,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		}
 	case crc_account_tmpPassword:
 		r = TL_account_tmpPassword{
-			Tmp_password: m.Object(),
+			Tmp_password: m.StringBytes(),
 			Valid_until:  m.Int(),
 		}
 	case crc_shippingOption:
@@ -19715,7 +19715,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Date:           m.Int(),
 			Admin_id:       m.Int(),
 			Participant_id: m.Int(),
-			G_a_hash:       m.Object(),
+			G_a_hash:       m.StringBytes(),
 			Protocol:       m.Object(),
 		}
 	case crc_phoneCallAccepted:
@@ -19725,7 +19725,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Date:           m.Int(),
 			Admin_id:       m.Int(),
 			Participant_id: m.Int(),
-			G_b:            m.Object(),
+			G_b:            m.StringBytes(),
 			Protocol:       m.Object(),
 		}
 	case crc_phoneCall:
@@ -19735,7 +19735,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Date:                    m.Int(),
 			Admin_id:                m.Int(),
 			Participant_id:          m.Int(),
-			G_a_or_b:                m.Object(),
+			G_a_or_b:                m.StringBytes(),
 			Key_fingerprint:         m.Long(),
 			Protocol:                m.Object(),
 			Connection:              m.Object(),
@@ -19769,7 +19769,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Ip:       m.String(),
 			Ipv6:     m.String(),
 			Port:     m.Int(),
-			Peer_tag: m.Object(),
+			Peer_tag: m.StringBytes(),
 		}
 	case crc_phoneCallProtocol:
 		flags := m.Int()
@@ -19869,14 +19869,14 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 	case crc_auth_importAuthorization:
 		r = TL_auth_importAuthorization{
 			Id:    m.Int(),
-			Bytes: m.Object(),
+			Bytes: m.StringBytes(),
 		}
 	case crc_auth_bindTempAuthKey:
 		r = TL_auth_bindTempAuthKey{
 			Perm_auth_key_id:  m.Long(),
 			Nonce:             m.Long(),
 			Expires_at:        m.Int(),
-			Encrypted_message: m.Object(),
+			Encrypted_message: m.StringBytes(),
 		}
 	case crc_auth_importBotAuthorization:
 		r = TL_auth_importBotAuthorization{
@@ -19887,7 +19887,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		}
 	case crc_auth_checkPassword:
 		r = TL_auth_checkPassword{
-			Password_hash: m.Object(),
+			Password_hash: m.StringBytes(),
 		}
 	case crc_auth_requestPasswordRecovery:
 		r = TL_auth_requestPasswordRecovery{}
@@ -20022,11 +20022,11 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		r = TL_account_getPassword{}
 	case crc_account_getPasswordSettings:
 		r = TL_account_getPasswordSettings{
-			Current_password_hash: m.Object(),
+			Current_password_hash: m.StringBytes(),
 		}
 	case crc_account_updatePasswordSettings:
 		r = TL_account_updatePasswordSettings{
-			Current_password_hash: m.Object(),
+			Current_password_hash: m.StringBytes(),
 			New_settings:          m.Object(),
 		}
 	case crc_account_sendConfirmPhoneCode:
@@ -20050,7 +20050,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		}
 	case crc_account_getTmpPassword:
 		r = TL_account_getTmpPassword{
-			Password_hash: m.Object(),
+			Password_hash: m.StringBytes(),
 			Period:        m.Int(),
 		}
 	case crc_users_getUsers:
@@ -20359,12 +20359,12 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		r = TL_messages_requestEncryption{
 			User_id:   m.Object(),
 			Random_id: m.Int(),
-			G_a:       m.Object(),
+			G_a:       m.StringBytes(),
 		}
 	case crc_messages_acceptEncryption:
 		r = TL_messages_acceptEncryption{
 			Peer:            m.Object(),
-			G_b:             m.Object(),
+			G_b:             m.StringBytes(),
 			Key_fingerprint: m.Long(),
 		}
 	case crc_messages_discardEncryption:
@@ -20385,20 +20385,20 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		r = TL_messages_sendEncrypted{
 			Peer:      m.Object(),
 			Random_id: m.Long(),
-			Data:      m.Object(),
+			Data:      m.StringBytes(),
 		}
 	case crc_messages_sendEncryptedFile:
 		r = TL_messages_sendEncryptedFile{
 			Peer:      m.Object(),
 			Random_id: m.Long(),
-			Data:      m.Object(),
+			Data:      m.StringBytes(),
 			File:      m.Object(),
 		}
 	case crc_messages_sendEncryptedService:
 		r = TL_messages_sendEncryptedService{
 			Peer:      m.Object(),
 			Random_id: m.Long(),
-			Data:      m.Object(),
+			Data:      m.StringBytes(),
 		}
 	case crc_messages_receivedQueue:
 		r = TL_messages_receivedQueue{
@@ -20492,7 +20492,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		}
 	case crc_messages_getDocumentByHash:
 		r = TL_messages_getDocumentByHash{
-			Sha256:    m.Object(),
+			Sha256:    m.StringBytes(),
 			Size:      m.Int(),
 			Mime_type: m.String(),
 		}
@@ -20637,9 +20637,9 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		game := flags&(1<<1) != 0
 		peer := m.Object()
 		msg_id := m.Int()
-		var data TL
+		var data []byte
 		if flags&(1<<0) != 0 {
-			data = m.Object()
+			data = m.StringBytes()
 		}
 		r = TL_messages_getBotCallbackAnswer{
 			Flags:  flags,
@@ -20915,7 +20915,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		r = TL_upload_saveFilePart{
 			File_id:   m.Long(),
 			File_part: m.Int(),
-			Bytes:     m.Object(),
+			Bytes:     m.StringBytes(),
 		}
 	case crc_upload_getFile:
 		r = TL_upload_getFile{
@@ -20928,7 +20928,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			File_id:          m.Long(),
 			File_part:        m.Int(),
 			File_total_parts: m.Int(),
-			Bytes:            m.Object(),
+			Bytes:            m.StringBytes(),
 		}
 	case crc_upload_getWebFile:
 		r = TL_upload_getWebFile{
@@ -21171,19 +21171,19 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		r = TL_phone_requestCall{
 			User_id:   m.Object(),
 			Random_id: m.Int(),
-			G_a_hash:  m.Object(),
+			G_a_hash:  m.StringBytes(),
 			Protocol:  m.Object(),
 		}
 	case crc_phone_acceptCall:
 		r = TL_phone_acceptCall{
 			Peer:     m.Object(),
-			G_b:      m.Object(),
+			G_b:      m.StringBytes(),
 			Protocol: m.Object(),
 		}
 	case crc_phone_confirmCall:
 		r = TL_phone_confirmCall{
 			Peer:            m.Object(),
-			G_a:             m.Object(),
+			G_a:             m.StringBytes(),
 			Key_fingerprint: m.Long(),
 			Protocol:        m.Object(),
 		}

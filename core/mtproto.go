@@ -359,13 +359,30 @@ func (m *MTProto) GetHistory(peer TL, offsetId, offsetDate, addOffset, limit, ma
 	resp := make(chan TL, 1)
 	m.queueSend <- packetToSend{
 		msg: TL_messages_getHistory{
-			Peer: peer,
-			Offset_id: offsetId,
+			Peer:        peer,
+			Offset_id:   offsetId,
 			Offset_date: offsetDate,
-			Add_offset: addOffset,
-			Limit: limit,
-			Max_id: maxId,
-			Min_id: minId,
+			Add_offset:  addOffset,
+			Limit:       limit,
+			Max_id:      maxId,
+			Min_id:      minId,
+		},
+		resp: resp,
+	}
+	x := <-resp
+
+	return nil, &x
+}
+
+func (m *MTProto) GetDialogs(excludePinned bool, offsetDate, offsetId int32, offsetPeer TL, limit int32) (error, *TL) {
+	resp := make(chan TL, 1)
+	m.queueSend <- packetToSend{
+		msg: TL_messages_getDialogs{
+			Exclude_pinned: excludePinned,
+			Offset_date:    offsetDate,
+			Offset_id:      offsetId,
+			Offset_peer:    offsetPeer,
+			Limit:          limit,
 		},
 		resp: resp,
 	}

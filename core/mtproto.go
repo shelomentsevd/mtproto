@@ -355,6 +355,25 @@ func (m *MTProto) GetTopPeers(correspondents, botsPM, botsInline, groups, channe
 	return nil, &x
 }
 
+func (m *MTProto) GetHistory(peer TL, offsetId, offsetDate, addOffset, limit, maxId, minId int32) (error, *TL) {
+	resp := make(chan TL, 1)
+	m.queueSend <- packetToSend{
+		msg: TL_messages_getHistory{
+			Peer: peer,
+			Offset_id: offsetId,
+			Offset_date: offsetDate,
+			Add_offset: addOffset,
+			Limit: limit,
+			Max_id: maxId,
+			Min_id: minId,
+		},
+		resp: resp,
+	}
+	x := <-resp
+
+	return nil, &x
+}
+
 func (m *MTProto) pingRoutine() {
 	for {
 		select {

@@ -391,6 +391,34 @@ func (m *MTProto) GetDialogs(excludePinned bool, offsetDate, offsetId int32, off
 	return nil, &x
 }
 
+func (m *MTProto) UpdatesGetState() (error, *TL) {
+	resp := make(chan TL, 1)
+	m.queueSend <- packetToSend{
+		msg: TL_updates_getState{},
+		resp: resp,
+	}
+	x := <-resp
+
+	return nil, &x
+}
+
+func (m *MTProto) UpdatesGetDifference(pts, ptsTotalLimit, date, qts int32) (error, *TL) {
+	resp := make(chan TL, 1)
+	m.queueSend <- packetToSend{
+		msg: TL_updates_getDifference{
+			Pts: pts,
+			Pts_total_limit: ptsTotalLimit,
+			Date: date,
+			Qts: qts,
+		},
+		resp: resp,
+	}
+
+	x := <-resp
+
+	return nil, &x
+}
+
 func (m *MTProto) pingRoutine() {
 	for {
 		select {

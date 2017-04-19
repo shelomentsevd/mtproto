@@ -419,6 +419,24 @@ func (m *MTProto) UpdatesGetDifference(pts, ptsTotalLimit, date, qts int32) (err
 	return nil, &x
 }
 
+func (m *MTProto) UpdatesGetChannelDifference(force bool, channel, filter TL, pts ,limit int32) (error, *TL) {
+	resp := make(chan TL, 1)
+	m.queueSend <- packetToSend{
+		msg: TL_updates_getChannelDifference{
+			Force: force,
+			Channel: channel,
+			Filter: filter,
+			Pts: pts,
+			Limit: limit,
+		},
+		resp: resp,
+	}
+
+	x := <-resp
+
+	return  nil, &x
+}
+
 func (m *MTProto) pingRoutine() {
 	for {
 		select {

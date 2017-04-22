@@ -1,13 +1,11 @@
-Directories:
+## Telegram
 
-core - mtproto core types
+MTProto implementation in Go language
 
-math - encryption algorithms
+This library is a fork of https://github.com/sdidyk/mtproto
 
-network - communication methods between telegram and client
+**Telegram API layer: 65**
 
-tests - tests
+## License
 
-examples - code examples
-
-Telegram API Layer version 65
+MIT

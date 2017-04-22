@@ -34,7 +34,7 @@ type MTProto struct {
 	seqNo        int32
 	msgId        int64
 
-	appConfig *appConfig
+	appConfig *Configuration
 
 	dclist map[int32]string
 }
@@ -44,14 +44,13 @@ type packetToSend struct {
 	resp chan TL
 }
 
-// TODO: Think about read this structure from JSON
-type appConfig struct {
-	id            int32
-	hash          string
-	version       string
-	deviceModel   string
-	systemVersion string
-	language      string
+type Configuration struct {
+	Id            int32
+	Hash          string
+	Version       string
+	DeviceModel   string
+	SystemVersion string
+	Language      string
 }
 
 // API Errors
@@ -68,58 +67,58 @@ const (
 const appConfigError = "App configuration error: %s"
 const telegramAddr = "149.154.167.50:443"
 
-// Current API Layer version
+// Current API Layer Version
 const layer = 65
 
-func NewConfig(id int32, hash, version, deviceModel, systemVersion, language string) (*appConfig, error) {
-	appConfig := new(appConfig)
+func NewConfiguration(id int32, hash, version, deviceModel, systemVersion, language string) (*Configuration, error) {
+	appConfig := new(Configuration)
 
 	if id == 0 || hash == "" || version == "" {
-		return nil, fmt.Errorf(appConfigError, "Fields Id, hash or version are empty")
+		return nil, fmt.Errorf(appConfigError, "Fields Id, Hash or Version are empty")
 	}
-	appConfig.id = id
-	appConfig.hash = hash
-	appConfig.version = version
+	appConfig.Id = id
+	appConfig.Hash = hash
+	appConfig.Version = version
 
-	appConfig.deviceModel = deviceModel
+	appConfig.DeviceModel = deviceModel
 	if deviceModel == "" {
-		appConfig.deviceModel = "Unknown"
+		appConfig.DeviceModel = "Unknown"
 	}
 
-	appConfig.systemVersion = systemVersion
+	appConfig.SystemVersion = systemVersion
 	if systemVersion == "" {
-		appConfig.systemVersion = runtime.GOOS + "/" + runtime.GOARCH
+		appConfig.SystemVersion = runtime.GOOS + "/" + runtime.GOARCH
 	}
 
-	appConfig.language = language
+	appConfig.Language = language
 	if language == "" {
-		appConfig.language = "en"
+		appConfig.Language = "en"
 	}
 
 	return appConfig, nil
 }
 
-func (appConfig appConfig) Check() error {
-	if appConfig.id == 0 || appConfig.hash == "" || appConfig.version == "" {
-		return fmt.Errorf(appConfigError, "appConfig.Id, appConfig.hash or appConfig.version are empty")
+func (appConfig Configuration) Check() error {
+	if appConfig.Id == 0 || appConfig.Hash == "" || appConfig.Version == "" {
+		return fmt.Errorf(appConfigError, "Configuration.Id, Configuration.Hash or Configuration.Version are empty")
 	}
 
-	if appConfig.deviceModel == "" {
-		return fmt.Errorf(appConfigError, "appConfig.deviceModel is empty")
+	if appConfig.DeviceModel == "" {
+		return fmt.Errorf(appConfigError, "Configuration.DeviceModel is empty")
 	}
 
-	if appConfig.systemVersion == "" {
-		return fmt.Errorf(appConfigError, "appConfig.systemVersion is empty")
+	if appConfig.SystemVersion == "" {
+		return fmt.Errorf(appConfigError, "Configuration.SystemVersion is empty")
 	}
 
-	if appConfig.language == "" {
-		return fmt.Errorf(appConfigError, "appConfig.language is empty")
+	if appConfig.Language == "" {
+		return fmt.Errorf(appConfigError, "Configuration.Language is empty")
 	}
 
 	return nil
 }
 
-func NewMTProto(authkeyfile string, appConfig *appConfig) (*MTProto, error) {
+func NewMTProto(authkeyfile string, appConfig *Configuration) (*MTProto, error) {
 	var err error
 
 	err = appConfig.Check()
@@ -192,11 +191,11 @@ func (m *MTProto) Connect() error {
 		msg: TL_invokeWithLayer{
 			Layer: layer,
 			Query: TL_initConnection{
-				Api_id:         m.appConfig.id,
-				Device_model:   m.appConfig.deviceModel,
-				System_version: m.appConfig.systemVersion,
-				App_version:    m.appConfig.version,
-				Lang_code:      m.appConfig.language,
+				Api_id:         m.appConfig.Id,
+				Device_model:   m.appConfig.DeviceModel,
+				System_version: m.appConfig.SystemVersion,
+				App_version:    m.appConfig.Version,
+				Lang_code:      m.appConfig.Language,
 				Query:          TL_help_getConfig{},
 			},
 		},
@@ -264,8 +263,8 @@ func (m *MTProto) AuthSendCode(phonenumber string) (error, *TL_auth_sentCode) {
 			msg: TL_auth_sendCode{
 				Allow_flashcall: false,
 				Phone_number:    phonenumber,
-				Api_id:          m.appConfig.id,
-				Api_hash:        m.appConfig.hash,
+				Api_id:          m.appConfig.Id,
+				Api_hash:        m.appConfig.Hash,
 			},
 			resp: resp,
 		}

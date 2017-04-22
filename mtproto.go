@@ -34,7 +34,7 @@ type MTProto struct {
 	seqNo        int32
 	msgId        int64
 
-	appConfig *Configuration
+	appConfig Configuration
 
 	dclist map[int32]string
 }
@@ -118,7 +118,7 @@ func (appConfig Configuration) Check() error {
 	return nil
 }
 
-func NewMTProto(authkeyfile string, appConfig *Configuration) (*MTProto, error) {
+func NewMTProto(authkeyfile string, appConfig Configuration) (*MTProto, error) {
 	var err error
 
 	err = appConfig.Check()

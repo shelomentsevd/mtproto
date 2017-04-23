@@ -65,7 +65,6 @@ const (
 )
 
 const appConfigError = "App configuration error: %s"
-const telegramAddr = "149.154.167.50:443"
 
 // Current API Layer Version
 const layer = 65
@@ -118,7 +117,7 @@ func (appConfig Configuration) Check() error {
 	return nil
 }
 
-func NewMTProto(authkeyfile string, appConfig Configuration) (*MTProto, error) {
+func NewMTProto(serverAddr, authkeyfile string, appConfig Configuration) (*MTProto, error) {
 	var err error
 
 	err = appConfig.Check()
@@ -138,7 +137,7 @@ func NewMTProto(authkeyfile string, appConfig Configuration) (*MTProto, error) {
 	if err == nil {
 		m.encrypted = true
 	} else {
-		m.addr = telegramAddr
+		m.addr = serverAddr
 		m.encrypted = false
 	}
 	rand.Seed(time.Now().UnixNano())

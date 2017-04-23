@@ -289,8 +289,9 @@ func (m *DecodeBuf) Object() (r TL) {
 		return nil
 	}
 
-	fmt.Printf("[%08x]\n", constructor)
-	m.dump()
+	// TODO: How to make it available only in DEBUG mode?
+	//fmt.Printf("[%08x]\n", constructor)
+	//m.dump()
 
 	switch constructor {
 

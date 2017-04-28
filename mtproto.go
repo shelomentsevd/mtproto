@@ -3,6 +3,7 @@ package mtproto
 import (
 	"errors"
 	"fmt"
+	"io"
 	"math/rand"
 	"net"
 	"os"
@@ -117,7 +118,7 @@ func (appConfig Configuration) Check() error {
 	return nil
 }
 
-func NewMTProto(serverAddr, authkeyfile string, appConfig Configuration) (*MTProto, error) {
+func NewMTProto(newSession bool, serverAddr string, authkeyfile string, appConfig Configuration) (*MTProto, error) {
 	var err error
 
 	err = appConfig.Check()
@@ -133,6 +134,15 @@ func NewMTProto(serverAddr, authkeyfile string, appConfig Configuration) (*MTPro
 		return nil, err
 	}
 
+	rand.Seed(time.Now().UnixNano())
+	m.sessionId = rand.Int63()
+
+	if newSession {
+		m.addr = serverAddr
+		m.encrypted = false
+		return m, nil
+	}
+
 	err = m.readData()
 	if err == nil {
 		m.encrypted = true
@@ -140,8 +150,6 @@ func NewMTProto(serverAddr, authkeyfile string, appConfig Configuration) (*MTPro
 		m.addr = serverAddr
 		m.encrypted = false
 	}
-	rand.Seed(time.Now().UnixNano())
-	m.sessionId = rand.Int63()
 
 	return m, nil
 }
@@ -392,7 +400,7 @@ func (m *MTProto) GetDialogs(excludePinned bool, offsetDate, offsetId int32, off
 func (m *MTProto) UpdatesGetState() (error, *TL) {
 	resp := make(chan TL, 1)
 	m.queueSend <- packetToSend{
-		msg: TL_updates_getState{},
+		msg:  TL_updates_getState{},
 		resp: resp,
 	}
 	x := <-resp
@@ -404,10 +412,10 @@ func (m *MTProto) UpdatesGetDifference(pts, ptsTotalLimit, date, qts int32) (err
 	resp := make(chan TL, 1)
 	m.queueSend <- packetToSend{
 		msg: TL_updates_getDifference{
-			Pts: pts,
+			Pts:             pts,
 			Pts_total_limit: ptsTotalLimit,
-			Date: date,
-			Qts: qts,
+			Date:            date,
+			Qts:             qts,
 		},
 		resp: resp,
 	}
@@ -417,22 +425,22 @@ func (m *MTProto) UpdatesGetDifference(pts, ptsTotalLimit, date, qts int32) (err
 	return nil, &x
 }
 
-func (m *MTProto) UpdatesGetChannelDifference(force bool, channel, filter TL, pts ,limit int32) (error, *TL) {
+func (m *MTProto) UpdatesGetChannelDifference(force bool, channel, filter TL, pts, limit int32) (error, *TL) {
 	resp := make(chan TL, 1)
 	m.queueSend <- packetToSend{
 		msg: TL_updates_getChannelDifference{
-			Force: force,
+			Force:   force,
 			Channel: channel,
-			Filter: filter,
-			Pts: pts,
-			Limit: limit,
+			Filter:  filter,
+			Pts:     pts,
+			Limit:   limit,
 		},
 		resp: resp,
 	}
 
 	x := <-resp
 
-	return  nil, &x
+	return nil, &x
 }
 
 func (m *MTProto) pingRoutine() {
@@ -462,6 +470,17 @@ func (m *MTProto) sendRoutine() {
 func (m *MTProto) readRoutine() {
 	for {
 		data, err := m.read(m.stopRead)
+		if err == io.EOF {
+			// Connection closed by server, trying to reconnect
+			go func() {
+				err = m.reconnect(m.addr)
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(2)
+				}
+			}()
+			return
+		}
 		if err != nil {
 			fmt.Println("ReadRoutine:", err)
 			os.Exit(2)

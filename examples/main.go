@@ -3,7 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
-	"telegram-api/core"
+	"mtproto"
+	"reflect"
 )
 
 func usage() {
@@ -17,6 +18,7 @@ func usage() {
 }
 
 func main() {
+	const telegramAddress = "149.154.167.40:443"
 	var err error
 
 	if len(os.Args) < 2 {
@@ -41,7 +43,7 @@ func main() {
 		usage()
 		os.Exit(1)
 	}
-	appConfig, err := core.NewConfig(41994,
+	appConfig, err := mtproto.NewConfiguration(41994,
 		"269069e15c81241f5670c397941016a2",
 		"0.0.1",
 		"",
@@ -51,7 +53,7 @@ func main() {
 		fmt.Printf("Create failed: %s\n", err)
 		os.Exit(2)
 	}
-	m, err := core.NewMTProto(os.Getenv("HOME")+"/.telegram_go", appConfig)
+	m, err := mtproto.NewMTProto(false, telegramAddress, os.Getenv("HOME")+"/.telegram_go", *appConfig)
 	if err != nil {
 		fmt.Printf("Create failed: %s\n", err)
 		os.Exit(2)
@@ -71,7 +73,12 @@ func main() {
 			fmt.Println(err)
 			os.Exit(2)
 		}
-
+		fmt.Println("Phone code hash: ", authSentCode.Phone_code_hash)
+		fmt.Println("Phone registered: ", authSentCode.Phone_registered)
+		fmt.Println("Flags: ", authSentCode.Flags)
+		fmt.Println("Code type: ", reflect.TypeOf(authSentCode.Code_type))
+		fmt.Println("Next type: ", reflect.TypeOf(authSentCode.Next_type))
+		fmt.Println("Timeout: ", authSentCode.Timeout)
 		if !authSentCode.Phone_registered {
 			fmt.Println("Cannot sign in: Phone isn't registered")
 			os.Exit(2)
@@ -84,16 +91,16 @@ func main() {
 			fmt.Println(err)
 			os.Exit(2)
 		}
-		userSelf := auth.User.(core.TL_user)
+		userSelf := auth.User.(mtproto.TL_user)
 		fmt.Printf("Signed in: Id %d name <%s %s>\n", userSelf.Id, userSelf.First_name, userSelf.Last_name)
 	//case "msg":
 	//	user_id, _ := strconv.Atoi(os.Args[2])
 	//	err = m.SendMessage(int32(user_id), os.Args[3])
 	//
-	case "peers":
-		err, topPeers = m.GetTopPeers()
+	//case "peers":
+	//	err, topPeers = m.GetTopPeers()
 	//case "dialogs": {
-	//	dialogs, users, err := m.GetDialogs(int32(0), int32(0), int32(100))
+	//	dialogs, users, err := m.MessagesGetDialogs(int32(0), int32(0), int32(100))
 	//	if err != nil {
 	//		fmt.Println(err)
 	//	}

@@ -18,7 +18,7 @@ func usage() {
 }
 
 func main() {
-	const telegramAddress = "149.154.167.40:443"
+	const telegramAddress = "149.154.167.50:443"
 	var err error
 
 	if len(os.Args) < 2 {

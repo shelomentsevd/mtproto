@@ -231,7 +231,6 @@ func (m *MTProto) makeAuthKey() error {
 	copy(x[0:], sha1(innerData1))
 	copy(x[20:], innerData1)
 	encryptedData1 := doRSAencrypt(x)
-	fmt.Println(string(encryptedData1))
 	// (send) req_DH_params
 	err = m.sendPacket(TL_req_DH_params{nonceFirst, nonceServer, p, q, telegramPublicKey_FP, encryptedData1}, nil)
 	if err != nil {

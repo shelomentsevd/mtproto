@@ -77,3 +77,19 @@ func (m *MTProto) AuthSignIn(phoneNumber, phoneCode, phoneCodeHash string) (erro
 	return nil, &auth
 }
 
+func (m *MTProto) AuthLogOut() (error, bool) {
+	var result bool
+	resp := make(chan TL, 1)
+	m.queueSend <- packetToSend{
+		msg: TL_auth_logOut{},
+		resp: resp,
+	}
+	x := <-resp
+	err, result := toBool(x)
+	if err != nil {
+		return err, result
+	}
+
+	return nil, result
+}
+

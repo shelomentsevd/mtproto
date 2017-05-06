@@ -226,9 +226,7 @@ func (m *MTProto) Connect() error {
 	return nil
 }
 
-func (m *MTProto) reconnect(newaddr string) error {
-	var err error
-
+func (m *MTProto) Disconnect() error {
 	// stop ping routine
 	m.stopPing <- struct{}{}
 	close(m.stopPing)
@@ -249,7 +247,16 @@ func (m *MTProto) reconnect(newaddr string) error {
 	close(m.queueSend)
 
 	// close connection
-	err = m.conn.Close()
+	err := m.conn.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *MTProto) reconnect(newaddr string) error {
+	err := m.Disconnect()
 	if err != nil {
 		return err
 	}

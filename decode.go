@@ -381,7 +381,13 @@ func (d *DecodeBuf) dump() {
 	fmt.Println(hex.Dump(d.buf[d.off:d.size]))
 }
 
-func toBool(x TL) bool {
-	_, ok := x.(TL_boolTrue)
-	return ok
+func toBool(x TL) (error, bool) {
+	switch x.(type) {
+	case TL_boolTrue:
+		return nil, true
+	case TL_boolFalse:
+		return nil, false
+	default:
+		return fmt.Errorf("Type %T can't convert to bool", x), false
+	}
 }

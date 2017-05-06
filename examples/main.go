@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"mtproto"
-	"reflect"
 )
 
 func usage() {
@@ -14,6 +13,7 @@ func usage() {
 	fmt.Print("    auth  <phone_number>            auth connection by code\n")
 	fmt.Print("    msg   <user_id> <msgtext>       send message to user\n")
 	fmt.Print("    list                            get contact list\n")
+	fmt.Print("    logout                          logout from server\n")
 	fmt.Println()
 }
 
@@ -26,7 +26,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	commands := map[string]int{"auth": 1, "msg": 2, "dialogs": 0, "list": 0}
+	commands := map[string]int{"auth": 1, "msg": 2, "dialogs": 0, "list": 0, "logout": 0}
 	valid := false
 	for k, v := range commands {
 		if os.Args[1] == k {
@@ -73,12 +73,6 @@ func main() {
 			fmt.Println(err)
 			os.Exit(2)
 		}
-		fmt.Println("Phone code hash: ", authSentCode.Phone_code_hash)
-		fmt.Println("Phone registered: ", authSentCode.Phone_registered)
-		fmt.Println("Flags: ", authSentCode.Flags)
-		fmt.Println("Code type: ", reflect.TypeOf(authSentCode.Code_type))
-		fmt.Println("Next type: ", reflect.TypeOf(authSentCode.Next_type))
-		fmt.Println("Timeout: ", authSentCode.Timeout)
 		if !authSentCode.Phone_registered {
 			fmt.Println("Cannot sign in: Phone isn't registered")
 			os.Exit(2)
@@ -93,6 +87,16 @@ func main() {
 		}
 		userSelf := auth.User.(mtproto.TL_user)
 		fmt.Printf("Signed in: Id %d name <%s %s>\n", userSelf.Id, userSelf.First_name, userSelf.Last_name)
+	case "logout":
+		err, logout := m.AuthLogOut()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(2)
+		}
+		if !logout {
+			fmt.Println("Can't logout")
+		}
+		fmt.Println("You logged out")
 	//case "msg":
 	//	user_id, _ := strconv.Atoi(os.Args[2])
 	//	err = m.SendMessage(int32(user_id), os.Args[3])

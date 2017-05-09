@@ -281,15 +281,19 @@ func (m *MTProto) pingRoutine() {
 }
 
 func (m *MTProto) sendRoutine() {
-	for x := range m.queueSend {
-		err := m.sendPacket(x.msg, x.resp)
-		if err != nil {
-			fmt.Println("SendRoutine:", err)
-			os.Exit(2)
+	for {
+		select {
+		case <-m.stopSend:
+			m.allDone <- struct{}{}
+			return
+		case x:= <-m.queueSend:
+			err := m.sendPacket(x.msg, x.resp)
+			if err != nil {
+				fmt.Println("SendRoutine:", err)
+				os.Exit(2)
+			}
 		}
 	}
-
-	m.allDone <- struct{}{}
 }
 
 func (m *MTProto) readRoutine() {

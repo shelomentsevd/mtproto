@@ -1,7 +1,9 @@
 package mtproto
 
-import ("fmt"
-	"errors")
+import (
+	"errors"
+	"fmt"
+)
 
 func (m *MTProto) AuthSendCode(phonenumber string) (*TL_auth_sentCode, error) {
 	var authSentCode TL_auth_sentCode
@@ -12,7 +14,7 @@ func (m *MTProto) AuthSendCode(phonenumber string) (*TL_auth_sentCode, error) {
 			msg: TL_auth_sendCode{
 				Allow_flashcall: false,
 				Phone_number:    phonenumber,
-				Current_number: TL_boolTrue{},
+				Current_number:  TL_boolTrue{},
 				Api_id:          m.appConfig.Id,
 				Api_hash:        m.appConfig.Hash,
 			},
@@ -81,7 +83,7 @@ func (m *MTProto) AuthLogOut() (bool, error) {
 	var result bool
 	resp := make(chan TL, 1)
 	m.queueSend <- packetToSend{
-		msg: TL_auth_logOut{},
+		msg:  TL_auth_logOut{},
 		resp: resp,
 	}
 	x := <-resp
@@ -93,4 +95,3 @@ func (m *MTProto) AuthLogOut() (bool, error) {
 
 	return result, err
 }
-

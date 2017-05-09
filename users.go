@@ -2,12 +2,12 @@ package mtproto
 
 import "fmt"
 
-func (m * MTProto) UsersGetFullUsers(id TL) (*TL_userFull, error) {
+func (m *MTProto) UsersGetFullUsers(id TL) (*TL_userFull, error) {
 	var user TL_userFull
 	resp := make(chan TL, 1)
 	m.queueSend <- packetToSend{
 		msg: TL_users_getFullUser{
-			Id:id,
+			Id: id,
 		},
 		resp: resp,
 	}

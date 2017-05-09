@@ -40,16 +40,16 @@ func (m *MTProto) MessagesSendMessage(no_webpage, silent, background, clear_draf
 	resp := make(chan TL, 1)
 	m.queueSend <- packetToSend{
 		msg: TL_messages_sendMessage{
-			No_webpage: no_webpage,
-			Silent: silent,
-			Background: background,
-			Clear_draft: clear_draft,
-			Peer: peer,
+			No_webpage:      no_webpage,
+			Silent:          silent,
+			Background:      background,
+			Clear_draft:     clear_draft,
+			Peer:            peer,
 			Reply_to_msg_id: reply_to_msg_id,
-			Message: message,
-			Random_id: random_id,
-			Reply_markup: reply_markup,
-			Entities: entities,
+			Message:         message,
+			Random_id:       random_id,
+			Reply_markup:    reply_markup,
+			Entities:        entities,
 		},
 		resp: resp,
 	}

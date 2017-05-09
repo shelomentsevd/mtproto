@@ -286,7 +286,7 @@ func (m *MTProto) sendRoutine() {
 		case <-m.stopSend:
 			m.allDone <- struct{}{}
 			return
-		case x:= <-m.queueSend:
+		case x := <-m.queueSend:
 			err := m.sendPacket(x.msg, x.resp)
 			if err != nil {
 				fmt.Println("SendRoutine:", err)

@@ -3,7 +3,7 @@ package mtproto
 import ("fmt"
 	"errors")
 
-func (m *MTProto) AuthSendCode(phonenumber string) (error, *TL_auth_sentCode) {
+func (m *MTProto) AuthSendCode(phonenumber string) (*TL_auth_sentCode, error) {
 	var authSentCode TL_auth_sentCode
 	flag := true
 	for flag {
@@ -26,36 +26,36 @@ func (m *MTProto) AuthSendCode(phonenumber string) (error, *TL_auth_sentCode) {
 		case TL_rpc_error:
 			x := x.(TL_rpc_error)
 			if x.Error_code != errorSeeOther {
-				return fmt.Errorf("RPC Error_code: %d", x.Error_code), nil
+				return nil, fmt.Errorf("RPC Error_code: %d", x.Error_code)
 			}
 			var newDc int32
 			n, _ := fmt.Sscanf(x.Error_message, "PHONE_MIGRATE_%d", &newDc)
 			if n != 1 {
 				n, _ := fmt.Sscanf(x.Error_message, "NETWORK_MIGRATE_%d", &newDc)
 				if n != 1 {
-					return fmt.Errorf("RPC error_string: %s", x.Error_message), nil
+					return nil, fmt.Errorf("RPC error_string: %s", x.Error_message)
 				}
 			}
 
 			newDcAddr, ok := m.dclist[newDc]
 			if !ok {
-				return fmt.Errorf("Wrong DC index: %d", newDc), nil
+				return nil, fmt.Errorf("Wrong DC index: %d", newDc)
 			}
 			err := m.reconnect(newDcAddr)
 			if err != nil {
-				return err, nil
+				return nil, err
 			}
 		default:
-			return fmt.Errorf("Got: %T", x), nil
+			return nil, fmt.Errorf("Got: %T", x)
 		}
 	}
 
-	return nil, &authSentCode
+	return &authSentCode, nil
 }
 
-func (m *MTProto) AuthSignIn(phoneNumber, phoneCode, phoneCodeHash string) (error, *TL_auth_authorization) {
+func (m *MTProto) AuthSignIn(phoneNumber, phoneCode, phoneCodeHash string) (*TL_auth_authorization, error) {
 	if phoneNumber == "" || phoneCode == "" || phoneCodeHash == "" {
-		return errors.New("MRProto::AuthSignIn one of function parameters is empty"), nil
+		return nil, errors.New("MRProto::AuthSignIn one of function parameters is empty")
 	}
 
 	resp := make(chan TL, 1)
@@ -71,13 +71,13 @@ func (m *MTProto) AuthSignIn(phoneNumber, phoneCode, phoneCodeHash string) (erro
 	auth, ok := x.(TL_auth_authorization)
 
 	if !ok {
-		return fmt.Errorf("RPC: %#v", x), nil
+		return nil, fmt.Errorf("RPC: %#v", x)
 	}
 
-	return nil, &auth
+	return &auth, nil
 }
 
-func (m *MTProto) AuthLogOut() (error, bool) {
+func (m *MTProto) AuthLogOut() (bool, error) {
 	var result bool
 	resp := make(chan TL, 1)
 	m.queueSend <- packetToSend{
@@ -85,11 +85,12 @@ func (m *MTProto) AuthLogOut() (error, bool) {
 		resp: resp,
 	}
 	x := <-resp
+
 	err, result := toBool(x)
 	if err != nil {
-		return err, result
+		return result, err
 	}
 
-	return nil, result
+	return result, err
 }
 

@@ -2,7 +2,7 @@ package mtproto
 
 import "fmt"
 
-func (m * MTProto) UsersGetFullUsers(id TL) (error, *TL_userFull) {
+func (m * MTProto) UsersGetFullUsers(id TL) (*TL_userFull, error) {
 	var user TL_userFull
 	resp := make(chan TL, 1)
 	m.queueSend <- packetToSend{
@@ -19,10 +19,10 @@ func (m * MTProto) UsersGetFullUsers(id TL) (error, *TL_userFull) {
 		user = x.(TL_userFull)
 	case TL_rpc_error:
 		x := x.(TL_rpc_error)
-		return fmt.Errorf("RPC code: %d message: %s", x.Error_code, x.Error_message), nil
+		return nil, fmt.Errorf("RPC code: %d message: %s", x.Error_code, x.Error_message)
 	default:
-		return fmt.Errorf("Got: %T", x), nil
+		return nil, fmt.Errorf("Got: %T", x)
 	}
 
-	return nil, &user
+	return &user, nil
 }

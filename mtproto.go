@@ -269,10 +269,10 @@ func (m *MTProto) reconnect(newaddr string) error {
 }
 
 func (m *MTProto) pingRoutine() {
+	defer func() { m.allDone <-struct {}{} }()
 	for {
 		select {
 		case <-m.stopPing:
-			m.allDone <- struct{}{}
 			return
 		case <-time.After(60 * time.Second):
 			m.queueSend <- packetToSend{TL_ping{0xCADACADA}, nil}
@@ -281,10 +281,10 @@ func (m *MTProto) pingRoutine() {
 }
 
 func (m *MTProto) sendRoutine() {
+	defer func() { m.allDone <-struct {}{} }()
 	for {
 		select {
 		case <-m.stopSend:
-			m.allDone <- struct{}{}
 			return
 		case x := <-m.queueSend:
 			err := m.sendPacket(x.msg, x.resp)
@@ -297,29 +297,36 @@ func (m *MTProto) sendRoutine() {
 }
 
 func (m *MTProto) readRoutine() {
+	defer func() { m.allDone <-struct {}{} }()
 	for {
-		data, err := m.read(m.stopRead)
-		if err == io.EOF {
-			// Connection closed by server, trying to reconnect
-			go func() {
+		// Run async wait for data from server
+		ch := make(chan interface{}, 1)
+		go func(ch chan <- interface{}) {
+			data, err := m.read()
+			if err == io.EOF {
+				// Connection closed by server, trying to reconnect
 				err = m.reconnect(m.addr)
 				if err != nil {
 					fmt.Println(err)
 					os.Exit(2)
 				}
-			}()
-			return
-		}
-		if err != nil {
-			fmt.Println("ReadRoutine:", err)
-			os.Exit(2)
-		}
-		if data == nil {
-			m.allDone <- struct{}{}
-			return
-		}
+			}
+			if err != nil {
+				fmt.Println("ReadRoutine: ", err)
+				os.Exit(2)
+			}
+			ch <- data
+		}(ch)
 
-		m.process(m.msgId, m.seqNo, data)
+		select {
+		case <-m.stopRead:
+			return
+		case data := <-ch:
+			if data == nil {
+				return
+			}
+			m.process(m.msgId, m.seqNo, data)
+		}
 	}
 }
 

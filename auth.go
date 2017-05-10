@@ -88,7 +88,7 @@ func (m *MTProto) AuthLogOut() (bool, error) {
 	}
 	x := <-resp
 
-	err, result := toBool(x)
+	result, err := ToBool(x)
 	if err != nil {
 		return result, err
 	}

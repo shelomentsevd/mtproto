@@ -2,6 +2,19 @@ package mtproto
 
 import "errors"
 
+func (m *MTProto) ContactsGetContacts(hash string) (*TL, error)  {
+	resp := make(chan TL, 1)
+	m.queueSend <- packetToSend{
+		msg: TL_contacts_getContacts{
+			Hash: hash,
+		},
+		resp: resp,
+	}
+	x := <-resp
+
+	return &x, nil
+}
+
 func (m *MTProto) ContactsGetTopPeers(correspondents, botsPM, botsInline, groups, channels bool, offset, limit, hash int32) (*TL, error) {
 	resp := make(chan TL, 1)
 	m.queueSend <- packetToSend{

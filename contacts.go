@@ -2,6 +2,19 @@ package mtproto
 
 import "errors"
 
+func (m *MTProto) ContactsResolveUsername(username string) (*TL, error) {
+	resp := make(chan TL, 1)
+	m.queueSend <- packetToSend{
+		msg: TL_contacts_resolveUsername{
+			Username: username,
+		},
+		resp: resp,
+	}
+	x := <-resp
+
+	return &x, nil
+}
+
 func (m *MTProto) ContactsGetContacts(hash string) (*TL, error)  {
 	resp := make(chan TL, 1)
 	m.queueSend <- packetToSend{

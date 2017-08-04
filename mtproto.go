@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"net"
 	"os"
@@ -302,8 +303,7 @@ func (m *MTProto) sendRoutine() {
 		case x := <-m.queueSend:
 			err := m.sendPacket(x.msg, x.resp)
 			if err != nil {
-				fmt.Println("SendRoutine:", err)
-				os.Exit(2)
+				log.Fatalln("SendRoutine:", err)
 			}
 		}
 	}
@@ -320,13 +320,11 @@ func (m *MTProto) readRoutine() {
 				// Connection closed by server, trying to reconnect
 				err = m.reconnect(m.addr)
 				if err != nil {
-					fmt.Println(err)
-					os.Exit(2)
+					log.Fatalln("ReadRoutine: ", err)
 				}
 			}
 			if err != nil {
-				fmt.Println("ReadRoutine: ", err)
-				os.Exit(2)
+				log.Fatalln("ReadRoutine: ", err)
 			}
 			ch <- data
 		}(ch)
@@ -356,11 +354,11 @@ func (m *MTProto) process(msgId int64, seqNo int32, data interface{}) interface{
 		m.serverSalt = data.New_server_salt
 		_ = m.saveData()
 		m.mutex.Lock()
+		defer m.mutex.Unlock()
 		for k, v := range m.msgsIdToAck {
 			delete(m.msgsIdToAck, k)
 			m.queueSend <- v
 		}
-		m.mutex.Unlock()
 
 	case TL_new_session_created:
 		data := data.(TL_new_session_created)
@@ -377,15 +375,16 @@ func (m *MTProto) process(msgId int64, seqNo int32, data interface{}) interface{
 	case TL_msgs_ack:
 		data := data.(TL_msgs_ack)
 		m.mutex.Lock()
+		defer m.mutex.Unlock()
 		for _, v := range data.MsgIds {
 			delete(m.msgsIdToAck, v)
 		}
-		m.mutex.Unlock()
 
 	case TL_rpc_result:
 		data := data.(TL_rpc_result)
 		x := m.process(msgId, seqNo, data.Obj)
 		m.mutex.Lock()
+		defer m.mutex.Unlock()
 		v, ok := m.msgsIdToResp[data.Req_msg_id]
 		if ok {
 			var resp response
@@ -399,7 +398,6 @@ func (m *MTProto) process(msgId int64, seqNo int32, data interface{}) interface{
 			delete(m.msgsIdToResp, data.Req_msg_id)
 		}
 		delete(m.msgsIdToAck, data.Req_msg_id)
-		m.mutex.Unlock()
 
 	default:
 		return data

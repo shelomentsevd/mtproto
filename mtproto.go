@@ -37,6 +37,7 @@ type MTProto struct {
 
 	appConfig Configuration
 
+	dc int32
 	dclist map[int32]string
 }
 
@@ -209,12 +210,21 @@ func (m *MTProto) Connect() error {
 		resp: resp,
 	}
 	x := <-resp
+
+	// Creating DC list to use it in reconnections
 	switch x.(type) {
 	case TL_config:
+		// Save current DC
+		m.dc = x.(TL_config).This_dc
+
 		m.dclist = make(map[int32]string, 5)
 		for _, v := range x.(TL_config).Dc_options {
 			v := v.(TL_dcOption)
-			m.dclist[v.Id] = fmt.Sprintf("%s:%d", v.Ip_address, v.Port)
+
+			// TODO option to enable IPv6 support
+			if v.Ipv6 != true {
+				m.dclist[v.Id] = fmt.Sprintf("%s:%d", v.Ip_address, v.Port)
+			}
 		}
 	default:
 		return fmt.Errorf("Connection error: got: %T", x)
@@ -263,9 +273,21 @@ func (m *MTProto) reconnect(newaddr string) error {
 
 	// renew connection
 	m.encrypted = true
+	if m.addr != newaddr {
+		m.encrypted = false
+	}
+
 	m.addr = newaddr
 	err = m.Connect()
 	return err
+}
+
+func (m *MTProto) importAuth()  {
+	
+}
+
+func (m *MTProto) exportAuth(dc int32)  {
+
 }
 
 func (m *MTProto) pingRoutine() {
@@ -375,9 +397,23 @@ func (m *MTProto) process(msgId int64, seqNo int32, data interface{}) interface{
 		m.mutex.Lock()
 		v, ok := m.msgsIdToResp[data.Req_msg_id]
 		if ok {
-			v <- x.(TL)
-			close(v)
-			delete(m.msgsIdToResp, data.Req_msg_id)
+			switch x.(type) {
+			case TL_rpc_error:
+				v <- x.(TL)
+				close(v)
+				delete(m.msgsIdToResp, data.Req_msg_id)
+
+				// TODO handle errors here
+				err := x.(TL_rpc_error)
+				if err.Error_code == 303 {
+					fmt.Sprintf("%d %s", err.Error_code, err.Error_message)
+				}
+
+			default:
+				v <- x.(TL)
+				close(v)
+				delete(m.msgsIdToResp, data.Req_msg_id)
+			}
 		}
 		delete(m.msgsIdToAck, data.Req_msg_id)
 		m.mutex.Unlock()
@@ -403,6 +439,7 @@ func (m *MTProto) saveData() (err error) {
 	b.StringBytes(m.authKeyHash)
 	b.StringBytes(m.serverSalt)
 	b.String(m.addr)
+	b.Int(m.dc)
 
 	err = m.f.Truncate(0)
 	if err != nil {
@@ -430,6 +467,7 @@ func (m *MTProto) readData() (err error) {
 	m.authKeyHash = d.StringBytes()
 	m.serverSalt = d.StringBytes()
 	m.addr = d.String()
+	m.dc = d.Int()
 
 	if d.err != nil {
 		return d.err

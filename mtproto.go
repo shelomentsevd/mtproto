@@ -263,6 +263,10 @@ func (m *MTProto) reconnect(newaddr string) error {
 
 	// renew connection
 	m.encrypted = true
+	if m.addr != newaddr {
+		m.encrypted = false
+	}
+	
 	m.addr = newaddr
 	err = m.Connect()
 	return err

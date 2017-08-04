@@ -1,18 +1,21 @@
 package mtproto
 
 func (m *MTProto) UpdatesGetState() (*TL, error) {
-	resp := make(chan TL, 1)
+	resp := make(chan response, 1)
 	m.queueSend <- packetToSend{
 		msg:  TL_updates_getState{},
 		resp: resp,
 	}
 	x := <-resp
+	if x.err != nil {
+		return nil, x.err
+	}
 
-	return &x, nil
+	return &x.data, nil
 }
 
 func (m *MTProto) UpdatesGetDifference(pts, ptsTotalLimit, date, qts int32) (*TL, error) {
-	resp := make(chan TL, 1)
+	resp := make(chan response, 1)
 	m.queueSend <- packetToSend{
 		msg: TL_updates_getDifference{
 			Pts:             pts,
@@ -24,12 +27,15 @@ func (m *MTProto) UpdatesGetDifference(pts, ptsTotalLimit, date, qts int32) (*TL
 	}
 
 	x := <-resp
+	if x.err != nil {
+		return nil, x.err
+	}
 
-	return &x, nil
+	return &x.data, nil
 }
 
 func (m *MTProto) UpdatesGetChannelDifference(force bool, channel, filter TL, pts, limit int32) (*TL, error) {
-	resp := make(chan TL, 1)
+	resp := make(chan response, 1)
 	m.queueSend <- packetToSend{
 		msg: TL_updates_getChannelDifference{
 			Force:   force,
@@ -42,6 +48,9 @@ func (m *MTProto) UpdatesGetChannelDifference(force bool, channel, filter TL, pt
 	}
 
 	x := <-resp
+	if x.err != nil {
+		return nil, x.err
+	}
 
-	return &x, nil
+	return &x.data, nil
 }

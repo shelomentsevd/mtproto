@@ -31,7 +31,7 @@ type MTProto struct {
 	mutex        *sync.Mutex
 	lastSeqNo    int32
 	msgsIdToAck  map[int64]packetToSend
-	msgsIdToResp map[int64]chan TL
+	msgsIdToResp map[int64]chan response
 	seqNo        int32
 	msgId        int64
 
@@ -42,7 +42,12 @@ type MTProto struct {
 
 type packetToSend struct {
 	msg  TL
-	resp chan TL
+	resp chan response
+}
+
+type response struct {
+	data TL
+	err  error
 }
 
 type Configuration struct {
@@ -187,13 +192,13 @@ func (m *MTProto) Connect() error {
 	m.stopPing = make(chan struct{}, 1)
 	m.allDone = make(chan struct{}, 3)
 	m.msgsIdToAck = make(map[int64]packetToSend)
-	m.msgsIdToResp = make(map[int64]chan TL)
+	m.msgsIdToResp = make(map[int64]chan response)
 	m.mutex = &sync.Mutex{}
 	go m.sendRoutine()
 	go m.readRoutine()
 
 	// (help_getConfig)
-	resp := make(chan TL, 1)
+	resp := make(chan response, 1)
 	m.queueSend <- packetToSend{
 		msg: TL_invokeWithLayer{
 			Layer: layer,
@@ -209,10 +214,14 @@ func (m *MTProto) Connect() error {
 		resp: resp,
 	}
 	x := <-resp
-	switch x.(type) {
+	if x.err != nil {
+		return x.err
+	}
+
+	switch x.data.(type) {
 	case TL_config:
 		m.dclist = make(map[int32]string, 5)
-		for _, v := range x.(TL_config).Dc_options {
+		for _, v := range x.data.(TL_config).Dc_options {
 			v := v.(TL_dcOption)
 			m.dclist[v.Id] = fmt.Sprintf("%s:%d", v.Ip_address, v.Port)
 		}
@@ -266,14 +275,14 @@ func (m *MTProto) reconnect(newaddr string) error {
 	if m.addr != newaddr {
 		m.encrypted = false
 	}
-	
+
 	m.addr = newaddr
 	err = m.Connect()
 	return err
 }
 
 func (m *MTProto) pingRoutine() {
-	defer func() { m.allDone <-struct {}{} }()
+	defer func() { m.allDone <- struct{}{} }()
 	for {
 		select {
 		case <-m.stopPing:
@@ -285,7 +294,7 @@ func (m *MTProto) pingRoutine() {
 }
 
 func (m *MTProto) sendRoutine() {
-	defer func() { m.allDone <-struct {}{} }()
+	defer func() { m.allDone <- struct{}{} }()
 	for {
 		select {
 		case <-m.stopSend:
@@ -301,11 +310,11 @@ func (m *MTProto) sendRoutine() {
 }
 
 func (m *MTProto) readRoutine() {
-	defer func() { m.allDone <-struct {}{} }()
+	defer func() { m.allDone <- struct{}{} }()
 	for {
 		// Run async wait for data from server
 		ch := make(chan interface{}, 1)
-		go func(ch chan <- interface{}) {
+		go func(ch chan<- interface{}) {
 			data, err := m.read()
 			if err == io.EOF {
 				// Connection closed by server, trying to reconnect
@@ -379,7 +388,13 @@ func (m *MTProto) process(msgId int64, seqNo int32, data interface{}) interface{
 		m.mutex.Lock()
 		v, ok := m.msgsIdToResp[data.Req_msg_id]
 		if ok {
-			v <- x.(TL)
+			var resp response
+			rpcError, ok := x.(TL_rpc_error)
+			if ok {
+				resp.err = m.handleRPCError(rpcError)
+			}
+			resp.data = x.(TL)
+			v <- resp
 			close(v)
 			delete(m.msgsIdToResp, data.Req_msg_id)
 		}
@@ -396,6 +411,33 @@ func (m *MTProto) process(msgId int64, seqNo int32, data interface{}) interface{
 	}
 
 	return nil
+}
+
+func (m *MTProto) handleRPCError(rpcError TL_rpc_error) error {
+	switch rpcError.Error_code {
+	case errorSeeOther:
+		var newDc int32
+		n, _ := fmt.Sscanf(rpcError.Error_message, "PHONE_MIGRATE_%d", &newDc)
+		if n != 1 {
+			n, _ := fmt.Sscanf(rpcError.Error_message, "NETWORK_MIGRATE_%d", &newDc)
+			if n != 1 {
+				return fmt.Errorf("RPC error_string: %s", rpcError.Error_message)
+			}
+		}
+		newDcAddr, ok := m.dclist[newDc]
+		if !ok {
+			return fmt.Errorf("Wrong DC index: %d", newDc)
+		}
+		err := m.reconnect(newDcAddr)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("mtproto error: %d %s", rpcError.Error_code, rpcError.Error_message)
+	case errorBadRequest, errorUnauthorized, errorFlood, errorInternal:
+		return fmt.Errorf("mtproto error: %d %s", rpcError.Error_code, rpcError.Error_message)
+	default:
+		return fmt.Errorf("mtproto unknow error: %d %s", rpcError.Error_code, rpcError.Error_message)
+	}
 }
 
 // Save session

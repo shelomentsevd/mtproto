@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func (m *MTProto) sendPacket(msg TL, resp chan TL) error {
+func (m *MTProto) sendPacket(msg TL, resp chan response) error {
 	obj := msg.encode()
 
 	x := NewEncodeBuf(256)

@@ -1,7 +1,7 @@
 package mtproto
 
 func (m *MTProto) MessagesGetHistory(peer TL, offsetId, offsetDate, addOffset, limit, maxId, minId int32) (*TL, error) {
-	resp := make(chan TL, 1)
+	resp := make(chan response, 1)
 	m.queueSend <- packetToSend{
 		msg: TL_messages_getHistory{
 			Peer:        peer,
@@ -16,11 +16,15 @@ func (m *MTProto) MessagesGetHistory(peer TL, offsetId, offsetDate, addOffset, l
 	}
 	x := <-resp
 
-	return &x, nil
+	if x.err != nil {
+		return nil, x.err
+	}
+
+	return &x.data, nil
 }
 
 func (m *MTProto) MessagesGetDialogs(excludePinned bool, offsetDate, offsetId int32, offsetPeer TL, limit int32) (*TL, error) {
-	resp := make(chan TL, 1)
+	resp := make(chan response, 1)
 	m.queueSend <- packetToSend{
 		msg: TL_messages_getDialogs{
 			Exclude_pinned: excludePinned,
@@ -33,11 +37,15 @@ func (m *MTProto) MessagesGetDialogs(excludePinned bool, offsetDate, offsetId in
 	}
 	x := <-resp
 
-	return &x, nil
+	if x.err != nil {
+		return nil, x.err
+	}
+
+	return &x.data, nil
 }
 
 func (m *MTProto) MessagesSendMessage(no_webpage, silent, background, clear_draft bool, peer TL, reply_to_msg_id int32, message string, random_id int64, reply_markup TL, entities []TL) (*TL, error) {
-	resp := make(chan TL, 1)
+	resp := make(chan response, 1)
 	m.queueSend <- packetToSend{
 		msg: TL_messages_sendMessage{
 			No_webpage:      no_webpage,
@@ -54,6 +62,9 @@ func (m *MTProto) MessagesSendMessage(no_webpage, silent, background, clear_draf
 		resp: resp,
 	}
 	x := <-resp
+	if x.err != nil {
+		return nil, x.err
+	}
 
-	return &x, nil
+	return &x.data, nil
 }

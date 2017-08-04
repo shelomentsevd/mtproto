@@ -2,8 +2,8 @@ package mtproto
 
 import "errors"
 
-func (m *MTProto) ContactsGetContacts(hash string) (*TL, error)  {
-	resp := make(chan TL, 1)
+func (m *MTProto) ContactsGetContacts(hash string) (*TL, error) {
+	resp := make(chan response, 1)
 	m.queueSend <- packetToSend{
 		msg: TL_contacts_getContacts{
 			Hash: hash,
@@ -12,11 +12,15 @@ func (m *MTProto) ContactsGetContacts(hash string) (*TL, error)  {
 	}
 	x := <-resp
 
-	return &x, nil
+	if x.err != nil {
+		return nil, x.err
+	}
+
+	return &x.data, nil
 }
 
 func (m *MTProto) ContactsGetTopPeers(correspondents, botsPM, botsInline, groups, channels bool, offset, limit, hash int32) (*TL, error) {
-	resp := make(chan TL, 1)
+	resp := make(chan response, 1)
 	m.queueSend <- packetToSend{
 		msg: TL_contacts_getTopPeers{
 			Correspondents: correspondents,
@@ -32,12 +36,16 @@ func (m *MTProto) ContactsGetTopPeers(correspondents, botsPM, botsInline, groups
 	}
 	x := <-resp
 
-	switch x.(type) {
+	if x.err != nil {
+		return nil, x.err
+	}
+
+	switch x.data.(type) {
 	case TL_contacts_topPeersNotModified:
 	case TL_contacts_topPeers:
 	default:
 		return nil, errors.New("MTProto::ContactsGetTopPeers error: Unknown type")
 	}
 
-	return &x, nil
+	return &x.data, nil
 }

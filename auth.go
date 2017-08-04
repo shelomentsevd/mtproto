@@ -21,6 +21,7 @@ func (m *MTProto) AuthSendCode(phonenumber string) (*TL_auth_sentCode, error) {
 			resp: resp,
 		}
 		x := <-resp
+
 		switch x.(type) {
 		case TL_auth_sentCode:
 			authSentCode = x.(TL_auth_sentCode)
@@ -94,4 +95,41 @@ func (m *MTProto) AuthLogOut() (bool, error) {
 	}
 
 	return result, err
+}
+
+func (m *MTProto) AuthImportAuthorization(id int32, bytes []byte) (*TL_auth_authorization, error) {
+	resp := make(chan TL, 1)
+	m.queueSend <- packetToSend{
+		msg: TL_auth_importAuthorization{
+			Id: id,
+			Bytes: bytes,
+		},
+		resp: resp,
+	}
+	x := <-resp
+	auth, ok := x.(TL_auth_authorization)
+
+	if !ok {
+		return nil, fmt.Errorf("RPC: %#v", x)
+	}
+
+	return &auth, nil
+}
+
+func (m *MTProto) AuthExportAuthorization(dc_id int32) (*TL_auth_exportedAuthorization, error)  {
+	resp := make(chan TL, 1)
+	m.queueSend <- packetToSend{
+		msg: TL_auth_exportAuthorization{
+			Dc_id: dc_id,
+		},
+		resp: resp,
+	}
+	x := <-resp
+	auth, ok := x.(TL_auth_exportedAuthorization)
+
+	if !ok {
+		return nil, fmt.Errorf("RPC: %#v", x)
+	}
+	
+	return &auth, nil
 }

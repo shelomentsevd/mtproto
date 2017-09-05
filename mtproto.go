@@ -376,18 +376,18 @@ func (m *MTProto) process(msgId int64, seqNo int32, data interface{}) interface{
 		defer m.mutex.Unlock()
 		v, ok := m.msgsIdToResp[data.Req_msg_id]
 		if ok {
-			var resp response
-			rpcError, ok := x.(TL_rpc_error)
-			if ok {
-				resp.err = m.handleRPCError(rpcError)
-			}
-			resp.data = x.(TL)
-			v <- resp
-			close(v)
-			delete(m.msgsIdToResp, data.Req_msg_id)
+			go func() {
+				var resp response
+				rpcError, ok := x.(TL_rpc_error)
+				if ok {
+					resp.err = m.handleRPCError(rpcError)
+				}
+				resp.data = x.(TL)
+				v <- resp
+				close(v)
+			}()
 		}
 		delete(m.msgsIdToAck, data.Req_msg_id)
-
 	default:
 		return data
 	}

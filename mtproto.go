@@ -220,7 +220,11 @@ func (m *MTProto) Connect() error {
 		m.dclist = make(map[int32]string, 5)
 		for _, v := range x.data.(TL_config).Dc_options {
 			v := v.(TL_dcOption)
-			m.dclist[v.Id] = fmt.Sprintf("%s:%d", v.Ip_address, v.Port)
+			if v.Ipv6 != true {
+				m.dclist[v.Id] = fmt.Sprintf("%s:%d", v.Ip_address, v.Port)
+			} else {
+				m.dclist[v.Id] = fmt.Sprintf("[%s]:%d", v.Ip_address, v.Port)
+			}
 		}
 	default:
 		return fmt.Errorf("Connection error: got: %T", x)

@@ -11,18 +11,13 @@ func (m *MTProto) AuthSendCode(phonenumber string) (*TL_auth_sentCode, error) {
 	var authSentCode TL_auth_sentCode
 	flag := true
 	for flag {
-		resp := make(chan response, 1)
-		m.queueSend <- packetToSend{
-			msg: TL_auth_sendCode{
-				Allow_flashcall: false,
-				Phone_number:    phonenumber,
-				Current_number:  TL_boolTrue{},
-				Api_id:          m.appConfig.Id,
-				Api_hash:        m.appConfig.Hash,
-			},
-			resp: resp,
-		}
-		x := <-resp
+		x := <-m.InvokeAsync(TL_auth_sendCode{
+			Allow_flashcall: false,
+			Phone_number:    phonenumber,
+			Current_number:  TL_boolTrue{},
+			Api_id:          m.appConfig.Id,
+			Api_hash:        m.appConfig.Hash,
+		})
 
 		if x.err != nil {
 			// TODO: Maybe there are different ways to do it
@@ -50,16 +45,11 @@ func (m *MTProto) AuthSignIn(phoneNumber, phoneCode, phoneCodeHash string) (*TL_
 		return nil, errors.New("MRProto::AuthSignIn one of function parameters is empty")
 	}
 
-	resp := make(chan response, 1)
-	m.queueSend <- packetToSend{
-		msg: TL_auth_signIn{
-			Phone_number:    phoneNumber,
-			Phone_code_hash: phoneCodeHash,
-			Phone_code:      phoneCode,
-		},
-		resp: resp,
-	}
-	x := <-resp
+	x := <-m.InvokeAsync(TL_auth_signIn{
+		Phone_number:    phoneNumber,
+		Phone_code_hash: phoneCodeHash,
+		Phone_code:      phoneCode,
+	})
 	if x.err != nil {
 		return nil, x.err
 	}
@@ -75,12 +65,7 @@ func (m *MTProto) AuthSignIn(phoneNumber, phoneCode, phoneCodeHash string) (*TL_
 
 func (m *MTProto) AuthLogOut() (bool, error) {
 	var result bool
-	resp := make(chan response, 1)
-	m.queueSend <- packetToSend{
-		msg:  TL_auth_logOut{},
-		resp: resp,
-	}
-	x := <-resp
+	x := <-m.InvokeAsync(TL_auth_logOut{})
 	if x.err != nil {
 		return result, x.err
 	}

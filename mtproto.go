@@ -474,3 +474,22 @@ func (m *MTProto) readData() (err error) {
 
 	return nil
 }
+
+func (m *MTProto) InvokeSync(msg TL) (*TL, error) {
+	x := <-m.InvokeAsync(msg)
+
+	if x.err != nil {
+		return nil, x.err
+	}
+
+	return &x.data, nil
+}
+
+func (m *MTProto) InvokeAsync(msg TL) chan response {
+	resp := make(chan response, 1)
+	m.queueSend <- packetToSend{
+		msg:  msg,
+		resp: resp,
+	}
+	return resp
+}

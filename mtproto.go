@@ -15,6 +15,7 @@ import (
 
 type MTProto struct {
 	addr         string
+	useIPv6      bool
 	conn         *net.TCPConn
 	f            *os.File
 	queueSend    chan packetToSend
@@ -122,7 +123,7 @@ func (appConfig Configuration) Check() error {
 	return nil
 }
 
-func NewMTProto(newSession bool, serverAddr string, authkeyfile string, appConfig Configuration) (*MTProto, error) {
+func NewMTProto(newSession bool, serverAddr string, useIPv6 bool, authkeyfile string, appConfig Configuration) (*MTProto, error) {
 	var err error
 
 	err = appConfig.Check()
@@ -143,6 +144,7 @@ func NewMTProto(newSession bool, serverAddr string, authkeyfile string, appConfi
 
 	if newSession {
 		m.addr = serverAddr
+		m.useIPv6 = useIPv6
 		m.encrypted = false
 		return m, nil
 	}
@@ -152,6 +154,7 @@ func NewMTProto(newSession bool, serverAddr string, authkeyfile string, appConfi
 		m.encrypted = true
 	} else {
 		m.addr = serverAddr
+		m.useIPv6 = useIPv6
 		m.encrypted = false
 	}
 
@@ -220,10 +223,10 @@ func (m *MTProto) Connect() error {
 		m.dclist = make(map[int32]string, 5)
 		for _, v := range x.data.(TL_config).Dc_options {
 			v := v.(TL_dcOption)
-			if v.Ipv6 != true {
-				m.dclist[v.Id] = fmt.Sprintf("%s:%d", v.Ip_address, v.Port)
-			} else {
+			if m.useIPv6 && v.Ipv6 {
 				m.dclist[v.Id] = fmt.Sprintf("[%s]:%d", v.Ip_address, v.Port)
+			} else if !v.Ipv6 {
+				m.dclist[v.Id] = fmt.Sprintf("%s:%d", v.Ip_address, v.Port)
 			}
 		}
 	default:
@@ -440,6 +443,11 @@ func (m *MTProto) saveData() (err error) {
 	b.StringBytes(m.authKeyHash)
 	b.StringBytes(m.serverSalt)
 	b.String(m.addr)
+	var useIPv6UInt uint32
+	if m.useIPv6 {
+		useIPv6UInt = 1
+	}
+	b.UInt(useIPv6UInt)
 
 	err = m.f.Truncate(0)
 	if err != nil {
@@ -467,6 +475,10 @@ func (m *MTProto) readData() (err error) {
 	m.authKeyHash = d.StringBytes()
 	m.serverSalt = d.StringBytes()
 	m.addr = d.String()
+	m.useIPv6 = false
+	if d.UInt() == 1 {
+		m.useIPv6 = true
+	}
 
 	if d.err != nil {
 		return d.err

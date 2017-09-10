@@ -4,15 +4,9 @@ import "fmt"
 
 func (m *MTProto) UsersGetFullUsers(id TL) (*TL_userFull, error) {
 	var user TL_userFull
-	resp := make(chan response, 1)
-	m.queueSend <- packetToSend{
-		msg: TL_users_getFullUser{
-			Id: id,
-		},
-		resp: resp,
-	}
-
-	x := <-resp
+	x := <-m.InvokeAsync(TL_users_getFullUser{
+		Id: id,
+	})
 	if x.err != nil {
 		return nil, x.err
 	}

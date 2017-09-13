@@ -1,7 +1,6 @@
 package mtproto
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -14,20 +13,13 @@ import (
 )
 
 type MTProto struct {
-	addr         string
-	useIPv6      bool
 	conn         *net.TCPConn
 	f            *os.File
 	queueSend    chan packetToSend
 	stopRoutines chan struct{}
 	allDone      sync.WaitGroup
 
-	authKey     []byte
-	authKeyHash []byte
-	serverSalt  []byte
-	encrypted   bool
-	sessionId   int64
-
+	session      ISession
 	mutex        *sync.Mutex
 	lastSeqNo    int32
 	msgsIdToAck  map[int64]packetToSend
@@ -134,28 +126,37 @@ func NewMTProto(newSession bool, serverAddr string, useIPv6 bool, authkeyfile st
 	m := new(MTProto)
 	m.appConfig = appConfig
 
+	m.queueSend = make(chan packetToSend, 64)
+	m.stopRoutines = make(chan struct{})
+	m.allDone = sync.WaitGroup{}
+	m.msgsIdToAck = make(map[int64]packetToSend)
+	m.msgsIdToResp = make(map[int64]chan response)
+	m.mutex = &sync.Mutex{}
+
 	m.f, err = os.OpenFile(authkeyfile, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		return nil, err
 	}
 
+	m.session = NewSession(m.f)
+
 	rand.Seed(time.Now().UnixNano())
-	m.sessionId = rand.Int63()
+	m.session.SetSessionID(rand.Int63())
 
 	if newSession {
-		m.addr = serverAddr
-		m.useIPv6 = useIPv6
-		m.encrypted = false
+		m.session.SetAddress(serverAddr)
+		m.session.UseIPv6(useIPv6)
+		m.session.Encrypted(false)
 		return m, nil
 	}
 
-	err = m.readData()
+	err = m.session.Load()
 	if err == nil {
-		m.encrypted = true
+		m.session.Encrypted(true)
 	} else {
-		m.addr = serverAddr
-		m.useIPv6 = useIPv6
-		m.encrypted = false
+		m.session.SetAddress(serverAddr)
+		m.session.UseIPv6(useIPv6)
+		m.session.Encrypted(false)
 	}
 
 	return m, nil
@@ -166,7 +167,7 @@ func (m *MTProto) Connect() error {
 	var tcpAddr *net.TCPAddr
 
 	// connect
-	tcpAddr, err = net.ResolveTCPAddr("tcp", m.addr)
+	tcpAddr, err = net.ResolveTCPAddr("tcp", m.session.GetAddress())
 	if err != nil {
 		return err
 	}
@@ -180,7 +181,7 @@ func (m *MTProto) Connect() error {
 		return err
 	}
 	// get new authKey if need
-	if !m.encrypted {
+	if !m.session.IsEncrypted() {
 		err = m.makeAuthKey()
 		if err != nil {
 			return err
@@ -188,12 +189,6 @@ func (m *MTProto) Connect() error {
 	}
 
 	// start goroutines
-	m.queueSend = make(chan packetToSend, 64)
-	m.stopRoutines = make(chan struct{})
-	m.allDone = sync.WaitGroup{}
-	m.msgsIdToAck = make(map[int64]packetToSend)
-	m.msgsIdToResp = make(map[int64]chan response)
-	m.mutex = &sync.Mutex{}
 	go m.sendRoutine()
 	go m.readRoutine()
 
@@ -223,7 +218,7 @@ func (m *MTProto) Connect() error {
 		m.dclist = make(map[int32]string, 5)
 		for _, v := range x.data.(TL_config).Dc_options {
 			v := v.(TL_dcOption)
-			if m.useIPv6 && v.Ipv6 {
+			if m.session.IsIPv6() && v.Ipv6 {
 				m.dclist[v.Id] = fmt.Sprintf("[%s]:%d", v.Ip_address, v.Port)
 			} else if !v.Ipv6 {
 				m.dclist[v.Id] = fmt.Sprintf("%s:%d", v.Ip_address, v.Port)
@@ -265,12 +260,13 @@ func (m *MTProto) reconnect(newaddr string) error {
 	}
 
 	// renew connection
-	m.encrypted = true
-	if m.addr != newaddr {
-		m.encrypted = false
+	m.session.Encrypted(true)
+	if newaddr != m.session.GetAddress() {
+		m.session = NewSession(m.f)
+		m.session.SetAddress(newaddr)
+		m.session.Encrypted(false)
 	}
 
-	m.addr = newaddr
 	err = m.Connect()
 	return err
 }
@@ -314,7 +310,7 @@ func (m *MTProto) readRoutine() {
 			data, err := m.read()
 			if err == io.EOF {
 				// Connection closed by server, trying to reconnect
-				err = m.reconnect(m.addr)
+				err = m.reconnect(m.session.GetAddress())
 				if err != nil {
 					log.Fatalln("ReadRoutine: ", err)
 				}
@@ -347,8 +343,8 @@ func (m *MTProto) process(msgId int64, seqNo int32, data interface{}) interface{
 
 	case TL_bad_server_salt:
 		data := data.(TL_bad_server_salt)
-		m.serverSalt = data.New_server_salt
-		_ = m.saveData()
+		m.session.SetServerSalt(data.New_server_salt)
+		_ = m.session.Save()
 		m.mutex.Lock()
 		defer m.mutex.Unlock()
 		for k, v := range m.msgsIdToAck {
@@ -358,8 +354,8 @@ func (m *MTProto) process(msgId int64, seqNo int32, data interface{}) interface{
 
 	case TL_new_session_created:
 		data := data.(TL_new_session_created)
-		m.serverSalt = data.Server_salt
-		_ = m.saveData()
+		m.session.SetServerSalt(data.Server_salt)
+		_ = m.session.Save()
 
 	case TL_ping:
 		data := data.(TL_ping)
@@ -432,59 +428,6 @@ func (m *MTProto) handleRPCError(rpcError TL_rpc_error) error {
 	default:
 		return fmt.Errorf("mtproto unknow error: %d %s", rpcError.Error_code, rpcError.Error_message)
 	}
-}
-
-// Save session
-func (m *MTProto) saveData() (err error) {
-	m.encrypted = true
-
-	b := NewEncodeBuf(1024)
-	b.StringBytes(m.authKey)
-	b.StringBytes(m.authKeyHash)
-	b.StringBytes(m.serverSalt)
-	b.String(m.addr)
-	var useIPv6UInt uint32
-	if m.useIPv6 {
-		useIPv6UInt = 1
-	}
-	b.UInt(useIPv6UInt)
-
-	err = m.f.Truncate(0)
-	if err != nil {
-		return err
-	}
-
-	_, err = m.f.WriteAt(b.buf, 0)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Load session
-func (m *MTProto) readData() (err error) {
-	b := make([]byte, 1024*4)
-	n, err := m.f.ReadAt(b, 0)
-	if n <= 0 {
-		return errors.New("New session")
-	}
-
-	d := NewDecodeBuf(b)
-	m.authKey = d.StringBytes()
-	m.authKeyHash = d.StringBytes()
-	m.serverSalt = d.StringBytes()
-	m.addr = d.String()
-	m.useIPv6 = false
-	if d.UInt() == 1 {
-		m.useIPv6 = true
-	}
-
-	if d.err != nil {
-		return d.err
-	}
-
-	return nil
 }
 
 func (m *MTProto) InvokeSync(msg TL) (*TL, error) {

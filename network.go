@@ -16,7 +16,7 @@ func (m *MTProto) sendPacket(msg TL, resp chan response) error {
 	// padding for tcpsize
 	x.Int(0)
 
-	if m.encrypted {
+	if m.session.IsEncrypted() {
 		needAck := true
 		switch msg.(type) {
 		case TL_ping, TL_msgs_ack:
@@ -24,8 +24,8 @@ func (m *MTProto) sendPacket(msg TL, resp chan response) error {
 		}
 		z := NewEncodeBuf(256)
 		newMsgId := GenerateMessageId()
-		z.Bytes(m.serverSalt)
-		z.Long(m.sessionId)
+		z.Bytes(m.session.GetServerSalt())
+		z.Long(m.session.GetSessionID())
 		z.Long(newMsgId)
 		if needAck {
 			z.Int(m.lastSeqNo | 1)
@@ -36,7 +36,7 @@ func (m *MTProto) sendPacket(msg TL, resp chan response) error {
 		z.Bytes(obj)
 
 		msgKey := sha1(z.buf)[4:20]
-		aesKey, aesIV := generateAES(msgKey, m.authKey, false)
+		aesKey, aesIV := generateAES(msgKey, m.session.GetAuthKey(), false)
 
 		y := make([]byte, len(z.buf)+((16-(len(obj)%16))&15))
 		copy(y, z.buf)
@@ -52,7 +52,7 @@ func (m *MTProto) sendPacket(msg TL, resp chan response) error {
 			m.mutex.Unlock()
 		}
 
-		x.Bytes(m.authKeyHash)
+		x.Bytes(m.session.GetAuthKeyHash())
 		x.Bytes(msgKey)
 		x.Bytes(encryptedData)
 
@@ -147,7 +147,7 @@ func (m *MTProto) read() (interface{}, error) {
 	} else {
 		msgKey := dbuf.Bytes(16)
 		encryptedData := dbuf.Bytes(dbuf.size - 24)
-		aesKey, aesIV := generateAES(msgKey, m.authKey, true)
+		aesKey, aesIV := generateAES(msgKey, m.session.GetAuthKey(), true)
 		x, err := doAES256IGEdecrypt(encryptedData, aesKey, aesIV)
 		if err != nil {
 			return nil, err
@@ -292,19 +292,23 @@ func (m *MTProto) makeAuthKey() error {
 	}
 
 	_, g_b, g_ab := makeGAB(dhi.G, dhi.G_a, dhi.Dh_prime)
-	m.authKey = g_ab.Bytes()
-	if m.authKey[0] == 0 {
-		m.authKey = m.authKey[1:]
+	authKey := g_ab.Bytes()
+	if authKey[0] == 0 {
+		authKey = authKey[1:]
 	}
-	m.authKeyHash = sha1(m.authKey)[12:20]
+	authKeyHash := sha1(authKey)[12:20]
 	t4 := make([]byte, 32+1+8)
 	copy(t4[0:], nonceSecond)
 	t4[32] = 1
-	copy(t4[33:], sha1(m.authKey)[0:8])
+	copy(t4[33:], sha1(authKey)[0:8])
 	nonceHash1 := sha1(t4)[4:20]
-	m.serverSalt = make([]byte, 8)
-	copy(m.serverSalt, nonceSecond[:8])
-	xor(m.serverSalt, nonceServer[:8])
+	serverSalt := make([]byte, 8)
+	copy(serverSalt, nonceSecond[:8])
+	xor(serverSalt, nonceServer[:8])
+
+	m.session.SetAuthKey(authKey)
+	m.session.SetAuthKeyHash(authKeyHash)
+	m.session.SetServerSalt(serverSalt)
 
 	// (encoding) client_DH_inner_data
 	innerData2 := (TL_client_DH_inner_data{nonceFirst, nonceServer, 0, g_b}).encode()
@@ -339,10 +343,11 @@ func (m *MTProto) makeAuthKey() error {
 	}
 
 	// (all ok)
-	err = m.saveData()
+	err = m.session.Save()
 	if err != nil {
 		return err
 	}
+	m.session.Encrypted(true)
 
 	return nil
 }

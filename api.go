@@ -30,6 +30,16 @@ func (e TL_true) encode() []byte {
 	return x.buf
 }
 
+// vector#1cb5c415 {t:Type} # [ t ] = Vector t;
+type TL_vector []TL
+
+// Encoding TL_vector
+func (e TL_vector) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.Vector(e)
+	return x.buf
+}
+
 // error#c4b9f9bb code:int text:string = Error;
 
 const crc_error = 0xc4b9f9bb
@@ -15769,6 +15779,9 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		r = TL_boolTrue{}
 	case crc_true:
 		r = TL_true{}
+	case crc_vector:
+		m.off -= 4
+		r = TL_vector(m.Vector())
 	case crc_error:
 		r = TL_error{
 			Code: m.Int(),

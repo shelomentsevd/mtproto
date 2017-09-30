@@ -73,7 +73,7 @@ const (
 const appConfigError = "App configuration error: %s"
 
 // Current API Layer Version
-const layer = 65
+const layer = 71
 
 func NewConfiguration(id int32, hash, version, deviceModel, systemVersion, language string) (*Configuration, error) {
 	appConfig := new(Configuration)
@@ -203,12 +203,14 @@ func (m *MTProto) Connect() error {
 		msg: TL_invokeWithLayer{
 			Layer: layer,
 			Query: TL_initConnection{
-				Api_id:         m.appConfig.Id,
-				Device_model:   m.appConfig.DeviceModel,
-				System_version: m.appConfig.SystemVersion,
-				App_version:    m.appConfig.Version,
-				Lang_code:      m.appConfig.Language,
-				Query:          TL_help_getConfig{},
+				Api_id:           m.appConfig.Id,
+				Device_model:     m.appConfig.DeviceModel,
+				System_version:   m.appConfig.SystemVersion,
+				App_version:      m.appConfig.Version,
+				System_lang_code: m.appConfig.Language,
+				Lang_pack:        "",
+				Lang_code:        m.appConfig.Language,
+				Query:            TL_help_getConfig{},
 			},
 		},
 		resp: resp,

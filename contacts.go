@@ -2,7 +2,7 @@ package mtproto
 
 import "errors"
 
-func (m *MTProto) ContactsGetContacts(hash string) (*TL, error) {
+func (m *MTProto) ContactsGetContacts(hash int32) (*TL, error) {
 	return m.InvokeSync(TL_contacts_getContacts{
 		Hash: hash,
 	})

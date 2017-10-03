@@ -30,6 +30,20 @@ func (e TL_true) encode() []byte {
 	return x.buf
 }
 
+// vector#1cb5c415 {t:Type} # [ t ] = Vector t;
+
+/*
+const crc_vector = 0x1cb5c415
+type TL_vector struct {
+	{t TL // {t:Type}
+	}
+	// Encoding TL_vector
+	func (e TL_vector) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_vector)
+	x.Bytes(e.t.encode())
+	return x.buf
+	}*/
 // error#c4b9f9bb code:int text:string = Error;
 
 const crc_error = 0xc4b9f9bb
@@ -203,12 +217,12 @@ func (e TL_inputPhoneContact) encode() []byte {
 	return x.buf
 }
 
-// inputFile#f52ff27f Id:long parts:int name:string md5_checksum:string = InputFile;
+// inputFile#f52ff27f id:long parts:int name:string md5_checksum:string = InputFile;
 
 const crc_inputFile = 0xf52ff27f
 
 type TL_inputFile struct {
-	Id           int64  // Id:long
+	Id           int64  // id:long
 	Parts        int32  // parts:int
 	Name         string // name:string
 	Md5_checksum string // md5_checksum:string
@@ -225,12 +239,12 @@ func (e TL_inputFile) encode() []byte {
 	return x.buf
 }
 
-// inputFileBig#fa4f0bb5 Id:long parts:int name:string = InputFile;
+// inputFileBig#fa4f0bb5 id:long parts:int name:string = InputFile;
 
 const crc_inputFileBig = 0xfa4f0bb5
 
 type TL_inputFileBig struct {
-	Id    int64  // Id:long
+	Id    int64  // id:long
 	Parts int32  // parts:int
 	Name  string // name:string
 }
@@ -259,15 +273,16 @@ func (e TL_inputMediaEmpty) encode() []byte {
 	return x.buf
 }
 
-// inputMediaUploadedPhoto#630c9af1 flags:# file:InputFile caption:string stickers:flags.0?Vector<InputDocument> = InputMedia;
+// inputMediaUploadedPhoto#2f37e231 flags:# file:InputFile caption:string stickers:flags.0?Vector<InputDocument> ttl_seconds:flags.1?int = InputMedia;
 
-const crc_inputMediaUploadedPhoto = 0x630c9af1
+const crc_inputMediaUploadedPhoto = 0x2f37e231
 
 type TL_inputMediaUploadedPhoto struct {
-	Flags    int32
-	File     TL     // file:InputFile
-	Caption  string // caption:string
-	Stickers []TL   // stickers:flags.0?Vector<InputDocument>
+	Flags       int32
+	File        TL     // file:InputFile
+	Caption     string // caption:string
+	Stickers    []TL   // stickers:flags.0?Vector<InputDocument>
+	Ttl_seconds int32  // ttl_seconds:flags.1?int
 }
 
 // Encoding TL_inputMediaUploadedPhoto
@@ -278,30 +293,46 @@ func (e TL_inputMediaUploadedPhoto) encode() []byte {
 	if len(e.Stickers) != 0 {
 		flags |= (1 << 0)
 	}
+	if e.Ttl_seconds > 0 {
+		flags |= (1 << 1)
+	}
 	x.Int(flags)
 	x.Bytes(e.File.encode())
 	x.String(e.Caption)
 	if flags&(1<<0) != 0 {
 		x.Vector(e.Stickers)
 	}
+	if flags&(1<<1) != 0 {
+		x.Int(e.Ttl_seconds)
+	}
 	return x.buf
 }
 
-// inputMediaPhoto#e9bfb4f3 Id:InputPhoto caption:string = InputMedia;
+// inputMediaPhoto#81fa373a flags:# id:InputPhoto caption:string ttl_seconds:flags.0?int = InputMedia;
 
-const crc_inputMediaPhoto = 0xe9bfb4f3
+const crc_inputMediaPhoto = 0x81fa373a
 
 type TL_inputMediaPhoto struct {
-	Id      TL     // Id:InputPhoto
-	Caption string // caption:string
+	Flags       int32
+	Id          TL     // id:InputPhoto
+	Caption     string // caption:string
+	Ttl_seconds int32  // ttl_seconds:flags.0?int
 }
 
 // Encoding TL_inputMediaPhoto
 func (e TL_inputMediaPhoto) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_inputMediaPhoto)
+	var flags int32
+	if e.Ttl_seconds > 0 {
+		flags |= (1 << 0)
+	}
+	x.Int(flags)
 	x.Bytes(e.Id.encode())
 	x.String(e.Caption)
+	if flags&(1<<0) != 0 {
+		x.Int(e.Ttl_seconds)
+	}
 	return x.buf
 }
 
@@ -341,17 +372,19 @@ func (e TL_inputMediaContact) encode() []byte {
 	return x.buf
 }
 
-// inputMediaUploadedDocument#d070f1e9 flags:# file:InputFile mime_type:string attributes:Vector<DocumentAttribute> caption:string stickers:flags.0?Vector<InputDocument> = InputMedia;
+// inputMediaUploadedDocument#e39621fd flags:# file:InputFile thumb:flags.2?InputFile mime_type:string attributes:Vector<DocumentAttribute> caption:string stickers:flags.0?Vector<InputDocument> ttl_seconds:flags.1?int = InputMedia;
 
-const crc_inputMediaUploadedDocument = 0xd070f1e9
+const crc_inputMediaUploadedDocument = 0xe39621fd
 
 type TL_inputMediaUploadedDocument struct {
-	Flags      int32
-	File       TL     // file:InputFile
-	Mime_type  string // mime_type:string
-	Attributes []TL   // attributes:Vector<DocumentAttribute>
-	Caption    string // caption:string
-	Stickers   []TL   // stickers:flags.0?Vector<InputDocument>
+	Flags       int32
+	File        TL     // file:InputFile
+	Thumb       TL     // thumb:flags.2?InputFile
+	Mime_type   string // mime_type:string
+	Attributes  []TL   // attributes:Vector<DocumentAttribute>
+	Caption     string // caption:string
+	Stickers    []TL   // stickers:flags.0?Vector<InputDocument>
+	Ttl_seconds int32  // ttl_seconds:flags.1?int
 }
 
 // Encoding TL_inputMediaUploadedDocument
@@ -359,69 +392,57 @@ func (e TL_inputMediaUploadedDocument) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_inputMediaUploadedDocument)
 	var flags int32
+	if _, ok := (e.Thumb).(TL_null); !ok {
+		flags |= (1 << 2)
+	}
 	if len(e.Stickers) != 0 {
 		flags |= (1 << 0)
 	}
+	if e.Ttl_seconds > 0 {
+		flags |= (1 << 1)
+	}
 	x.Int(flags)
 	x.Bytes(e.File.encode())
+	if flags&(1<<2) != 0 {
+		x.Bytes(e.Thumb.encode())
+	}
 	x.String(e.Mime_type)
 	x.Vector(e.Attributes)
 	x.String(e.Caption)
 	if flags&(1<<0) != 0 {
 		x.Vector(e.Stickers)
 	}
-	return x.buf
-}
-
-// inputMediaUploadedThumbDocument#50d88cae flags:# file:InputFile thumb:InputFile mime_type:string attributes:Vector<DocumentAttribute> caption:string stickers:flags.0?Vector<InputDocument> = InputMedia;
-
-const crc_inputMediaUploadedThumbDocument = 0x50d88cae
-
-type TL_inputMediaUploadedThumbDocument struct {
-	Flags      int32
-	File       TL     // file:InputFile
-	Thumb      TL     // thumb:InputFile
-	Mime_type  string // mime_type:string
-	Attributes []TL   // attributes:Vector<DocumentAttribute>
-	Caption    string // caption:string
-	Stickers   []TL   // stickers:flags.0?Vector<InputDocument>
-}
-
-// Encoding TL_inputMediaUploadedThumbDocument
-func (e TL_inputMediaUploadedThumbDocument) encode() []byte {
-	x := NewEncodeBuf(512)
-	x.UInt(crc_inputMediaUploadedThumbDocument)
-	var flags int32
-	if len(e.Stickers) != 0 {
-		flags |= (1 << 0)
-	}
-	x.Int(flags)
-	x.Bytes(e.File.encode())
-	x.Bytes(e.Thumb.encode())
-	x.String(e.Mime_type)
-	x.Vector(e.Attributes)
-	x.String(e.Caption)
-	if flags&(1<<0) != 0 {
-		x.Vector(e.Stickers)
+	if flags&(1<<1) != 0 {
+		x.Int(e.Ttl_seconds)
 	}
 	return x.buf
 }
 
-// inputMediaDocument#1a77f29c Id:InputDocument caption:string = InputMedia;
+// inputMediaDocument#5acb668e flags:# id:InputDocument caption:string ttl_seconds:flags.0?int = InputMedia;
 
-const crc_inputMediaDocument = 0x1a77f29c
+const crc_inputMediaDocument = 0x5acb668e
 
 type TL_inputMediaDocument struct {
-	Id      TL     // Id:InputDocument
-	Caption string // caption:string
+	Flags       int32
+	Id          TL     // id:InputDocument
+	Caption     string // caption:string
+	Ttl_seconds int32  // ttl_seconds:flags.0?int
 }
 
 // Encoding TL_inputMediaDocument
 func (e TL_inputMediaDocument) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_inputMediaDocument)
+	var flags int32
+	if e.Ttl_seconds > 0 {
+		flags |= (1 << 0)
+	}
+	x.Int(flags)
 	x.Bytes(e.Id.encode())
 	x.String(e.Caption)
+	if flags&(1<<0) != 0 {
+		x.Int(e.Ttl_seconds)
+	}
 	return x.buf
 }
 
@@ -467,48 +488,68 @@ func (e TL_inputMediaGifExternal) encode() []byte {
 	return x.buf
 }
 
-// inputMediaPhotoExternal#b55f4f18 url:string caption:string = InputMedia;
+// inputMediaPhotoExternal#922aec1 flags:# url:string caption:string ttl_seconds:flags.0?int = InputMedia;
 
-const crc_inputMediaPhotoExternal = 0xb55f4f18
+const crc_inputMediaPhotoExternal = 0x922aec1
 
 type TL_inputMediaPhotoExternal struct {
-	Url     string // url:string
-	Caption string // caption:string
+	Flags       int32
+	Url         string // url:string
+	Caption     string // caption:string
+	Ttl_seconds int32  // ttl_seconds:flags.0?int
 }
 
 // Encoding TL_inputMediaPhotoExternal
 func (e TL_inputMediaPhotoExternal) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_inputMediaPhotoExternal)
+	var flags int32
+	if e.Ttl_seconds > 0 {
+		flags |= (1 << 0)
+	}
+	x.Int(flags)
 	x.String(e.Url)
 	x.String(e.Caption)
+	if flags&(1<<0) != 0 {
+		x.Int(e.Ttl_seconds)
+	}
 	return x.buf
 }
 
-// inputMediaDocumentExternal#e5e9607c url:string caption:string = InputMedia;
+// inputMediaDocumentExternal#b6f74335 flags:# url:string caption:string ttl_seconds:flags.0?int = InputMedia;
 
-const crc_inputMediaDocumentExternal = 0xe5e9607c
+const crc_inputMediaDocumentExternal = 0xb6f74335
 
 type TL_inputMediaDocumentExternal struct {
-	Url     string // url:string
-	Caption string // caption:string
+	Flags       int32
+	Url         string // url:string
+	Caption     string // caption:string
+	Ttl_seconds int32  // ttl_seconds:flags.0?int
 }
 
 // Encoding TL_inputMediaDocumentExternal
 func (e TL_inputMediaDocumentExternal) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_inputMediaDocumentExternal)
+	var flags int32
+	if e.Ttl_seconds > 0 {
+		flags |= (1 << 0)
+	}
+	x.Int(flags)
 	x.String(e.Url)
 	x.String(e.Caption)
+	if flags&(1<<0) != 0 {
+		x.Int(e.Ttl_seconds)
+	}
 	return x.buf
 }
 
-// inputMediaGame#d33f43f3 Id:InputGame = InputMedia;
+// inputMediaGame#d33f43f3 id:InputGame = InputMedia;
 
 const crc_inputMediaGame = 0xd33f43f3
 
 type TL_inputMediaGame struct {
-	Id TL // Id:InputGame
+	Id TL // id:InputGame
 }
 
 // Encoding TL_inputMediaGame
@@ -585,12 +626,12 @@ func (e TL_inputChatUploadedPhoto) encode() []byte {
 	return x.buf
 }
 
-// inputChatPhoto#8953ad37 Id:InputPhoto = InputChatPhoto;
+// inputChatPhoto#8953ad37 id:InputPhoto = InputChatPhoto;
 
 const crc_inputChatPhoto = 0x8953ad37
 
 type TL_inputChatPhoto struct {
-	Id TL // Id:InputPhoto
+	Id TL // id:InputPhoto
 }
 
 // Encoding TL_inputChatPhoto
@@ -647,12 +688,12 @@ func (e TL_inputPhotoEmpty) encode() []byte {
 	return x.buf
 }
 
-// inputPhoto#fb95c6c4 Id:long access_hash:long = InputPhoto;
+// inputPhoto#fb95c6c4 id:long access_hash:long = InputPhoto;
 
 const crc_inputPhoto = 0xfb95c6c4
 
 type TL_inputPhoto struct {
-	Id          int64 // Id:long
+	Id          int64 // id:long
 	Access_hash int64 // access_hash:long
 }
 
@@ -685,12 +726,12 @@ func (e TL_inputFileLocation) encode() []byte {
 	return x.buf
 }
 
-// inputEncryptedFileLocation#f5235d55 Id:long access_hash:long = InputFileLocation;
+// inputEncryptedFileLocation#f5235d55 id:long access_hash:long = InputFileLocation;
 
 const crc_inputEncryptedFileLocation = 0xf5235d55
 
 type TL_inputEncryptedFileLocation struct {
-	Id          int64 // Id:long
+	Id          int64 // id:long
 	Access_hash int64 // access_hash:long
 }
 
@@ -703,14 +744,14 @@ func (e TL_inputEncryptedFileLocation) encode() []byte {
 	return x.buf
 }
 
-// inputDocumentFileLocation#430f0724 Id:long access_hash:long Version:int = InputFileLocation;
+// inputDocumentFileLocation#430f0724 id:long access_hash:long version:int = InputFileLocation;
 
 const crc_inputDocumentFileLocation = 0x430f0724
 
 type TL_inputDocumentFileLocation struct {
-	Id          int64 // Id:long
+	Id          int64 // id:long
 	Access_hash int64 // access_hash:long
-	Version     int32 // Version:int
+	Version     int32 // version:int
 }
 
 // Encoding TL_inputDocumentFileLocation
@@ -975,12 +1016,12 @@ func (e TL_fileLocation) encode() []byte {
 	return x.buf
 }
 
-// userEmpty#200250ba Id:int = User;
+// userEmpty#200250ba id:int = User;
 
 const crc_userEmpty = 0x200250ba
 
 type TL_userEmpty struct {
-	Id int32 // Id:int
+	Id int32 // id:int
 }
 
 // Encoding TL_userEmpty
@@ -991,9 +1032,9 @@ func (e TL_userEmpty) encode() []byte {
 	return x.buf
 }
 
-// user#d10d979a flags:# self:flags.10?true contact:flags.11?true mutual_contact:flags.12?true deleted:flags.13?true bot:flags.14?true bot_chat_history:flags.15?true bot_nochats:flags.16?true verified:flags.17?true restricted:flags.18?true min:flags.20?true bot_inline_geo:flags.21?true Id:int access_hash:flags.0?long first_name:flags.1?string last_name:flags.2?string username:flags.3?string phone:flags.4?string photo:flags.5?UserProfilePhoto status:flags.6?UserStatus bot_info_version:flags.14?int restriction_reason:flags.18?string bot_inline_placeholder:flags.19?string = User;
+// user#2e13f4c3 flags:# self:flags.10?true contact:flags.11?true mutual_contact:flags.12?true deleted:flags.13?true bot:flags.14?true bot_chat_history:flags.15?true bot_nochats:flags.16?true verified:flags.17?true restricted:flags.18?true min:flags.20?true bot_inline_geo:flags.21?true id:int access_hash:flags.0?long first_name:flags.1?string last_name:flags.2?string username:flags.3?string phone:flags.4?string photo:flags.5?UserProfilePhoto status:flags.6?UserStatus bot_info_version:flags.14?int restriction_reason:flags.18?string bot_inline_placeholder:flags.19?string lang_code:flags.22?string = User;
 
-const crc_user = 0xd10d979a
+const crc_user = 0x2e13f4c3
 
 type TL_user struct {
 	Flags                  int32
@@ -1008,7 +1049,7 @@ type TL_user struct {
 	Restricted             bool   // restricted:flags.18?true
 	Min                    bool   // min:flags.20?true
 	Bot_inline_geo         bool   // bot_inline_geo:flags.21?true
-	Id                     int32  // Id:int
+	Id                     int32  // id:int
 	Access_hash            int64  // access_hash:flags.0?long
 	First_name             string // first_name:flags.1?string
 	Last_name              string // last_name:flags.2?string
@@ -1019,6 +1060,7 @@ type TL_user struct {
 	Bot_info_version       int32  // bot_info_version:flags.14?int
 	Restriction_reason     string // restriction_reason:flags.18?string
 	Bot_inline_placeholder string // bot_inline_placeholder:flags.19?string
+	Lang_code              string // lang_code:flags.22?string
 }
 
 // Encoding TL_user
@@ -1089,6 +1131,9 @@ func (e TL_user) encode() []byte {
 	if e.Bot_inline_placeholder != "" {
 		flags |= (1 << 19)
 	}
+	if e.Lang_code != "" {
+		flags |= (1 << 22)
+	}
 	x.Int(flags)
 	x.Int(e.Id)
 	if flags&(1<<0) != 0 {
@@ -1120,6 +1165,9 @@ func (e TL_user) encode() []byte {
 	}
 	if flags&(1<<19) != 0 {
 		x.String(e.Bot_inline_placeholder)
+	}
+	if flags&(1<<22) != 0 {
+		x.String(e.Lang_code)
 	}
 	return x.buf
 }
@@ -1246,12 +1294,12 @@ func (e TL_userStatusLastMonth) encode() []byte {
 	return x.buf
 }
 
-// chatEmpty#9ba2d800 Id:int = Chat;
+// chatEmpty#9ba2d800 id:int = Chat;
 
 const crc_chatEmpty = 0x9ba2d800
 
 type TL_chatEmpty struct {
-	Id int32 // Id:int
+	Id int32 // id:int
 }
 
 // Encoding TL_chatEmpty
@@ -1262,7 +1310,7 @@ func (e TL_chatEmpty) encode() []byte {
 	return x.buf
 }
 
-// chat#d91cdd54 flags:# creator:flags.0?true kicked:flags.1?true left:flags.2?true admins_enabled:flags.3?true admin:flags.4?true deactivated:flags.5?true Id:int title:string photo:ChatPhoto participants_count:int date:int Version:int migrated_to:flags.6?InputChannel = Chat;
+// chat#d91cdd54 flags:# creator:flags.0?true kicked:flags.1?true left:flags.2?true admins_enabled:flags.3?true admin:flags.4?true deactivated:flags.5?true id:int title:string photo:ChatPhoto participants_count:int date:int version:int migrated_to:flags.6?InputChannel = Chat;
 
 const crc_chat = 0xd91cdd54
 
@@ -1274,12 +1322,12 @@ type TL_chat struct {
 	Admins_enabled     bool   // admins_enabled:flags.3?true
 	Admin              bool   // admin:flags.4?true
 	Deactivated        bool   // deactivated:flags.5?true
-	Id                 int32  // Id:int
+	Id                 int32  // id:int
 	Title              string // title:string
 	Photo              TL     // photo:ChatPhoto
 	Participants_count int32  // participants_count:int
 	Date               int32  // date:int
-	Version            int32  // Version:int
+	Version            int32  // version:int
 	Migrated_to        TL     // migrated_to:flags.6?InputChannel
 }
 
@@ -1322,12 +1370,12 @@ func (e TL_chat) encode() []byte {
 	return x.buf
 }
 
-// chatForbidden#7328bdb Id:int title:string = Chat;
+// chatForbidden#7328bdb id:int title:string = Chat;
 
 const crc_chatForbidden = 0x7328bdb
 
 type TL_chatForbidden struct {
-	Id    int32  // Id:int
+	Id    int32  // id:int
 	Title string // title:string
 }
 
@@ -1340,17 +1388,15 @@ func (e TL_chatForbidden) encode() []byte {
 	return x.buf
 }
 
-// channel#a14dca52 flags:# creator:flags.0?true kicked:flags.1?true left:flags.2?true editor:flags.3?true moderator:flags.4?true broadcast:flags.5?true verified:flags.7?true megagroup:flags.8?true restricted:flags.9?true democracy:flags.10?true signatures:flags.11?true min:flags.12?true Id:int access_hash:flags.13?long title:string username:flags.6?string photo:ChatPhoto date:int Version:int restriction_reason:flags.9?string = Chat;
+// channel#cb44b1c flags:# creator:flags.0?true left:flags.2?true editor:flags.3?true broadcast:flags.5?true verified:flags.7?true megagroup:flags.8?true restricted:flags.9?true democracy:flags.10?true signatures:flags.11?true min:flags.12?true id:int access_hash:flags.13?long title:string username:flags.6?string photo:ChatPhoto date:int version:int restriction_reason:flags.9?string admin_rights:flags.14?ChannelAdminRights banned_rights:flags.15?ChannelBannedRights = Chat;
 
-const crc_channel = 0xa14dca52
+const crc_channel = 0xcb44b1c
 
 type TL_channel struct {
 	Flags              int32
 	Creator            bool   // creator:flags.0?true
-	Kicked             bool   // kicked:flags.1?true
 	Left               bool   // left:flags.2?true
 	Editor             bool   // editor:flags.3?true
-	Moderator          bool   // moderator:flags.4?true
 	Broadcast          bool   // broadcast:flags.5?true
 	Verified           bool   // verified:flags.7?true
 	Megagroup          bool   // megagroup:flags.8?true
@@ -1358,14 +1404,16 @@ type TL_channel struct {
 	Democracy          bool   // democracy:flags.10?true
 	Signatures         bool   // signatures:flags.11?true
 	Min                bool   // min:flags.12?true
-	Id                 int32  // Id:int
+	Id                 int32  // id:int
 	Access_hash        int64  // access_hash:flags.13?long
 	Title              string // title:string
 	Username           string // username:flags.6?string
 	Photo              TL     // photo:ChatPhoto
 	Date               int32  // date:int
-	Version            int32  // Version:int
+	Version            int32  // version:int
 	Restriction_reason string // restriction_reason:flags.9?string
+	Admin_rights       TL     // admin_rights:flags.14?ChannelAdminRights
+	Banned_rights      TL     // banned_rights:flags.15?ChannelBannedRights
 }
 
 // Encoding TL_channel
@@ -1376,17 +1424,11 @@ func (e TL_channel) encode() []byte {
 	if e.Creator {
 		flags |= (1 << 0)
 	}
-	if e.Kicked {
-		flags |= (1 << 1)
-	}
 	if e.Left {
 		flags |= (1 << 2)
 	}
 	if e.Editor {
 		flags |= (1 << 3)
-	}
-	if e.Moderator {
-		flags |= (1 << 4)
 	}
 	if e.Broadcast {
 		flags |= (1 << 5)
@@ -1418,6 +1460,12 @@ func (e TL_channel) encode() []byte {
 	if e.Restriction_reason != "" {
 		flags |= (1 << 9)
 	}
+	if _, ok := (e.Admin_rights).(TL_null); !ok {
+		flags |= (1 << 14)
+	}
+	if _, ok := (e.Banned_rights).(TL_null); !ok {
+		flags |= (1 << 15)
+	}
 	x.Int(flags)
 	x.Int(e.Id)
 	if flags&(1<<13) != 0 {
@@ -1433,20 +1481,27 @@ func (e TL_channel) encode() []byte {
 	if flags&(1<<9) != 0 {
 		x.String(e.Restriction_reason)
 	}
+	if flags&(1<<14) != 0 {
+		x.Bytes(e.Admin_rights.encode())
+	}
+	if flags&(1<<15) != 0 {
+		x.Bytes(e.Banned_rights.encode())
+	}
 	return x.buf
 }
 
-// channelForbidden#8537784f flags:# broadcast:flags.5?true megagroup:flags.8?true Id:int access_hash:long title:string = Chat;
+// channelForbidden#289da732 flags:# broadcast:flags.5?true megagroup:flags.8?true id:int access_hash:long title:string until_date:flags.16?int = Chat;
 
-const crc_channelForbidden = 0x8537784f
+const crc_channelForbidden = 0x289da732
 
 type TL_channelForbidden struct {
 	Flags       int32
 	Broadcast   bool   // broadcast:flags.5?true
 	Megagroup   bool   // megagroup:flags.8?true
-	Id          int32  // Id:int
+	Id          int32  // id:int
 	Access_hash int64  // access_hash:long
 	Title       string // title:string
+	Until_date  int32  // until_date:flags.16?int
 }
 
 // Encoding TL_channelForbidden
@@ -1460,19 +1515,25 @@ func (e TL_channelForbidden) encode() []byte {
 	if e.Megagroup {
 		flags |= (1 << 8)
 	}
+	if e.Until_date > 0 {
+		flags |= (1 << 16)
+	}
 	x.Int(flags)
 	x.Int(e.Id)
 	x.Long(e.Access_hash)
 	x.String(e.Title)
+	if flags&(1<<16) != 0 {
+		x.Int(e.Until_date)
+	}
 	return x.buf
 }
 
-// chatFull#2e02a614 Id:int participants:ChatParticipants chat_photo:Photo notify_settings:PeerNotifySettings exported_invite:ExportedChatInvite bot_info:Vector<BotInfo> = ChatFull;
+// chatFull#2e02a614 id:int participants:ChatParticipants chat_photo:Photo notify_settings:PeerNotifySettings exported_invite:ExportedChatInvite bot_info:Vector<BotInfo> = ChatFull;
 
 const crc_chatFull = 0x2e02a614
 
 type TL_chatFull struct {
-	Id              int32 // Id:int
+	Id              int32 // id:int
 	Participants    TL    // participants:ChatParticipants
 	Chat_photo      TL    // chat_photo:Photo
 	Notify_settings TL    // notify_settings:PeerNotifySettings
@@ -1493,19 +1554,21 @@ func (e TL_chatFull) encode() []byte {
 	return x.buf
 }
 
-// channelFull#c3d5512f flags:# can_view_participants:flags.3?true can_set_username:flags.6?true Id:int about:string participants_count:flags.0?int admins_count:flags.1?int kicked_count:flags.2?int read_inbox_max_id:int read_outbox_max_id:int unread_count:int chat_photo:Photo notify_settings:PeerNotifySettings exported_invite:ExportedChatInvite bot_info:Vector<BotInfo> migrated_from_chat_id:flags.4?int migrated_from_max_id:flags.4?int pinned_msg_id:flags.5?int = ChatFull;
+// channelFull#17f45fcf flags:# can_view_participants:flags.3?true can_set_username:flags.6?true can_set_stickers:flags.7?true id:int about:string participants_count:flags.0?int admins_count:flags.1?int kicked_count:flags.2?int banned_count:flags.2?int read_inbox_max_id:int read_outbox_max_id:int unread_count:int chat_photo:Photo notify_settings:PeerNotifySettings exported_invite:ExportedChatInvite bot_info:Vector<BotInfo> migrated_from_chat_id:flags.4?int migrated_from_max_id:flags.4?int pinned_msg_id:flags.5?int stickerset:flags.8?StickerSet = ChatFull;
 
-const crc_channelFull = 0xc3d5512f
+const crc_channelFull = 0x17f45fcf
 
 type TL_channelFull struct {
 	Flags                 int32
 	Can_view_participants bool   // can_view_participants:flags.3?true
 	Can_set_username      bool   // can_set_username:flags.6?true
-	Id                    int32  // Id:int
+	Can_set_stickers      bool   // can_set_stickers:flags.7?true
+	Id                    int32  // id:int
 	About                 string // about:string
 	Participants_count    int32  // participants_count:flags.0?int
 	Admins_count          int32  // admins_count:flags.1?int
 	Kicked_count          int32  // kicked_count:flags.2?int
+	Banned_count          int32  // banned_count:flags.2?int
 	Read_inbox_max_id     int32  // read_inbox_max_id:int
 	Read_outbox_max_id    int32  // read_outbox_max_id:int
 	Unread_count          int32  // unread_count:int
@@ -1516,6 +1579,7 @@ type TL_channelFull struct {
 	Migrated_from_chat_id int32  // migrated_from_chat_id:flags.4?int
 	Migrated_from_max_id  int32  // migrated_from_max_id:flags.4?int
 	Pinned_msg_id         int32  // pinned_msg_id:flags.5?int
+	Stickerset            TL     // stickerset:flags.8?StickerSet
 }
 
 // Encoding TL_channelFull
@@ -1529,6 +1593,9 @@ func (e TL_channelFull) encode() []byte {
 	if e.Can_set_username {
 		flags |= (1 << 6)
 	}
+	if e.Can_set_stickers {
+		flags |= (1 << 7)
+	}
 	if e.Participants_count > 0 {
 		flags |= (1 << 0)
 	}
@@ -1536,6 +1603,9 @@ func (e TL_channelFull) encode() []byte {
 		flags |= (1 << 1)
 	}
 	if e.Kicked_count > 0 {
+		flags |= (1 << 2)
+	}
+	if e.Banned_count > 0 {
 		flags |= (1 << 2)
 	}
 	if e.Migrated_from_chat_id > 0 {
@@ -1546,6 +1616,9 @@ func (e TL_channelFull) encode() []byte {
 	}
 	if e.Pinned_msg_id > 0 {
 		flags |= (1 << 5)
+	}
+	if _, ok := (e.Stickerset).(TL_null); !ok {
+		flags |= (1 << 8)
 	}
 	x.Int(flags)
 	x.Int(e.Id)
@@ -1558,6 +1631,9 @@ func (e TL_channelFull) encode() []byte {
 	}
 	if flags&(1<<2) != 0 {
 		x.Int(e.Kicked_count)
+	}
+	if flags&(1<<2) != 0 {
+		x.Int(e.Banned_count)
 	}
 	x.Int(e.Read_inbox_max_id)
 	x.Int(e.Read_outbox_max_id)
@@ -1574,6 +1650,9 @@ func (e TL_channelFull) encode() []byte {
 	}
 	if flags&(1<<5) != 0 {
 		x.Int(e.Pinned_msg_id)
+	}
+	if flags&(1<<8) != 0 {
+		x.Bytes(e.Stickerset.encode())
 	}
 	return x.buf
 }
@@ -1660,14 +1739,14 @@ func (e TL_chatParticipantsForbidden) encode() []byte {
 	return x.buf
 }
 
-// chatParticipants#3f460fed chat_id:int participants:Vector<ChatParticipant> Version:int = ChatParticipants;
+// chatParticipants#3f460fed chat_id:int participants:Vector<ChatParticipant> version:int = ChatParticipants;
 
 const crc_chatParticipants = 0x3f460fed
 
 type TL_chatParticipants struct {
 	Chat_id      int32 // chat_id:int
 	Participants []TL  // participants:Vector<ChatParticipant>
-	Version      int32 // Version:int
+	Version      int32 // version:int
 }
 
 // Encoding TL_chatParticipants
@@ -1712,12 +1791,12 @@ func (e TL_chatPhoto) encode() []byte {
 	return x.buf
 }
 
-// messageEmpty#83e5de54 Id:int = Message;
+// messageEmpty#83e5de54 id:int = Message;
 
 const crc_messageEmpty = 0x83e5de54
 
 type TL_messageEmpty struct {
-	Id int32 // Id:int
+	Id int32 // id:int
 }
 
 // Encoding TL_messageEmpty
@@ -1728,9 +1807,9 @@ func (e TL_messageEmpty) encode() []byte {
 	return x.buf
 }
 
-// message#c09be45f flags:# out:flags.1?true mentioned:flags.4?true media_unread:flags.5?true silent:flags.13?true post:flags.14?true Id:int from_id:flags.8?int to_id:Peer fwd_from:flags.2?MessageFwdHeader via_bot_id:flags.11?int reply_to_msg_id:flags.3?int date:int message:string media:flags.9?MessageMedia reply_markup:flags.6?ReplyMarkup entities:flags.7?Vector<MessageEntity> views:flags.10?int edit_date:flags.15?int = Message;
+// message#90dddc11 flags:# out:flags.1?true mentioned:flags.4?true media_unread:flags.5?true silent:flags.13?true post:flags.14?true id:int from_id:flags.8?int to_id:Peer fwd_from:flags.2?MessageFwdHeader via_bot_id:flags.11?int reply_to_msg_id:flags.3?int date:int message:string media:flags.9?MessageMedia reply_markup:flags.6?ReplyMarkup entities:flags.7?Vector<MessageEntity> views:flags.10?int edit_date:flags.15?int post_author:flags.16?string = Message;
 
-const crc_message = 0xc09be45f
+const crc_message = 0x90dddc11
 
 type TL_message struct {
 	Flags           int32
@@ -1739,7 +1818,7 @@ type TL_message struct {
 	Media_unread    bool   // media_unread:flags.5?true
 	Silent          bool   // silent:flags.13?true
 	Post            bool   // post:flags.14?true
-	Id              int32  // Id:int
+	Id              int32  // id:int
 	From_id         int32  // from_id:flags.8?int
 	To_id           TL     // to_id:Peer
 	Fwd_from        TL     // fwd_from:flags.2?MessageFwdHeader
@@ -1752,6 +1831,7 @@ type TL_message struct {
 	Entities        []TL   // entities:flags.7?Vector<MessageEntity>
 	Views           int32  // views:flags.10?int
 	Edit_date       int32  // edit_date:flags.15?int
+	Post_author     string // post_author:flags.16?string
 }
 
 // Encoding TL_message
@@ -1801,6 +1881,9 @@ func (e TL_message) encode() []byte {
 	if e.Edit_date > 0 {
 		flags |= (1 << 15)
 	}
+	if e.Post_author != "" {
+		flags |= (1 << 16)
+	}
 	x.Int(flags)
 	x.Int(e.Id)
 	if flags&(1<<8) != 0 {
@@ -1833,10 +1916,13 @@ func (e TL_message) encode() []byte {
 	if flags&(1<<15) != 0 {
 		x.Int(e.Edit_date)
 	}
+	if flags&(1<<16) != 0 {
+		x.String(e.Post_author)
+	}
 	return x.buf
 }
 
-// messageService#9e19a1f6 flags:# out:flags.1?true mentioned:flags.4?true media_unread:flags.5?true silent:flags.13?true post:flags.14?true Id:int from_id:flags.8?int to_id:Peer reply_to_msg_id:flags.3?int date:int action:MessageAction = Message;
+// messageService#9e19a1f6 flags:# out:flags.1?true mentioned:flags.4?true media_unread:flags.5?true silent:flags.13?true post:flags.14?true id:int from_id:flags.8?int to_id:Peer reply_to_msg_id:flags.3?int date:int action:MessageAction = Message;
 
 const crc_messageService = 0x9e19a1f6
 
@@ -1847,7 +1933,7 @@ type TL_messageService struct {
 	Media_unread    bool  // media_unread:flags.5?true
 	Silent          bool  // silent:flags.13?true
 	Post            bool  // post:flags.14?true
-	Id              int32 // Id:int
+	Id              int32 // id:int
 	From_id         int32 // from_id:flags.8?int
 	To_id           TL    // to_id:Peer
 	Reply_to_msg_id int32 // reply_to_msg_id:flags.3?int
@@ -1909,21 +1995,41 @@ func (e TL_messageMediaEmpty) encode() []byte {
 	return x.buf
 }
 
-// messageMediaPhoto#3d8ce53d photo:Photo caption:string = MessageMedia;
+// messageMediaPhoto#b5223b0f flags:# photo:flags.0?Photo caption:flags.1?string ttl_seconds:flags.2?int = MessageMedia;
 
-const crc_messageMediaPhoto = 0x3d8ce53d
+const crc_messageMediaPhoto = 0xb5223b0f
 
 type TL_messageMediaPhoto struct {
-	Photo   TL     // photo:Photo
-	Caption string // caption:string
+	Flags       int32
+	Photo       TL     // photo:flags.0?Photo
+	Caption     string // caption:flags.1?string
+	Ttl_seconds int32  // ttl_seconds:flags.2?int
 }
 
 // Encoding TL_messageMediaPhoto
 func (e TL_messageMediaPhoto) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_messageMediaPhoto)
-	x.Bytes(e.Photo.encode())
-	x.String(e.Caption)
+	var flags int32
+	if _, ok := (e.Photo).(TL_null); !ok {
+		flags |= (1 << 0)
+	}
+	if e.Caption != "" {
+		flags |= (1 << 1)
+	}
+	if e.Ttl_seconds > 0 {
+		flags |= (1 << 2)
+	}
+	x.Int(flags)
+	if flags&(1<<0) != 0 {
+		x.Bytes(e.Photo.encode())
+	}
+	if flags&(1<<1) != 0 {
+		x.String(e.Caption)
+	}
+	if flags&(1<<2) != 0 {
+		x.Int(e.Ttl_seconds)
+	}
 	return x.buf
 }
 
@@ -1979,21 +2085,41 @@ func (e TL_messageMediaUnsupported) encode() []byte {
 	return x.buf
 }
 
-// messageMediaDocument#f3e02ea8 document:Document caption:string = MessageMedia;
+// messageMediaDocument#7c4414d3 flags:# document:flags.0?Document caption:flags.1?string ttl_seconds:flags.2?int = MessageMedia;
 
-const crc_messageMediaDocument = 0xf3e02ea8
+const crc_messageMediaDocument = 0x7c4414d3
 
 type TL_messageMediaDocument struct {
-	Document TL     // document:Document
-	Caption  string // caption:string
+	Flags       int32
+	Document    TL     // document:flags.0?Document
+	Caption     string // caption:flags.1?string
+	Ttl_seconds int32  // ttl_seconds:flags.2?int
 }
 
 // Encoding TL_messageMediaDocument
 func (e TL_messageMediaDocument) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_messageMediaDocument)
-	x.Bytes(e.Document.encode())
-	x.String(e.Caption)
+	var flags int32
+	if _, ok := (e.Document).(TL_null); !ok {
+		flags |= (1 << 0)
+	}
+	if e.Caption != "" {
+		flags |= (1 << 1)
+	}
+	if e.Ttl_seconds > 0 {
+		flags |= (1 << 2)
+	}
+	x.Int(flags)
+	if flags&(1<<0) != 0 {
+		x.Bytes(e.Document.encode())
+	}
+	if flags&(1<<1) != 0 {
+		x.String(e.Caption)
+	}
+	if flags&(1<<2) != 0 {
+		x.Int(e.Ttl_seconds)
+	}
 	return x.buf
 }
 
@@ -2414,21 +2540,36 @@ func (e TL_messageActionPhoneCall) encode() []byte {
 	return x.buf
 }
 
-// dialog#66ffba14 flags:# pinned:flags.2?true peer:Peer top_message:int read_inbox_max_id:int read_outbox_max_id:int unread_count:int notify_settings:PeerNotifySettings pts:flags.0?int draft:flags.1?DraftMessage = Dialog;
+// messageActionScreenshotTaken#4792929b = MessageAction;
 
-const crc_dialog = 0x66ffba14
+const crc_messageActionScreenshotTaken = 0x4792929b
+
+type TL_messageActionScreenshotTaken struct {
+}
+
+// Encoding TL_messageActionScreenshotTaken
+func (e TL_messageActionScreenshotTaken) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_messageActionScreenshotTaken)
+	return x.buf
+}
+
+// dialog#e4def5db flags:# pinned:flags.2?true peer:Peer top_message:int read_inbox_max_id:int read_outbox_max_id:int unread_count:int unread_mentions_count:int notify_settings:PeerNotifySettings pts:flags.0?int draft:flags.1?DraftMessage = Dialog;
+
+const crc_dialog = 0xe4def5db
 
 type TL_dialog struct {
-	Flags              int32
-	Pinned             bool  // pinned:flags.2?true
-	Peer               TL    // peer:Peer
-	Top_message        int32 // top_message:int
-	Read_inbox_max_id  int32 // read_inbox_max_id:int
-	Read_outbox_max_id int32 // read_outbox_max_id:int
-	Unread_count       int32 // unread_count:int
-	Notify_settings    TL    // notify_settings:PeerNotifySettings
-	Pts                int32 // pts:flags.0?int
-	Draft              TL    // draft:flags.1?DraftMessage
+	Flags                 int32
+	Pinned                bool  // pinned:flags.2?true
+	Peer                  TL    // peer:Peer
+	Top_message           int32 // top_message:int
+	Read_inbox_max_id     int32 // read_inbox_max_id:int
+	Read_outbox_max_id    int32 // read_outbox_max_id:int
+	Unread_count          int32 // unread_count:int
+	Unread_mentions_count int32 // unread_mentions_count:int
+	Notify_settings       TL    // notify_settings:PeerNotifySettings
+	Pts                   int32 // pts:flags.0?int
+	Draft                 TL    // draft:flags.1?DraftMessage
 }
 
 // Encoding TL_dialog
@@ -2451,6 +2592,7 @@ func (e TL_dialog) encode() []byte {
 	x.Int(e.Read_inbox_max_id)
 	x.Int(e.Read_outbox_max_id)
 	x.Int(e.Unread_count)
+	x.Int(e.Unread_mentions_count)
 	x.Bytes(e.Notify_settings.encode())
 	if flags&(1<<0) != 0 {
 		x.Int(e.Pts)
@@ -2461,12 +2603,12 @@ func (e TL_dialog) encode() []byte {
 	return x.buf
 }
 
-// photoEmpty#2331b22d Id:long = Photo;
+// photoEmpty#2331b22d id:long = Photo;
 
 const crc_photoEmpty = 0x2331b22d
 
 type TL_photoEmpty struct {
-	Id int64 // Id:long
+	Id int64 // id:long
 }
 
 // Encoding TL_photoEmpty
@@ -2477,14 +2619,14 @@ func (e TL_photoEmpty) encode() []byte {
 	return x.buf
 }
 
-// photo#9288dd29 flags:# has_stickers:flags.0?true Id:long access_hash:long date:int sizes:Vector<PhotoSize> = Photo;
+// photo#9288dd29 flags:# has_stickers:flags.0?true id:long access_hash:long date:int sizes:Vector<PhotoSize> = Photo;
 
 const crc_photo = 0x9288dd29
 
 type TL_photo struct {
 	Flags        int32
 	Has_stickers bool  // has_stickers:flags.0?true
-	Id           int64 // Id:long
+	Id           int64 // id:long
 	Access_hash  int64 // access_hash:long
 	Date         int32 // date:int
 	Sizes        []TL  // sizes:Vector<PhotoSize>
@@ -2683,12 +2825,12 @@ func (e TL_auth_authorization) encode() []byte {
 	return x.buf
 }
 
-// auth.exportedAuthorization#df969c2d Id:int bytes:bytes = auth.ExportedAuthorization;
+// auth.exportedAuthorization#df969c2d id:int bytes:bytes = auth.ExportedAuthorization;
 
 const crc_auth_exportedAuthorization = 0xdf969c2d
 
 type TL_auth_exportedAuthorization struct {
-	Id    int32  // Id:int
+	Id    int32  // id:int
 	Bytes []byte // bytes:bytes
 }
 
@@ -2908,12 +3050,12 @@ func (e TL_peerSettings) encode() []byte {
 	return x.buf
 }
 
-// wallPaper#ccb03657 Id:int title:string sizes:Vector<PhotoSize> color:int = WallPaper;
+// wallPaper#ccb03657 id:int title:string sizes:Vector<PhotoSize> color:int = WallPaper;
 
 const crc_wallPaper = 0xccb03657
 
 type TL_wallPaper struct {
-	Id    int32  // Id:int
+	Id    int32  // id:int
 	Title string // title:string
 	Sizes []TL   // sizes:Vector<PhotoSize>
 	Color int32  // color:int
@@ -2930,12 +3072,12 @@ func (e TL_wallPaper) encode() []byte {
 	return x.buf
 }
 
-// wallPaperSolid#63117f24 Id:int title:string bg_color:int color:int = WallPaper;
+// wallPaperSolid#63117f24 id:int title:string bg_color:int color:int = WallPaper;
 
 const crc_wallPaperSolid = 0x63117f24
 
 type TL_wallPaperSolid struct {
-	Id       int32  // Id:int
+	Id       int32  // id:int
 	Title    string // title:string
 	Bg_color int32  // bg_color:int
 	Color    int32  // color:int
@@ -3174,13 +3316,14 @@ func (e TL_contacts_contactsNotModified) encode() []byte {
 	return x.buf
 }
 
-// contacts.contacts#6f8b8cb2 contacts:Vector<Contact> users:Vector<User> = contacts.Contacts;
+// contacts.contacts#eae87e42 contacts:Vector<Contact> saved_count:int users:Vector<User> = contacts.Contacts;
 
-const crc_contacts_contacts = 0x6f8b8cb2
+const crc_contacts_contacts = 0xeae87e42
 
 type TL_contacts_contacts struct {
-	Contacts []TL // contacts:Vector<Contact>
-	Users    []TL // users:Vector<User>
+	Contacts    []TL  // contacts:Vector<Contact>
+	Saved_count int32 // saved_count:int
+	Users       []TL  // users:Vector<User>
 }
 
 // Encoding TL_contacts_contacts
@@ -3188,18 +3331,20 @@ func (e TL_contacts_contacts) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_contacts_contacts)
 	x.Vector(e.Contacts)
+	x.Int(e.Saved_count)
 	x.Vector(e.Users)
 	return x.buf
 }
 
-// contacts.importedContacts#ad524315 imported:Vector<ImportedContact> retry_contacts:Vector<long> users:Vector<User> = contacts.ImportedContacts;
+// contacts.importedContacts#77d01c3b imported:Vector<ImportedContact> popular_invites:Vector<PopularContact> retry_contacts:Vector<long> users:Vector<User> = contacts.ImportedContacts;
 
-const crc_contacts_importedContacts = 0xad524315
+const crc_contacts_importedContacts = 0x77d01c3b
 
 type TL_contacts_importedContacts struct {
-	Imported       []TL    // imported:Vector<ImportedContact>
-	Retry_contacts []int64 // retry_contacts:Vector<long>
-	Users          []TL    // users:Vector<User>
+	Imported        []TL    // imported:Vector<ImportedContact>
+	Popular_invites []TL    // popular_invites:Vector<PopularContact>
+	Retry_contacts  []int64 // retry_contacts:Vector<long>
+	Users           []TL    // users:Vector<User>
 }
 
 // Encoding TL_contacts_importedContacts
@@ -3207,6 +3352,7 @@ func (e TL_contacts_importedContacts) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_contacts_importedContacts)
 	x.Vector(e.Imported)
+	x.Vector(e.Popular_invites)
 	x.VectorLong(e.Retry_contacts)
 	x.Vector(e.Users)
 	return x.buf
@@ -3614,6 +3760,48 @@ func (e TL_inputMessagesFilterPhoneCalls) encode() []byte {
 	return x.buf
 }
 
+// inputMessagesFilterRoundVoice#7a7c17a4 = MessagesFilter;
+
+const crc_inputMessagesFilterRoundVoice = 0x7a7c17a4
+
+type TL_inputMessagesFilterRoundVoice struct {
+}
+
+// Encoding TL_inputMessagesFilterRoundVoice
+func (e TL_inputMessagesFilterRoundVoice) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_inputMessagesFilterRoundVoice)
+	return x.buf
+}
+
+// inputMessagesFilterRoundVideo#b549da53 = MessagesFilter;
+
+const crc_inputMessagesFilterRoundVideo = 0xb549da53
+
+type TL_inputMessagesFilterRoundVideo struct {
+}
+
+// Encoding TL_inputMessagesFilterRoundVideo
+func (e TL_inputMessagesFilterRoundVideo) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_inputMessagesFilterRoundVideo)
+	return x.buf
+}
+
+// inputMessagesFilterMyMentions#c1f8e69a = MessagesFilter;
+
+const crc_inputMessagesFilterMyMentions = 0xc1f8e69a
+
+type TL_inputMessagesFilterMyMentions struct {
+}
+
+// Encoding TL_inputMessagesFilterMyMentions
+func (e TL_inputMessagesFilterMyMentions) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_inputMessagesFilterMyMentions)
+	return x.buf
+}
+
 // updateNewMessage#1f2b0afd message:Message pts:int pts_count:int = Update;
 
 const crc_updateNewMessage = 0x1f2b0afd
@@ -3634,12 +3822,12 @@ func (e TL_updateNewMessage) encode() []byte {
 	return x.buf
 }
 
-// updateMessageID#4e90bfd6 Id:int random_id:long = Update;
+// updateMessageID#4e90bfd6 id:int random_id:long = Update;
 
 const crc_updateMessageID = 0x4e90bfd6
 
 type TL_updateMessageID struct {
-	Id        int32 // Id:int
+	Id        int32 // id:int
 	Random_id int64 // random_id:long
 }
 
@@ -3898,7 +4086,7 @@ func (e TL_updateEncryptedMessagesRead) encode() []byte {
 	return x.buf
 }
 
-// updateChatParticipantAdd#ea4b0e5c chat_id:int user_id:int inviter_id:int date:int Version:int = Update;
+// updateChatParticipantAdd#ea4b0e5c chat_id:int user_id:int inviter_id:int date:int version:int = Update;
 
 const crc_updateChatParticipantAdd = 0xea4b0e5c
 
@@ -3907,7 +4095,7 @@ type TL_updateChatParticipantAdd struct {
 	User_id    int32 // user_id:int
 	Inviter_id int32 // inviter_id:int
 	Date       int32 // date:int
-	Version    int32 // Version:int
+	Version    int32 // version:int
 }
 
 // Encoding TL_updateChatParticipantAdd
@@ -3922,14 +4110,14 @@ func (e TL_updateChatParticipantAdd) encode() []byte {
 	return x.buf
 }
 
-// updateChatParticipantDelete#6e5f8c22 chat_id:int user_id:int Version:int = Update;
+// updateChatParticipantDelete#6e5f8c22 chat_id:int user_id:int version:int = Update;
 
 const crc_updateChatParticipantDelete = 0x6e5f8c22
 
 type TL_updateChatParticipantDelete struct {
 	Chat_id int32 // chat_id:int
 	User_id int32 // user_id:int
-	Version int32 // Version:int
+	Version int32 // version:int
 }
 
 // Encoding TL_updateChatParticipantDelete
@@ -4252,13 +4440,13 @@ func (e TL_updateDeleteChannelMessages) encode() []byte {
 	return x.buf
 }
 
-// updateChannelMessageViews#98a12b4b channel_id:int Id:int views:int = Update;
+// updateChannelMessageViews#98a12b4b channel_id:int id:int views:int = Update;
 
 const crc_updateChannelMessageViews = 0x98a12b4b
 
 type TL_updateChannelMessageViews struct {
 	Channel_id int32 // channel_id:int
-	Id         int32 // Id:int
+	Id         int32 // id:int
 	Views      int32 // views:int
 }
 
@@ -4272,14 +4460,14 @@ func (e TL_updateChannelMessageViews) encode() []byte {
 	return x.buf
 }
 
-// updateChatAdmins#6e947941 chat_id:int enabled:Bool Version:int = Update;
+// updateChatAdmins#6e947941 chat_id:int enabled:Bool version:int = Update;
 
 const crc_updateChatAdmins = 0x6e947941
 
 type TL_updateChatAdmins struct {
 	Chat_id int32 // chat_id:int
 	Enabled TL    // enabled:Bool
-	Version int32 // Version:int
+	Version int32 // version:int
 }
 
 // Encoding TL_updateChatAdmins
@@ -4292,7 +4480,7 @@ func (e TL_updateChatAdmins) encode() []byte {
 	return x.buf
 }
 
-// updateChatParticipantAdmin#b6901959 chat_id:int user_id:int is_admin:Bool Version:int = Update;
+// updateChatParticipantAdmin#b6901959 chat_id:int user_id:int is_admin:Bool version:int = Update;
 
 const crc_updateChatParticipantAdmin = 0xb6901959
 
@@ -4300,7 +4488,7 @@ type TL_updateChatParticipantAdmin struct {
 	Chat_id  int32 // chat_id:int
 	User_id  int32 // user_id:int
 	Is_admin TL    // is_admin:Bool
-	Version  int32 // Version:int
+	Version  int32 // version:int
 }
 
 // Encoding TL_updateChatParticipantAdmin
@@ -4413,7 +4601,7 @@ func (e TL_updateBotInlineQuery) encode() []byte {
 	return x.buf
 }
 
-// updateBotInlineSend#e48f964 flags:# user_id:int query:string geo:flags.0?GeoPoint Id:string msg_id:flags.1?InputBotInlineMessageID = Update;
+// updateBotInlineSend#e48f964 flags:# user_id:int query:string geo:flags.0?GeoPoint id:string msg_id:flags.1?InputBotInlineMessageID = Update;
 
 const crc_updateBotInlineSend = 0xe48f964
 
@@ -4422,7 +4610,7 @@ type TL_updateBotInlineSend struct {
 	User_id int32  // user_id:int
 	Query   string // query:string
 	Geo     TL     // geo:flags.0?GeoPoint
-	Id      string // Id:string
+	Id      string // id:string
 	Msg_id  TL     // msg_id:flags.1?InputBotInlineMessageID
 }
 
@@ -4470,13 +4658,13 @@ func (e TL_updateEditChannelMessage) encode() []byte {
 	return x.buf
 }
 
-// updateChannelPinnedMessage#98592475 channel_id:int Id:int = Update;
+// updateChannelPinnedMessage#98592475 channel_id:int id:int = Update;
 
 const crc_updateChannelPinnedMessage = 0x98592475
 
 type TL_updateChannelPinnedMessage struct {
 	Channel_id int32 // channel_id:int
-	Id         int32 // Id:int
+	Id         int32 // id:int
 }
 
 // Encoding TL_updateChannelPinnedMessage
@@ -4864,6 +5052,82 @@ func (e TL_updatePhoneCall) encode() []byte {
 	return x.buf
 }
 
+// updateLangPackTooLong#10c2404b = Update;
+
+const crc_updateLangPackTooLong = 0x10c2404b
+
+type TL_updateLangPackTooLong struct {
+}
+
+// Encoding TL_updateLangPackTooLong
+func (e TL_updateLangPackTooLong) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_updateLangPackTooLong)
+	return x.buf
+}
+
+// updateLangPack#56022f4d difference:LangPackDifference = Update;
+
+const crc_updateLangPack = 0x56022f4d
+
+type TL_updateLangPack struct {
+	Difference TL // difference:LangPackDifference
+}
+
+// Encoding TL_updateLangPack
+func (e TL_updateLangPack) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_updateLangPack)
+	x.Bytes(e.Difference.encode())
+	return x.buf
+}
+
+// updateFavedStickers#e511996d = Update;
+
+const crc_updateFavedStickers = 0xe511996d
+
+type TL_updateFavedStickers struct {
+}
+
+// Encoding TL_updateFavedStickers
+func (e TL_updateFavedStickers) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_updateFavedStickers)
+	return x.buf
+}
+
+// updateChannelReadMessagesContents#89893b45 channel_id:int messages:Vector<int> = Update;
+
+const crc_updateChannelReadMessagesContents = 0x89893b45
+
+type TL_updateChannelReadMessagesContents struct {
+	Channel_id int32   // channel_id:int
+	Messages   []int32 // messages:Vector<int>
+}
+
+// Encoding TL_updateChannelReadMessagesContents
+func (e TL_updateChannelReadMessagesContents) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_updateChannelReadMessagesContents)
+	x.Int(e.Channel_id)
+	x.VectorInt(e.Messages)
+	return x.buf
+}
+
+// updateContactsReset#7084a7be = Update;
+
+const crc_updateContactsReset = 0x7084a7be
+
+type TL_updateContactsReset struct {
+}
+
+// Encoding TL_updateContactsReset
+func (e TL_updateContactsReset) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_updateContactsReset)
+	return x.buf
+}
+
 // updates.state#a56c2a3e pts:int qts:int date:int seq:int unread_count:int = updates.State;
 
 const crc_updates_state = 0xa56c2a3e
@@ -4988,7 +5252,7 @@ func (e TL_updatesTooLong) encode() []byte {
 	return x.buf
 }
 
-// updateShortMessage#914fbf11 flags:# out:flags.1?true mentioned:flags.4?true media_unread:flags.5?true silent:flags.13?true Id:int user_id:int message:string pts:int pts_count:int date:int fwd_from:flags.2?MessageFwdHeader via_bot_id:flags.11?int reply_to_msg_id:flags.3?int entities:flags.7?Vector<MessageEntity> = Updates;
+// updateShortMessage#914fbf11 flags:# out:flags.1?true mentioned:flags.4?true media_unread:flags.5?true silent:flags.13?true id:int user_id:int message:string pts:int pts_count:int date:int fwd_from:flags.2?MessageFwdHeader via_bot_id:flags.11?int reply_to_msg_id:flags.3?int entities:flags.7?Vector<MessageEntity> = Updates;
 
 const crc_updateShortMessage = 0x914fbf11
 
@@ -4998,7 +5262,7 @@ type TL_updateShortMessage struct {
 	Mentioned       bool   // mentioned:flags.4?true
 	Media_unread    bool   // media_unread:flags.5?true
 	Silent          bool   // silent:flags.13?true
-	Id              int32  // Id:int
+	Id              int32  // id:int
 	User_id         int32  // user_id:int
 	Message         string // message:string
 	Pts             int32  // pts:int
@@ -5061,7 +5325,7 @@ func (e TL_updateShortMessage) encode() []byte {
 	return x.buf
 }
 
-// updateShortChatMessage#16812688 flags:# out:flags.1?true mentioned:flags.4?true media_unread:flags.5?true silent:flags.13?true Id:int from_id:int chat_id:int message:string pts:int pts_count:int date:int fwd_from:flags.2?MessageFwdHeader via_bot_id:flags.11?int reply_to_msg_id:flags.3?int entities:flags.7?Vector<MessageEntity> = Updates;
+// updateShortChatMessage#16812688 flags:# out:flags.1?true mentioned:flags.4?true media_unread:flags.5?true silent:flags.13?true id:int from_id:int chat_id:int message:string pts:int pts_count:int date:int fwd_from:flags.2?MessageFwdHeader via_bot_id:flags.11?int reply_to_msg_id:flags.3?int entities:flags.7?Vector<MessageEntity> = Updates;
 
 const crc_updateShortChatMessage = 0x16812688
 
@@ -5071,7 +5335,7 @@ type TL_updateShortChatMessage struct {
 	Mentioned       bool   // mentioned:flags.4?true
 	Media_unread    bool   // media_unread:flags.5?true
 	Silent          bool   // silent:flags.13?true
-	Id              int32  // Id:int
+	Id              int32  // id:int
 	From_id         int32  // from_id:int
 	Chat_id         int32  // chat_id:int
 	Message         string // message:string
@@ -5204,14 +5468,14 @@ func (e TL_updates) encode() []byte {
 	return x.buf
 }
 
-// updateShortSentMessage#11f1331c flags:# out:flags.1?true Id:int pts:int pts_count:int date:int media:flags.9?MessageMedia entities:flags.7?Vector<MessageEntity> = Updates;
+// updateShortSentMessage#11f1331c flags:# out:flags.1?true id:int pts:int pts_count:int date:int media:flags.9?MessageMedia entities:flags.7?Vector<MessageEntity> = Updates;
 
 const crc_updateShortSentMessage = 0x11f1331c
 
 type TL_updateShortSentMessage struct {
 	Flags     int32
 	Out       bool  // out:flags.1?true
-	Id        int32 // Id:int
+	Id        int32 // id:int
 	Pts       int32 // pts:int
 	Pts_count int32 // pts_count:int
 	Date      int32 // date:int
@@ -5323,7 +5587,31 @@ func (e TL_upload_file) encode() []byte {
 	return x.buf
 }
 
-// dcOption#5d8c6cc flags:# ipv6:flags.0?true media_only:flags.1?true tcpo_only:flags.2?true Id:int ip_address:string port:int = DcOption;
+// upload.fileCdnRedirect#ea52fe5a dc_id:int file_token:bytes encryption_key:bytes encryption_iv:bytes cdn_file_hashes:Vector<CdnFileHash> = upload.File;
+
+const crc_upload_fileCdnRedirect = 0xea52fe5a
+
+type TL_upload_fileCdnRedirect struct {
+	Dc_id           int32  // dc_id:int
+	File_token      []byte // file_token:bytes
+	Encryption_key  []byte // encryption_key:bytes
+	Encryption_iv   []byte // encryption_iv:bytes
+	Cdn_file_hashes []TL   // cdn_file_hashes:Vector<CdnFileHash>
+}
+
+// Encoding TL_upload_fileCdnRedirect
+func (e TL_upload_fileCdnRedirect) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_upload_fileCdnRedirect)
+	x.Int(e.Dc_id)
+	x.Bytes(e.File_token)
+	x.Bytes(e.Encryption_key)
+	x.Bytes(e.Encryption_iv)
+	x.Vector(e.Cdn_file_hashes)
+	return x.buf
+}
+
+// dcOption#5d8c6cc flags:# ipv6:flags.0?true media_only:flags.1?true tcpo_only:flags.2?true cdn:flags.3?true static:flags.4?true id:int ip_address:string port:int = DcOption;
 
 const crc_dcOption = 0x5d8c6cc
 
@@ -5332,7 +5620,9 @@ type TL_dcOption struct {
 	Ipv6       bool   // ipv6:flags.0?true
 	Media_only bool   // media_only:flags.1?true
 	Tcpo_only  bool   // tcpo_only:flags.2?true
-	Id         int32  // Id:int
+	Cdn        bool   // cdn:flags.3?true
+	Static     bool   // static:flags.4?true
+	Id         int32  // id:int
 	Ip_address string // ip_address:string
 	Port       int32  // port:int
 }
@@ -5351,6 +5641,12 @@ func (e TL_dcOption) encode() []byte {
 	if e.Tcpo_only {
 		flags |= (1 << 2)
 	}
+	if e.Cdn {
+		flags |= (1 << 3)
+	}
+	if e.Static {
+		flags |= (1 << 4)
+	}
 	x.Int(flags)
 	x.Int(e.Id)
 	x.String(e.Ip_address)
@@ -5358,9 +5654,9 @@ func (e TL_dcOption) encode() []byte {
 	return x.buf
 }
 
-// config#cb601684 flags:# phonecalls_enabled:flags.1?true date:int expires:int test_mode:Bool this_dc:int dc_options:Vector<DcOption> chat_size_max:int megagroup_size_max:int forwarded_count_max:int online_update_period_ms:int offline_blur_timeout_ms:int offline_idle_timeout_ms:int online_cloud_timeout_ms:int notify_cloud_delay_ms:int notify_default_delay_ms:int chat_big_size:int push_chat_period_ms:int push_chat_limit:int saved_gifs_limit:int edit_time_limit:int rating_e_decay:int stickers_recent_limit:int tmp_sessions:flags.0?int pinned_dialogs_count_max:int call_receive_timeout_ms:int call_ring_timeout_ms:int call_connect_timeout_ms:int call_packet_timeout_ms:int me_url_prefix:string disabled_features:Vector<DisabledFeature> = Config;
+// config#8df376a4 flags:# phonecalls_enabled:flags.1?true date:int expires:int test_mode:Bool this_dc:int dc_options:Vector<DcOption> chat_size_max:int megagroup_size_max:int forwarded_count_max:int online_update_period_ms:int offline_blur_timeout_ms:int offline_idle_timeout_ms:int online_cloud_timeout_ms:int notify_cloud_delay_ms:int notify_default_delay_ms:int chat_big_size:int push_chat_period_ms:int push_chat_limit:int saved_gifs_limit:int edit_time_limit:int rating_e_decay:int stickers_recent_limit:int stickers_faved_limit:int tmp_sessions:flags.0?int pinned_dialogs_count_max:int call_receive_timeout_ms:int call_ring_timeout_ms:int call_connect_timeout_ms:int call_packet_timeout_ms:int me_url_prefix:string suggested_lang_code:flags.2?string lang_pack_version:flags.2?int disabled_features:Vector<DisabledFeature> = Config;
 
-const crc_config = 0xcb601684
+const crc_config = 0x8df376a4
 
 type TL_config struct {
 	Flags                    int32
@@ -5386,6 +5682,7 @@ type TL_config struct {
 	Edit_time_limit          int32  // edit_time_limit:int
 	Rating_e_decay           int32  // rating_e_decay:int
 	Stickers_recent_limit    int32  // stickers_recent_limit:int
+	Stickers_faved_limit     int32  // stickers_faved_limit:int
 	Tmp_sessions             int32  // tmp_sessions:flags.0?int
 	Pinned_dialogs_count_max int32  // pinned_dialogs_count_max:int
 	Call_receive_timeout_ms  int32  // call_receive_timeout_ms:int
@@ -5393,6 +5690,8 @@ type TL_config struct {
 	Call_connect_timeout_ms  int32  // call_connect_timeout_ms:int
 	Call_packet_timeout_ms   int32  // call_packet_timeout_ms:int
 	Me_url_prefix            string // me_url_prefix:string
+	Suggested_lang_code      string // suggested_lang_code:flags.2?string
+	Lang_pack_version        int32  // lang_pack_version:flags.2?int
 	Disabled_features        []TL   // disabled_features:Vector<DisabledFeature>
 }
 
@@ -5406,6 +5705,12 @@ func (e TL_config) encode() []byte {
 	}
 	if e.Tmp_sessions > 0 {
 		flags |= (1 << 0)
+	}
+	if e.Suggested_lang_code != "" {
+		flags |= (1 << 2)
+	}
+	if e.Lang_pack_version > 0 {
+		flags |= (1 << 2)
 	}
 	x.Int(flags)
 	x.Int(e.Date)
@@ -5429,6 +5734,7 @@ func (e TL_config) encode() []byte {
 	x.Int(e.Edit_time_limit)
 	x.Int(e.Rating_e_decay)
 	x.Int(e.Stickers_recent_limit)
+	x.Int(e.Stickers_faved_limit)
 	if flags&(1<<0) != 0 {
 		x.Int(e.Tmp_sessions)
 	}
@@ -5438,6 +5744,12 @@ func (e TL_config) encode() []byte {
 	x.Int(e.Call_connect_timeout_ms)
 	x.Int(e.Call_packet_timeout_ms)
 	x.String(e.Me_url_prefix)
+	if flags&(1<<2) != 0 {
+		x.String(e.Suggested_lang_code)
+	}
+	if flags&(1<<2) != 0 {
+		x.Int(e.Lang_pack_version)
+	}
 	x.Vector(e.Disabled_features)
 	return x.buf
 }
@@ -5462,12 +5774,12 @@ func (e TL_nearestDc) encode() []byte {
 	return x.buf
 }
 
-// help.appUpdate#8987f311 Id:int critical:Bool url:string text:string = help.AppUpdate;
+// help.appUpdate#8987f311 id:int critical:Bool url:string text:string = help.AppUpdate;
 
 const crc_help_appUpdate = 0x8987f311
 
 type TL_help_appUpdate struct {
-	Id       int32  // Id:int
+	Id       int32  // id:int
 	Critical TL     // critical:Bool
 	Url      string // url:string
 	Text     string // text:string
@@ -5514,12 +5826,12 @@ func (e TL_help_inviteText) encode() []byte {
 	return x.buf
 }
 
-// encryptedChatEmpty#ab7ec0a0 Id:int = EncryptedChat;
+// encryptedChatEmpty#ab7ec0a0 id:int = EncryptedChat;
 
 const crc_encryptedChatEmpty = 0xab7ec0a0
 
 type TL_encryptedChatEmpty struct {
-	Id int32 // Id:int
+	Id int32 // id:int
 }
 
 // Encoding TL_encryptedChatEmpty
@@ -5530,12 +5842,12 @@ func (e TL_encryptedChatEmpty) encode() []byte {
 	return x.buf
 }
 
-// encryptedChatWaiting#3bf703dc Id:int access_hash:long date:int admin_id:int participant_id:int = EncryptedChat;
+// encryptedChatWaiting#3bf703dc id:int access_hash:long date:int admin_id:int participant_id:int = EncryptedChat;
 
 const crc_encryptedChatWaiting = 0x3bf703dc
 
 type TL_encryptedChatWaiting struct {
-	Id             int32 // Id:int
+	Id             int32 // id:int
 	Access_hash    int64 // access_hash:long
 	Date           int32 // date:int
 	Admin_id       int32 // admin_id:int
@@ -5554,12 +5866,12 @@ func (e TL_encryptedChatWaiting) encode() []byte {
 	return x.buf
 }
 
-// encryptedChatRequested#c878527e Id:int access_hash:long date:int admin_id:int participant_id:int g_a:bytes = EncryptedChat;
+// encryptedChatRequested#c878527e id:int access_hash:long date:int admin_id:int participant_id:int g_a:bytes = EncryptedChat;
 
 const crc_encryptedChatRequested = 0xc878527e
 
 type TL_encryptedChatRequested struct {
-	Id             int32  // Id:int
+	Id             int32  // id:int
 	Access_hash    int64  // access_hash:long
 	Date           int32  // date:int
 	Admin_id       int32  // admin_id:int
@@ -5580,12 +5892,12 @@ func (e TL_encryptedChatRequested) encode() []byte {
 	return x.buf
 }
 
-// encryptedChat#fa56ce36 Id:int access_hash:long date:int admin_id:int participant_id:int g_a_or_b:bytes key_fingerprint:long = EncryptedChat;
+// encryptedChat#fa56ce36 id:int access_hash:long date:int admin_id:int participant_id:int g_a_or_b:bytes key_fingerprint:long = EncryptedChat;
 
 const crc_encryptedChat = 0xfa56ce36
 
 type TL_encryptedChat struct {
-	Id              int32  // Id:int
+	Id              int32  // id:int
 	Access_hash     int64  // access_hash:long
 	Date            int32  // date:int
 	Admin_id        int32  // admin_id:int
@@ -5608,12 +5920,12 @@ func (e TL_encryptedChat) encode() []byte {
 	return x.buf
 }
 
-// encryptedChatDiscarded#13d6dd27 Id:int = EncryptedChat;
+// encryptedChatDiscarded#13d6dd27 id:int = EncryptedChat;
 
 const crc_encryptedChatDiscarded = 0x13d6dd27
 
 type TL_encryptedChatDiscarded struct {
-	Id int32 // Id:int
+	Id int32 // id:int
 }
 
 // Encoding TL_encryptedChatDiscarded
@@ -5656,12 +5968,12 @@ func (e TL_encryptedFileEmpty) encode() []byte {
 	return x.buf
 }
 
-// encryptedFile#4a70994c Id:long access_hash:long size:int dc_id:int key_fingerprint:int = EncryptedFile;
+// encryptedFile#4a70994c id:long access_hash:long size:int dc_id:int key_fingerprint:int = EncryptedFile;
 
 const crc_encryptedFile = 0x4a70994c
 
 type TL_encryptedFile struct {
-	Id              int64 // Id:long
+	Id              int64 // id:long
 	Access_hash     int64 // access_hash:long
 	Size            int32 // size:int
 	Dc_id           int32 // dc_id:int
@@ -5694,12 +6006,12 @@ func (e TL_inputEncryptedFileEmpty) encode() []byte {
 	return x.buf
 }
 
-// inputEncryptedFileUploaded#64bd0306 Id:long parts:int md5_checksum:string key_fingerprint:int = InputEncryptedFile;
+// inputEncryptedFileUploaded#64bd0306 id:long parts:int md5_checksum:string key_fingerprint:int = InputEncryptedFile;
 
 const crc_inputEncryptedFileUploaded = 0x64bd0306
 
 type TL_inputEncryptedFileUploaded struct {
-	Id              int64  // Id:long
+	Id              int64  // id:long
 	Parts           int32  // parts:int
 	Md5_checksum    string // md5_checksum:string
 	Key_fingerprint int32  // key_fingerprint:int
@@ -5716,12 +6028,12 @@ func (e TL_inputEncryptedFileUploaded) encode() []byte {
 	return x.buf
 }
 
-// inputEncryptedFile#5a17b5e5 Id:long access_hash:long = InputEncryptedFile;
+// inputEncryptedFile#5a17b5e5 id:long access_hash:long = InputEncryptedFile;
 
 const crc_inputEncryptedFile = 0x5a17b5e5
 
 type TL_inputEncryptedFile struct {
-	Id          int64 // Id:long
+	Id          int64 // id:long
 	Access_hash int64 // access_hash:long
 }
 
@@ -5734,12 +6046,12 @@ func (e TL_inputEncryptedFile) encode() []byte {
 	return x.buf
 }
 
-// inputEncryptedFileBigUploaded#2dc173c8 Id:long parts:int key_fingerprint:int = InputEncryptedFile;
+// inputEncryptedFileBigUploaded#2dc173c8 id:long parts:int key_fingerprint:int = InputEncryptedFile;
 
 const crc_inputEncryptedFileBigUploaded = 0x2dc173c8
 
 type TL_inputEncryptedFileBigUploaded struct {
-	Id              int64 // Id:long
+	Id              int64 // id:long
 	Parts           int32 // parts:int
 	Key_fingerprint int32 // key_fingerprint:int
 }
@@ -5816,14 +6128,14 @@ func (e TL_messages_dhConfigNotModified) encode() []byte {
 	return x.buf
 }
 
-// messages.dhConfig#2c221edd g:int p:bytes Version:int random:bytes = messages.DhConfig;
+// messages.dhConfig#2c221edd g:int p:bytes version:int random:bytes = messages.DhConfig;
 
 const crc_messages_dhConfig = 0x2c221edd
 
 type TL_messages_dhConfig struct {
 	G       int32  // g:int
 	P       []byte // p:bytes
-	Version int32  // Version:int
+	Version int32  // version:int
 	Random  []byte // random:bytes
 }
 
@@ -5886,12 +6198,12 @@ func (e TL_inputDocumentEmpty) encode() []byte {
 	return x.buf
 }
 
-// inputDocument#18798952 Id:long access_hash:long = InputDocument;
+// inputDocument#18798952 id:long access_hash:long = InputDocument;
 
 const crc_inputDocument = 0x18798952
 
 type TL_inputDocument struct {
-	Id          int64 // Id:long
+	Id          int64 // id:long
 	Access_hash int64 // access_hash:long
 }
 
@@ -5904,12 +6216,12 @@ func (e TL_inputDocument) encode() []byte {
 	return x.buf
 }
 
-// documentEmpty#36f8c871 Id:long = Document;
+// documentEmpty#36f8c871 id:long = Document;
 
 const crc_documentEmpty = 0x36f8c871
 
 type TL_documentEmpty struct {
-	Id int64 // Id:long
+	Id int64 // id:long
 }
 
 // Encoding TL_documentEmpty
@@ -5920,19 +6232,19 @@ func (e TL_documentEmpty) encode() []byte {
 	return x.buf
 }
 
-// document#87232bc7 Id:long access_hash:long date:int mime_type:string size:int thumb:PhotoSize dc_id:int Version:int attributes:Vector<DocumentAttribute> = Document;
+// document#87232bc7 id:long access_hash:long date:int mime_type:string size:int thumb:PhotoSize dc_id:int version:int attributes:Vector<DocumentAttribute> = Document;
 
 const crc_document = 0x87232bc7
 
 type TL_document struct {
-	Id          int64  // Id:long
+	Id          int64  // id:long
 	Access_hash int64  // access_hash:long
 	Date        int32  // date:int
 	Mime_type   string // mime_type:string
 	Size        int32  // size:int
 	Thumb       TL     // thumb:PhotoSize
 	Dc_id       int32  // dc_id:int
-	Version     int32  // Version:int
+	Version     int32  // version:int
 	Attributes  []TL   // attributes:Vector<DocumentAttribute>
 }
 
@@ -6187,6 +6499,36 @@ type TL_sendMessageGamePlayAction struct {
 func (e TL_sendMessageGamePlayAction) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_sendMessageGamePlayAction)
+	return x.buf
+}
+
+// sendMessageRecordRoundAction#88f27fbc = SendMessageAction;
+
+const crc_sendMessageRecordRoundAction = 0x88f27fbc
+
+type TL_sendMessageRecordRoundAction struct {
+}
+
+// Encoding TL_sendMessageRecordRoundAction
+func (e TL_sendMessageRecordRoundAction) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_sendMessageRecordRoundAction)
+	return x.buf
+}
+
+// sendMessageUploadRoundAction#243e1c66 progress:int = SendMessageAction;
+
+const crc_sendMessageUploadRoundAction = 0x243e1c66
+
+type TL_sendMessageUploadRoundAction struct {
+	Progress int32 // progress:int
+}
+
+// Encoding TL_sendMessageUploadRoundAction
+func (e TL_sendMessageUploadRoundAction) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_sendMessageUploadRoundAction)
+	x.Int(e.Progress)
 	return x.buf
 }
 
@@ -6568,20 +6910,27 @@ func (e TL_documentAttributeSticker) encode() []byte {
 	return x.buf
 }
 
-// documentAttributeVideo#5910cccb duration:int w:int h:int = DocumentAttribute;
+// documentAttributeVideo#ef02ce6 flags:# round_message:flags.0?true duration:int w:int h:int = DocumentAttribute;
 
-const crc_documentAttributeVideo = 0x5910cccb
+const crc_documentAttributeVideo = 0xef02ce6
 
 type TL_documentAttributeVideo struct {
-	Duration int32 // duration:int
-	W        int32 // w:int
-	H        int32 // h:int
+	Flags         int32
+	Round_message bool  // round_message:flags.0?true
+	Duration      int32 // duration:int
+	W             int32 // w:int
+	H             int32 // h:int
 }
 
 // Encoding TL_documentAttributeVideo
 func (e TL_documentAttributeVideo) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_documentAttributeVideo)
+	var flags int32
+	if e.Round_message {
+		flags |= (1 << 0)
+	}
+	x.Int(flags)
 	x.Int(e.Duration)
 	x.Int(e.W)
 	x.Int(e.H)
@@ -6676,12 +7025,12 @@ func (e TL_messages_stickersNotModified) encode() []byte {
 	return x.buf
 }
 
-// messages.stickers#8a8ecd32 Hash:string stickers:Vector<Document> = messages.Stickers;
+// messages.stickers#8a8ecd32 hash:string stickers:Vector<Document> = messages.Stickers;
 
 const crc_messages_stickers = 0x8a8ecd32
 
 type TL_messages_stickers struct {
-	Hash     string // Hash:string
+	Hash     string // hash:string
 	Stickers []TL   // stickers:Vector<Document>
 }
 
@@ -6726,12 +7075,12 @@ func (e TL_messages_allStickersNotModified) encode() []byte {
 	return x.buf
 }
 
-// messages.allStickers#edfd405f Hash:int sets:Vector<StickerSet> = messages.AllStickers;
+// messages.allStickers#edfd405f hash:int sets:Vector<StickerSet> = messages.AllStickers;
 
 const crc_messages_allStickers = 0xedfd405f
 
 type TL_messages_allStickers struct {
-	Hash int32 // Hash:int
+	Hash int32 // hash:int
 	Sets []TL  // sets:Vector<StickerSet>
 }
 
@@ -6836,12 +7185,12 @@ func (e TL_contactLinkContact) encode() []byte {
 	return x.buf
 }
 
-// webPageEmpty#eb1477e8 Id:long = WebPage;
+// webPageEmpty#eb1477e8 id:long = WebPage;
 
 const crc_webPageEmpty = 0xeb1477e8
 
 type TL_webPageEmpty struct {
-	Id int64 // Id:long
+	Id int64 // id:long
 }
 
 // Encoding TL_webPageEmpty
@@ -6852,12 +7201,12 @@ func (e TL_webPageEmpty) encode() []byte {
 	return x.buf
 }
 
-// webPagePending#c586da1c Id:long date:int = WebPage;
+// webPagePending#c586da1c id:long date:int = WebPage;
 
 const crc_webPagePending = 0xc586da1c
 
 type TL_webPagePending struct {
-	Id   int64 // Id:long
+	Id   int64 // id:long
 	Date int32 // date:int
 }
 
@@ -6870,16 +7219,16 @@ func (e TL_webPagePending) encode() []byte {
 	return x.buf
 }
 
-// webPage#5f07b4bc flags:# Id:long url:string display_url:string Hash:int type:flags.0?string site_name:flags.1?string title:flags.2?string description:flags.3?string photo:flags.4?Photo embed_url:flags.5?string embed_type:flags.5?string embed_width:flags.6?int embed_height:flags.6?int duration:flags.7?int author:flags.8?string document:flags.9?Document cached_page:flags.10?Page = WebPage;
+// webPage#5f07b4bc flags:# id:long url:string display_url:string hash:int type:flags.0?string site_name:flags.1?string title:flags.2?string description:flags.3?string photo:flags.4?Photo embed_url:flags.5?string embed_type:flags.5?string embed_width:flags.6?int embed_height:flags.6?int duration:flags.7?int author:flags.8?string document:flags.9?Document cached_page:flags.10?Page = WebPage;
 
 const crc_webPage = 0x5f07b4bc
 
 type TL_webPage struct {
 	Flags        int32
-	Id           int64  // Id:long
+	Id           int64  // id:long
 	Url          string // url:string
 	Display_url  string // display_url:string
-	Hash         int32  // Hash:int
+	Hash         int32  // hash:int
 	Code_type    string // type:flags.0?string
 	Site_name    string // site_name:flags.1?string
 	Title        string // title:flags.2?string
@@ -7000,12 +7349,12 @@ func (e TL_webPageNotModified) encode() []byte {
 	return x.buf
 }
 
-// authorization#7bf2e6f6 Hash:long flags:int device_model:string platform:string system_version:string api_id:int app_name:string app_version:string date_created:int date_active:int ip:string country:string region:string = Authorization;
+// authorization#7bf2e6f6 hash:long flags:int device_model:string platform:string system_version:string api_id:int app_name:string app_version:string date_created:int date_active:int ip:string country:string region:string = Authorization;
 
 const crc_authorization = 0x7bf2e6f6
 
 type TL_authorization struct {
-	Hash           int64  // Hash:long
+	Hash           int64  // hash:long
 	Flags          int32  // flags:int
 	Device_model   string // device_model:string
 	Platform       string // platform:string
@@ -7175,12 +7524,12 @@ func (e TL_auth_passwordRecovery) encode() []byte {
 	return x.buf
 }
 
-// receivedNotifyMessage#a384b779 Id:int flags:int = ReceivedNotifyMessage;
+// receivedNotifyMessage#a384b779 id:int flags:int = ReceivedNotifyMessage;
 
 const crc_receivedNotifyMessage = 0xa384b779
 
 type TL_receivedNotifyMessage struct {
-	Id    int32 // Id:int
+	Id    int32 // id:int
 	Flags int32 // flags:int
 }
 
@@ -7299,12 +7648,12 @@ func (e TL_inputStickerSetEmpty) encode() []byte {
 	return x.buf
 }
 
-// inputStickerSetID#9de7a269 Id:long access_hash:long = InputStickerSet;
+// inputStickerSetID#9de7a269 id:long access_hash:long = InputStickerSet;
 
 const crc_inputStickerSetID = 0x9de7a269
 
 type TL_inputStickerSetID struct {
-	Id          int64 // Id:long
+	Id          int64 // id:long
 	Access_hash int64 // access_hash:long
 }
 
@@ -7333,7 +7682,7 @@ func (e TL_inputStickerSetShortName) encode() []byte {
 	return x.buf
 }
 
-// stickerSet#cd303b41 flags:# installed:flags.0?true archived:flags.1?true official:flags.2?true masks:flags.3?true Id:long access_hash:long title:string short_name:string count:int Hash:int = StickerSet;
+// stickerSet#cd303b41 flags:# installed:flags.0?true archived:flags.1?true official:flags.2?true masks:flags.3?true id:long access_hash:long title:string short_name:string count:int hash:int = StickerSet;
 
 const crc_stickerSet = 0xcd303b41
 
@@ -7343,12 +7692,12 @@ type TL_stickerSet struct {
 	Archived    bool   // archived:flags.1?true
 	Official    bool   // official:flags.2?true
 	Masks       bool   // masks:flags.3?true
-	Id          int64  // Id:long
+	Id          int64  // id:long
 	Access_hash int64  // access_hash:long
 	Title       string // title:string
 	Short_name  string // short_name:string
 	Count       int32  // count:int
-	Hash        int32  // Hash:int
+	Hash        int32  // hash:int
 }
 
 // Encoding TL_stickerSet
@@ -7848,14 +8197,14 @@ func (e TL_messageEntityCode) encode() []byte {
 	return x.buf
 }
 
-// messageEntityPre#73924be0 offset:int length:int Language:string = MessageEntity;
+// messageEntityPre#73924be0 offset:int length:int language:string = MessageEntity;
 
 const crc_messageEntityPre = 0x73924be0
 
 type TL_messageEntityPre struct {
 	Offset   int32  // offset:int
 	Length   int32  // length:int
-	Language string // Language:string
+	Language string // language:string
 }
 
 // Encoding TL_messageEntityPre
@@ -8028,22 +8377,23 @@ func (e TL_updates_channelDifferenceEmpty) encode() []byte {
 	return x.buf
 }
 
-// updates.channelDifferenceTooLong#410dee07 flags:# final:flags.0?true pts:int timeout:flags.1?int top_message:int read_inbox_max_id:int read_outbox_max_id:int unread_count:int messages:Vector<Message> chats:Vector<Chat> users:Vector<User> = updates.ChannelDifference;
+// updates.channelDifferenceTooLong#6a9d7b35 flags:# final:flags.0?true pts:int timeout:flags.1?int top_message:int read_inbox_max_id:int read_outbox_max_id:int unread_count:int unread_mentions_count:int messages:Vector<Message> chats:Vector<Chat> users:Vector<User> = updates.ChannelDifference;
 
-const crc_updates_channelDifferenceTooLong = 0x410dee07
+const crc_updates_channelDifferenceTooLong = 0x6a9d7b35
 
 type TL_updates_channelDifferenceTooLong struct {
-	Flags              int32
-	Final              bool  // final:flags.0?true
-	Pts                int32 // pts:int
-	Timeout            int32 // timeout:flags.1?int
-	Top_message        int32 // top_message:int
-	Read_inbox_max_id  int32 // read_inbox_max_id:int
-	Read_outbox_max_id int32 // read_outbox_max_id:int
-	Unread_count       int32 // unread_count:int
-	Messages           []TL  // messages:Vector<Message>
-	Chats              []TL  // chats:Vector<Chat>
-	Users              []TL  // users:Vector<User>
+	Flags                 int32
+	Final                 bool  // final:flags.0?true
+	Pts                   int32 // pts:int
+	Timeout               int32 // timeout:flags.1?int
+	Top_message           int32 // top_message:int
+	Read_inbox_max_id     int32 // read_inbox_max_id:int
+	Read_outbox_max_id    int32 // read_outbox_max_id:int
+	Unread_count          int32 // unread_count:int
+	Unread_mentions_count int32 // unread_mentions_count:int
+	Messages              []TL  // messages:Vector<Message>
+	Chats                 []TL  // chats:Vector<Chat>
+	Users                 []TL  // users:Vector<User>
 }
 
 // Encoding TL_updates_channelDifferenceTooLong
@@ -8066,6 +8416,7 @@ func (e TL_updates_channelDifferenceTooLong) encode() []byte {
 	x.Int(e.Read_inbox_max_id)
 	x.Int(e.Read_outbox_max_id)
 	x.Int(e.Unread_count)
+	x.Int(e.Unread_mentions_count)
 	x.Vector(e.Messages)
 	x.Vector(e.Chats)
 	x.Vector(e.Users)
@@ -8185,66 +8536,6 @@ func (e TL_channelParticipantSelf) encode() []byte {
 	return x.buf
 }
 
-// channelParticipantModerator#91057fef user_id:int inviter_id:int date:int = ChannelParticipant;
-
-const crc_channelParticipantModerator = 0x91057fef
-
-type TL_channelParticipantModerator struct {
-	User_id    int32 // user_id:int
-	Inviter_id int32 // inviter_id:int
-	Date       int32 // date:int
-}
-
-// Encoding TL_channelParticipantModerator
-func (e TL_channelParticipantModerator) encode() []byte {
-	x := NewEncodeBuf(512)
-	x.UInt(crc_channelParticipantModerator)
-	x.Int(e.User_id)
-	x.Int(e.Inviter_id)
-	x.Int(e.Date)
-	return x.buf
-}
-
-// channelParticipantEditor#98192d61 user_id:int inviter_id:int date:int = ChannelParticipant;
-
-const crc_channelParticipantEditor = 0x98192d61
-
-type TL_channelParticipantEditor struct {
-	User_id    int32 // user_id:int
-	Inviter_id int32 // inviter_id:int
-	Date       int32 // date:int
-}
-
-// Encoding TL_channelParticipantEditor
-func (e TL_channelParticipantEditor) encode() []byte {
-	x := NewEncodeBuf(512)
-	x.UInt(crc_channelParticipantEditor)
-	x.Int(e.User_id)
-	x.Int(e.Inviter_id)
-	x.Int(e.Date)
-	return x.buf
-}
-
-// channelParticipantKicked#8cc5e69a user_id:int kicked_by:int date:int = ChannelParticipant;
-
-const crc_channelParticipantKicked = 0x8cc5e69a
-
-type TL_channelParticipantKicked struct {
-	User_id   int32 // user_id:int
-	Kicked_by int32 // kicked_by:int
-	Date      int32 // date:int
-}
-
-// Encoding TL_channelParticipantKicked
-func (e TL_channelParticipantKicked) encode() []byte {
-	x := NewEncodeBuf(512)
-	x.UInt(crc_channelParticipantKicked)
-	x.Int(e.User_id)
-	x.Int(e.Kicked_by)
-	x.Int(e.Date)
-	return x.buf
-}
-
 // channelParticipantCreator#e3e2e1f9 user_id:int = ChannelParticipant;
 
 const crc_channelParticipantCreator = 0xe3e2e1f9
@@ -8258,6 +8549,66 @@ func (e TL_channelParticipantCreator) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_channelParticipantCreator)
 	x.Int(e.User_id)
+	return x.buf
+}
+
+// channelParticipantAdmin#a82fa898 flags:# can_edit:flags.0?true user_id:int inviter_id:int promoted_by:int date:int admin_rights:ChannelAdminRights = ChannelParticipant;
+
+const crc_channelParticipantAdmin = 0xa82fa898
+
+type TL_channelParticipantAdmin struct {
+	Flags        int32
+	Can_edit     bool  // can_edit:flags.0?true
+	User_id      int32 // user_id:int
+	Inviter_id   int32 // inviter_id:int
+	Promoted_by  int32 // promoted_by:int
+	Date         int32 // date:int
+	Admin_rights TL    // admin_rights:ChannelAdminRights
+}
+
+// Encoding TL_channelParticipantAdmin
+func (e TL_channelParticipantAdmin) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelParticipantAdmin)
+	var flags int32
+	if e.Can_edit {
+		flags |= (1 << 0)
+	}
+	x.Int(flags)
+	x.Int(e.User_id)
+	x.Int(e.Inviter_id)
+	x.Int(e.Promoted_by)
+	x.Int(e.Date)
+	x.Bytes(e.Admin_rights.encode())
+	return x.buf
+}
+
+// channelParticipantBanned#222c1886 flags:# left:flags.0?true user_id:int kicked_by:int date:int banned_rights:ChannelBannedRights = ChannelParticipant;
+
+const crc_channelParticipantBanned = 0x222c1886
+
+type TL_channelParticipantBanned struct {
+	Flags         int32
+	Left          bool  // left:flags.0?true
+	User_id       int32 // user_id:int
+	Kicked_by     int32 // kicked_by:int
+	Date          int32 // date:int
+	Banned_rights TL    // banned_rights:ChannelBannedRights
+}
+
+// Encoding TL_channelParticipantBanned
+func (e TL_channelParticipantBanned) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelParticipantBanned)
+	var flags int32
+	if e.Left {
+		flags |= (1 << 0)
+	}
+	x.Int(flags)
+	x.Int(e.User_id)
+	x.Int(e.Kicked_by)
+	x.Int(e.Date)
+	x.Bytes(e.Banned_rights.encode())
 	return x.buf
 }
 
@@ -8289,17 +8640,19 @@ func (e TL_channelParticipantsAdmins) encode() []byte {
 	return x.buf
 }
 
-// channelParticipantsKicked#3c37bb7a = ChannelParticipantsFilter;
+// channelParticipantsKicked#a3b54985 q:string = ChannelParticipantsFilter;
 
-const crc_channelParticipantsKicked = 0x3c37bb7a
+const crc_channelParticipantsKicked = 0xa3b54985
 
 type TL_channelParticipantsKicked struct {
+	Q string // q:string
 }
 
 // Encoding TL_channelParticipantsKicked
 func (e TL_channelParticipantsKicked) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_channelParticipantsKicked)
+	x.String(e.Q)
 	return x.buf
 }
 
@@ -8317,45 +8670,35 @@ func (e TL_channelParticipantsBots) encode() []byte {
 	return x.buf
 }
 
-// channelRoleEmpty#b285a0c6 = ChannelParticipantRole;
+// channelParticipantsBanned#1427a5e1 q:string = ChannelParticipantsFilter;
 
-const crc_channelRoleEmpty = 0xb285a0c6
+const crc_channelParticipantsBanned = 0x1427a5e1
 
-type TL_channelRoleEmpty struct {
+type TL_channelParticipantsBanned struct {
+	Q string // q:string
 }
 
-// Encoding TL_channelRoleEmpty
-func (e TL_channelRoleEmpty) encode() []byte {
+// Encoding TL_channelParticipantsBanned
+func (e TL_channelParticipantsBanned) encode() []byte {
 	x := NewEncodeBuf(512)
-	x.UInt(crc_channelRoleEmpty)
+	x.UInt(crc_channelParticipantsBanned)
+	x.String(e.Q)
 	return x.buf
 }
 
-// channelRoleModerator#9618d975 = ChannelParticipantRole;
+// channelParticipantsSearch#656ac4b q:string = ChannelParticipantsFilter;
 
-const crc_channelRoleModerator = 0x9618d975
+const crc_channelParticipantsSearch = 0x656ac4b
 
-type TL_channelRoleModerator struct {
+type TL_channelParticipantsSearch struct {
+	Q string // q:string
 }
 
-// Encoding TL_channelRoleModerator
-func (e TL_channelRoleModerator) encode() []byte {
+// Encoding TL_channelParticipantsSearch
+func (e TL_channelParticipantsSearch) encode() []byte {
 	x := NewEncodeBuf(512)
-	x.UInt(crc_channelRoleModerator)
-	return x.buf
-}
-
-// channelRoleEditor#820bfe8c = ChannelParticipantRole;
-
-const crc_channelRoleEditor = 0x820bfe8c
-
-type TL_channelRoleEditor struct {
-}
-
-// Encoding TL_channelRoleEditor
-func (e TL_channelRoleEditor) encode() []byte {
-	x := NewEncodeBuf(512)
-	x.UInt(crc_channelRoleEditor)
+	x.UInt(crc_channelParticipantsSearch)
+	x.String(e.Q)
 	return x.buf
 }
 
@@ -8491,12 +8834,12 @@ func (e TL_messages_savedGifsNotModified) encode() []byte {
 	return x.buf
 }
 
-// messages.savedGifs#2e0709a5 Hash:int gifs:Vector<Document> = messages.SavedGifs;
+// messages.savedGifs#2e0709a5 hash:int gifs:Vector<Document> = messages.SavedGifs;
 
 const crc_messages_savedGifs = 0x2e0709a5
 
 type TL_messages_savedGifs struct {
-	Hash int32 // Hash:int
+	Hash int32 // hash:int
 	Gifs []TL  // gifs:Vector<Document>
 }
 
@@ -8686,13 +9029,13 @@ func (e TL_inputBotInlineMessageGame) encode() []byte {
 	return x.buf
 }
 
-// inputBotInlineResult#2cbbe15a flags:# Id:string type:string title:flags.1?string description:flags.2?string url:flags.3?string thumb_url:flags.4?string content_url:flags.5?string content_type:flags.5?string w:flags.6?int h:flags.6?int duration:flags.7?int send_message:InputBotInlineMessage = InputBotInlineResult;
+// inputBotInlineResult#2cbbe15a flags:# id:string type:string title:flags.1?string description:flags.2?string url:flags.3?string thumb_url:flags.4?string content_url:flags.5?string content_type:flags.5?string w:flags.6?int h:flags.6?int duration:flags.7?int send_message:InputBotInlineMessage = InputBotInlineResult;
 
 const crc_inputBotInlineResult = 0x2cbbe15a
 
 type TL_inputBotInlineResult struct {
 	Flags        int32
-	Id           string // Id:string
+	Id           string // id:string
 	Code_type    string // type:string
 	Title        string // title:flags.1?string
 	Description  string // description:flags.2?string
@@ -8772,12 +9115,12 @@ func (e TL_inputBotInlineResult) encode() []byte {
 	return x.buf
 }
 
-// inputBotInlineResultPhoto#a8d864a7 Id:string type:string photo:InputPhoto send_message:InputBotInlineMessage = InputBotInlineResult;
+// inputBotInlineResultPhoto#a8d864a7 id:string type:string photo:InputPhoto send_message:InputBotInlineMessage = InputBotInlineResult;
 
 const crc_inputBotInlineResultPhoto = 0xa8d864a7
 
 type TL_inputBotInlineResultPhoto struct {
-	Id           string // Id:string
+	Id           string // id:string
 	Code_type    string // type:string
 	Photo        TL     // photo:InputPhoto
 	Send_message TL     // send_message:InputBotInlineMessage
@@ -8794,13 +9137,13 @@ func (e TL_inputBotInlineResultPhoto) encode() []byte {
 	return x.buf
 }
 
-// inputBotInlineResultDocument#fff8fdc4 flags:# Id:string type:string title:flags.1?string description:flags.2?string document:InputDocument send_message:InputBotInlineMessage = InputBotInlineResult;
+// inputBotInlineResultDocument#fff8fdc4 flags:# id:string type:string title:flags.1?string description:flags.2?string document:InputDocument send_message:InputBotInlineMessage = InputBotInlineResult;
 
 const crc_inputBotInlineResultDocument = 0xfff8fdc4
 
 type TL_inputBotInlineResultDocument struct {
 	Flags        int32
-	Id           string // Id:string
+	Id           string // id:string
 	Code_type    string // type:string
 	Title        string // title:flags.1?string
 	Description  string // description:flags.2?string
@@ -8833,12 +9176,12 @@ func (e TL_inputBotInlineResultDocument) encode() []byte {
 	return x.buf
 }
 
-// inputBotInlineResultGame#4fa417f2 Id:string short_name:string send_message:InputBotInlineMessage = InputBotInlineResult;
+// inputBotInlineResultGame#4fa417f2 id:string short_name:string send_message:InputBotInlineMessage = InputBotInlineResult;
 
 const crc_inputBotInlineResultGame = 0x4fa417f2
 
 type TL_inputBotInlineResultGame struct {
-	Id           string // Id:string
+	Id           string // id:string
 	Short_name   string // short_name:string
 	Send_message TL     // send_message:InputBotInlineMessage
 }
@@ -9006,13 +9349,13 @@ func (e TL_botInlineMessageMediaContact) encode() []byte {
 	return x.buf
 }
 
-// botInlineResult#9bebaeb9 flags:# Id:string type:string title:flags.1?string description:flags.2?string url:flags.3?string thumb_url:flags.4?string content_url:flags.5?string content_type:flags.5?string w:flags.6?int h:flags.6?int duration:flags.7?int send_message:BotInlineMessage = BotInlineResult;
+// botInlineResult#9bebaeb9 flags:# id:string type:string title:flags.1?string description:flags.2?string url:flags.3?string thumb_url:flags.4?string content_url:flags.5?string content_type:flags.5?string w:flags.6?int h:flags.6?int duration:flags.7?int send_message:BotInlineMessage = BotInlineResult;
 
 const crc_botInlineResult = 0x9bebaeb9
 
 type TL_botInlineResult struct {
 	Flags        int32
-	Id           string // Id:string
+	Id           string // id:string
 	Code_type    string // type:string
 	Title        string // title:flags.1?string
 	Description  string // description:flags.2?string
@@ -9092,13 +9435,13 @@ func (e TL_botInlineResult) encode() []byte {
 	return x.buf
 }
 
-// botInlineMediaResult#17db940b flags:# Id:string type:string photo:flags.0?Photo document:flags.1?Document title:flags.2?string description:flags.3?string send_message:BotInlineMessage = BotInlineResult;
+// botInlineMediaResult#17db940b flags:# id:string type:string photo:flags.0?Photo document:flags.1?Document title:flags.2?string description:flags.3?string send_message:BotInlineMessage = BotInlineResult;
 
 const crc_botInlineMediaResult = 0x17db940b
 
 type TL_botInlineMediaResult struct {
 	Flags        int32
-	Id           string // Id:string
+	Id           string // id:string
 	Code_type    string // type:string
 	Photo        TL     // photo:flags.0?Photo
 	Document     TL     // document:flags.1?Document
@@ -9200,16 +9543,17 @@ func (e TL_exportedMessageLink) encode() []byte {
 	return x.buf
 }
 
-// messageFwdHeader#c786ddcb flags:# from_id:flags.0?int date:int channel_id:flags.1?int channel_post:flags.2?int = MessageFwdHeader;
+// messageFwdHeader#fadff4ac flags:# from_id:flags.0?int date:int channel_id:flags.1?int channel_post:flags.2?int post_author:flags.3?string = MessageFwdHeader;
 
-const crc_messageFwdHeader = 0xc786ddcb
+const crc_messageFwdHeader = 0xfadff4ac
 
 type TL_messageFwdHeader struct {
 	Flags        int32
-	From_id      int32 // from_id:flags.0?int
-	Date         int32 // date:int
-	Channel_id   int32 // channel_id:flags.1?int
-	Channel_post int32 // channel_post:flags.2?int
+	From_id      int32  // from_id:flags.0?int
+	Date         int32  // date:int
+	Channel_id   int32  // channel_id:flags.1?int
+	Channel_post int32  // channel_post:flags.2?int
+	Post_author  string // post_author:flags.3?string
 }
 
 // Encoding TL_messageFwdHeader
@@ -9226,6 +9570,9 @@ func (e TL_messageFwdHeader) encode() []byte {
 	if e.Channel_post > 0 {
 		flags |= (1 << 2)
 	}
+	if e.Post_author != "" {
+		flags |= (1 << 3)
+	}
 	x.Int(flags)
 	if flags&(1<<0) != 0 {
 		x.Int(e.From_id)
@@ -9236,6 +9583,9 @@ func (e TL_messageFwdHeader) encode() []byte {
 	}
 	if flags&(1<<2) != 0 {
 		x.Int(e.Channel_post)
+	}
+	if flags&(1<<3) != 0 {
+		x.String(e.Post_author)
 	}
 	return x.buf
 }
@@ -9408,13 +9758,13 @@ func (e TL_messages_messageEditData) encode() []byte {
 	return x.buf
 }
 
-// inputBotInlineMessageID#890c3d89 dc_id:int Id:long access_hash:long = InputBotInlineMessageID;
+// inputBotInlineMessageID#890c3d89 dc_id:int id:long access_hash:long = InputBotInlineMessageID;
 
 const crc_inputBotInlineMessageID = 0x890c3d89
 
 type TL_inputBotInlineMessageID struct {
 	Dc_id       int32 // dc_id:int
-	Id          int64 // Id:long
+	Id          int64 // id:long
 	Access_hash int64 // access_hash:long
 }
 
@@ -9558,6 +9908,20 @@ func (e TL_topPeerCategoryChannels) encode() []byte {
 	return x.buf
 }
 
+// topPeerCategoryPhoneCalls#1e76a78c = TopPeerCategory;
+
+const crc_topPeerCategoryPhoneCalls = 0x1e76a78c
+
+type TL_topPeerCategoryPhoneCalls struct {
+}
+
+// Encoding TL_topPeerCategoryPhoneCalls
+func (e TL_topPeerCategoryPhoneCalls) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_topPeerCategoryPhoneCalls)
+	return x.buf
+}
+
 // topPeerCategoryPeers#fb834291 category:TopPeerCategory count:int peers:Vector<TopPeer> = TopPeerCategoryPeers;
 
 const crc_topPeerCategoryPeers = 0xfb834291
@@ -9679,12 +10043,12 @@ func (e TL_messages_featuredStickersNotModified) encode() []byte {
 	return x.buf
 }
 
-// messages.featuredStickers#f89d88e5 Hash:int sets:Vector<StickerSetCovered> unread:Vector<long> = messages.FeaturedStickers;
+// messages.featuredStickers#f89d88e5 hash:int sets:Vector<StickerSetCovered> unread:Vector<long> = messages.FeaturedStickers;
 
 const crc_messages_featuredStickers = 0xf89d88e5
 
 type TL_messages_featuredStickers struct {
-	Hash   int32   // Hash:int
+	Hash   int32   // hash:int
 	Sets   []TL    // sets:Vector<StickerSetCovered>
 	Unread []int64 // unread:Vector<long>
 }
@@ -9713,12 +10077,12 @@ func (e TL_messages_recentStickersNotModified) encode() []byte {
 	return x.buf
 }
 
-// messages.recentStickers#5ce20970 Hash:int stickers:Vector<Document> = messages.RecentStickers;
+// messages.recentStickers#5ce20970 hash:int stickers:Vector<Document> = messages.RecentStickers;
 
 const crc_messages_recentStickers = 0x5ce20970
 
 type TL_messages_recentStickers struct {
-	Hash     int32 // Hash:int
+	Hash     int32 // hash:int
 	Stickers []TL  // stickers:Vector<Document>
 }
 
@@ -9837,12 +10201,12 @@ func (e TL_maskCoords) encode() []byte {
 	return x.buf
 }
 
-// inputStickeredMediaPhoto#4a992157 Id:InputPhoto = InputStickeredMedia;
+// inputStickeredMediaPhoto#4a992157 id:InputPhoto = InputStickeredMedia;
 
 const crc_inputStickeredMediaPhoto = 0x4a992157
 
 type TL_inputStickeredMediaPhoto struct {
-	Id TL // Id:InputPhoto
+	Id TL // id:InputPhoto
 }
 
 // Encoding TL_inputStickeredMediaPhoto
@@ -9853,12 +10217,12 @@ func (e TL_inputStickeredMediaPhoto) encode() []byte {
 	return x.buf
 }
 
-// inputStickeredMediaDocument#438865b Id:InputDocument = InputStickeredMedia;
+// inputStickeredMediaDocument#438865b id:InputDocument = InputStickeredMedia;
 
 const crc_inputStickeredMediaDocument = 0x438865b
 
 type TL_inputStickeredMediaDocument struct {
-	Id TL // Id:InputDocument
+	Id TL // id:InputDocument
 }
 
 // Encoding TL_inputStickeredMediaDocument
@@ -9869,13 +10233,13 @@ func (e TL_inputStickeredMediaDocument) encode() []byte {
 	return x.buf
 }
 
-// game#bdf9653b flags:# Id:long access_hash:long short_name:string title:string description:string photo:Photo document:flags.0?Document = Game;
+// game#bdf9653b flags:# id:long access_hash:long short_name:string title:string description:string photo:Photo document:flags.0?Document = Game;
 
 const crc_game = 0xbdf9653b
 
 type TL_game struct {
 	Flags       int32
-	Id          int64  // Id:long
+	Id          int64  // id:long
 	Access_hash int64  // access_hash:long
 	Short_name  string // short_name:string
 	Title       string // title:string
@@ -9905,12 +10269,12 @@ func (e TL_game) encode() []byte {
 	return x.buf
 }
 
-// inputGameID#32c3e77 Id:long access_hash:long = InputGame;
+// inputGameID#32c3e77 id:long access_hash:long = InputGame;
 
 const crc_inputGameID = 0x32c3e77
 
 type TL_inputGameID struct {
-	Id          int64 // Id:long
+	Id          int64 // id:long
 	Access_hash int64 // access_hash:long
 }
 
@@ -10255,13 +10619,13 @@ func (e TL_pageBlockParagraph) encode() []byte {
 	return x.buf
 }
 
-// pageBlockPreformatted#c070d93e text:RichText Language:string = PageBlock;
+// pageBlockPreformatted#c070d93e text:RichText language:string = PageBlock;
 
 const crc_pageBlockPreformatted = 0xc070d93e
 
 type TL_pageBlockPreformatted struct {
 	Text     TL     // text:RichText
-	Language string // Language:string
+	Language string // language:string
 }
 
 // Encoding TL_pageBlockPreformatted
@@ -10552,14 +10916,48 @@ func (e TL_pageBlockSlideshow) encode() []byte {
 	return x.buf
 }
 
-// pagePart#8dee6c44 blocks:Vector<PageBlock> photos:Vector<Photo> videos:Vector<Document> = Page;
+// pageBlockChannel#ef1751b5 channel:Chat = PageBlock;
 
-const crc_pagePart = 0x8dee6c44
+const crc_pageBlockChannel = 0xef1751b5
+
+type TL_pageBlockChannel struct {
+	Channel TL // channel:Chat
+}
+
+// Encoding TL_pageBlockChannel
+func (e TL_pageBlockChannel) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_pageBlockChannel)
+	x.Bytes(e.Channel.encode())
+	return x.buf
+}
+
+// pageBlockAudio#31b81a7f audio_id:long caption:RichText = PageBlock;
+
+const crc_pageBlockAudio = 0x31b81a7f
+
+type TL_pageBlockAudio struct {
+	Audio_id int64 // audio_id:long
+	Caption  TL    // caption:RichText
+}
+
+// Encoding TL_pageBlockAudio
+func (e TL_pageBlockAudio) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_pageBlockAudio)
+	x.Long(e.Audio_id)
+	x.Bytes(e.Caption.encode())
+	return x.buf
+}
+
+// pagePart#8e3f9ebe blocks:Vector<PageBlock> photos:Vector<Photo> documents:Vector<Document> = Page;
+
+const crc_pagePart = 0x8e3f9ebe
 
 type TL_pagePart struct {
-	Blocks []TL // blocks:Vector<PageBlock>
-	Photos []TL // photos:Vector<Photo>
-	Videos []TL // videos:Vector<Document>
+	Blocks    []TL // blocks:Vector<PageBlock>
+	Photos    []TL // photos:Vector<Photo>
+	Documents []TL // documents:Vector<Document>
 }
 
 // Encoding TL_pagePart
@@ -10568,18 +10966,18 @@ func (e TL_pagePart) encode() []byte {
 	x.UInt(crc_pagePart)
 	x.Vector(e.Blocks)
 	x.Vector(e.Photos)
-	x.Vector(e.Videos)
+	x.Vector(e.Documents)
 	return x.buf
 }
 
-// pageFull#d7a19d69 blocks:Vector<PageBlock> photos:Vector<Photo> videos:Vector<Document> = Page;
+// pageFull#556ec7aa blocks:Vector<PageBlock> photos:Vector<Photo> documents:Vector<Document> = Page;
 
-const crc_pageFull = 0xd7a19d69
+const crc_pageFull = 0x556ec7aa
 
 type TL_pageFull struct {
-	Blocks []TL // blocks:Vector<PageBlock>
-	Photos []TL // photos:Vector<Photo>
-	Videos []TL // videos:Vector<Document>
+	Blocks    []TL // blocks:Vector<PageBlock>
+	Photos    []TL // photos:Vector<Photo>
+	Documents []TL // documents:Vector<Document>
 }
 
 // Encoding TL_pageFull
@@ -10588,7 +10986,7 @@ func (e TL_pageFull) encode() []byte {
 	x.UInt(crc_pageFull)
 	x.Vector(e.Blocks)
 	x.Vector(e.Photos)
-	x.Vector(e.Videos)
+	x.Vector(e.Documents)
 	return x.buf
 }
 
@@ -10727,12 +11125,12 @@ func (e TL_invoice) encode() []byte {
 	return x.buf
 }
 
-// paymentCharge#ea02c27e Id:string provider_charge_id:string = PaymentCharge;
+// paymentCharge#ea02c27e id:string provider_charge_id:string = PaymentCharge;
 
 const crc_paymentCharge = 0xea02c27e
 
 type TL_paymentCharge struct {
-	Id                 string // Id:string
+	Id                 string // id:string
 	Provider_charge_id string // provider_charge_id:string
 }
 
@@ -10816,12 +11214,12 @@ func (e TL_paymentRequestedInfo) encode() []byte {
 	return x.buf
 }
 
-// paymentSavedCredentialsCard#cdc27a1f Id:string title:string = PaymentSavedCredentials;
+// paymentSavedCredentialsCard#cdc27a1f id:string title:string = PaymentSavedCredentials;
 
 const crc_paymentSavedCredentialsCard = 0xcdc27a1f
 
 type TL_paymentSavedCredentialsCard struct {
-	Id    string // Id:string
+	Id    string // id:string
 	Title string // title:string
 }
 
@@ -10987,13 +11385,13 @@ func (e TL_payments_paymentForm) encode() []byte {
 	return x.buf
 }
 
-// payments.validatedRequestedInfo#d1451883 flags:# Id:flags.0?string shipping_options:flags.1?Vector<ShippingOption> = payments.ValidatedRequestedInfo;
+// payments.validatedRequestedInfo#d1451883 flags:# id:flags.0?string shipping_options:flags.1?Vector<ShippingOption> = payments.ValidatedRequestedInfo;
 
 const crc_payments_validatedRequestedInfo = 0xd1451883
 
 type TL_payments_validatedRequestedInfo struct {
 	Flags            int32
-	Id               string // Id:flags.0?string
+	Id               string // id:flags.0?string
 	Shipping_options []TL   // shipping_options:flags.1?Vector<ShippingOption>
 }
 
@@ -11125,12 +11523,12 @@ func (e TL_payments_savedInfo) encode() []byte {
 	return x.buf
 }
 
-// inputPaymentCredentialsSaved#c10eb2cf Id:string tmp_password:bytes = InputPaymentCredentials;
+// inputPaymentCredentialsSaved#c10eb2cf id:string tmp_password:bytes = InputPaymentCredentials;
 
 const crc_inputPaymentCredentialsSaved = 0xc10eb2cf
 
 type TL_inputPaymentCredentialsSaved struct {
-	Id           string // Id:string
+	Id           string // id:string
 	Tmp_password []byte // tmp_password:bytes
 }
 
@@ -11184,12 +11582,12 @@ func (e TL_account_tmpPassword) encode() []byte {
 	return x.buf
 }
 
-// shippingOption#b6213cdf Id:string title:string prices:Vector<LabeledPrice> = ShippingOption;
+// shippingOption#b6213cdf id:string title:string prices:Vector<LabeledPrice> = ShippingOption;
 
 const crc_shippingOption = 0xb6213cdf
 
 type TL_shippingOption struct {
-	Id     string // Id:string
+	Id     string // id:string
 	Title  string // title:string
 	Prices []TL   // prices:Vector<LabeledPrice>
 }
@@ -11204,12 +11602,40 @@ func (e TL_shippingOption) encode() []byte {
 	return x.buf
 }
 
-// inputPhoneCall#1e36fded Id:long access_hash:long = InputPhoneCall;
+// inputStickerSetItem#ffa0a496 flags:# document:InputDocument emoji:string mask_coords:flags.0?MaskCoords = InputStickerSetItem;
+
+const crc_inputStickerSetItem = 0xffa0a496
+
+type TL_inputStickerSetItem struct {
+	Flags       int32
+	Document    TL     // document:InputDocument
+	Emoji       string // emoji:string
+	Mask_coords TL     // mask_coords:flags.0?MaskCoords
+}
+
+// Encoding TL_inputStickerSetItem
+func (e TL_inputStickerSetItem) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_inputStickerSetItem)
+	var flags int32
+	if _, ok := (e.Mask_coords).(TL_null); !ok {
+		flags |= (1 << 0)
+	}
+	x.Int(flags)
+	x.Bytes(e.Document.encode())
+	x.String(e.Emoji)
+	if flags&(1<<0) != 0 {
+		x.Bytes(e.Mask_coords.encode())
+	}
+	return x.buf
+}
+
+// inputPhoneCall#1e36fded id:long access_hash:long = InputPhoneCall;
 
 const crc_inputPhoneCall = 0x1e36fded
 
 type TL_inputPhoneCall struct {
-	Id          int64 // Id:long
+	Id          int64 // id:long
 	Access_hash int64 // access_hash:long
 }
 
@@ -11222,12 +11648,12 @@ func (e TL_inputPhoneCall) encode() []byte {
 	return x.buf
 }
 
-// phoneCallEmpty#5366c915 Id:long = PhoneCall;
+// phoneCallEmpty#5366c915 id:long = PhoneCall;
 
 const crc_phoneCallEmpty = 0x5366c915
 
 type TL_phoneCallEmpty struct {
-	Id int64 // Id:long
+	Id int64 // id:long
 }
 
 // Encoding TL_phoneCallEmpty
@@ -11238,13 +11664,13 @@ func (e TL_phoneCallEmpty) encode() []byte {
 	return x.buf
 }
 
-// phoneCallWaiting#1b8f4ad1 flags:# Id:long access_hash:long date:int admin_id:int participant_id:int protocol:PhoneCallProtocol receive_date:flags.0?int = PhoneCall;
+// phoneCallWaiting#1b8f4ad1 flags:# id:long access_hash:long date:int admin_id:int participant_id:int protocol:PhoneCallProtocol receive_date:flags.0?int = PhoneCall;
 
 const crc_phoneCallWaiting = 0x1b8f4ad1
 
 type TL_phoneCallWaiting struct {
 	Flags          int32
-	Id             int64 // Id:long
+	Id             int64 // id:long
 	Access_hash    int64 // access_hash:long
 	Date           int32 // date:int
 	Admin_id       int32 // admin_id:int
@@ -11274,12 +11700,12 @@ func (e TL_phoneCallWaiting) encode() []byte {
 	return x.buf
 }
 
-// phoneCallRequested#83761ce4 Id:long access_hash:long date:int admin_id:int participant_id:int g_a_hash:bytes protocol:PhoneCallProtocol = PhoneCall;
+// phoneCallRequested#83761ce4 id:long access_hash:long date:int admin_id:int participant_id:int g_a_hash:bytes protocol:PhoneCallProtocol = PhoneCall;
 
 const crc_phoneCallRequested = 0x83761ce4
 
 type TL_phoneCallRequested struct {
-	Id             int64  // Id:long
+	Id             int64  // id:long
 	Access_hash    int64  // access_hash:long
 	Date           int32  // date:int
 	Admin_id       int32  // admin_id:int
@@ -11302,12 +11728,12 @@ func (e TL_phoneCallRequested) encode() []byte {
 	return x.buf
 }
 
-// phoneCallAccepted#6d003d3f Id:long access_hash:long date:int admin_id:int participant_id:int g_b:bytes protocol:PhoneCallProtocol = PhoneCall;
+// phoneCallAccepted#6d003d3f id:long access_hash:long date:int admin_id:int participant_id:int g_b:bytes protocol:PhoneCallProtocol = PhoneCall;
 
 const crc_phoneCallAccepted = 0x6d003d3f
 
 type TL_phoneCallAccepted struct {
-	Id             int64  // Id:long
+	Id             int64  // id:long
 	Access_hash    int64  // access_hash:long
 	Date           int32  // date:int
 	Admin_id       int32  // admin_id:int
@@ -11330,12 +11756,12 @@ func (e TL_phoneCallAccepted) encode() []byte {
 	return x.buf
 }
 
-// phoneCall#ffe6ab67 Id:long access_hash:long date:int admin_id:int participant_id:int g_a_or_b:bytes key_fingerprint:long protocol:PhoneCallProtocol connection:PhoneConnection alternative_connections:Vector<PhoneConnection> start_date:int = PhoneCall;
+// phoneCall#ffe6ab67 id:long access_hash:long date:int admin_id:int participant_id:int g_a_or_b:bytes key_fingerprint:long protocol:PhoneCallProtocol connection:PhoneConnection alternative_connections:Vector<PhoneConnection> start_date:int = PhoneCall;
 
 const crc_phoneCall = 0xffe6ab67
 
 type TL_phoneCall struct {
-	Id                      int64  // Id:long
+	Id                      int64  // id:long
 	Access_hash             int64  // access_hash:long
 	Date                    int32  // date:int
 	Admin_id                int32  // admin_id:int
@@ -11366,7 +11792,7 @@ func (e TL_phoneCall) encode() []byte {
 	return x.buf
 }
 
-// phoneCallDiscarded#50ca4de1 flags:# need_rating:flags.2?true need_debug:flags.3?true Id:long reason:flags.0?PhoneCallDiscardReason duration:flags.1?int = PhoneCall;
+// phoneCallDiscarded#50ca4de1 flags:# need_rating:flags.2?true need_debug:flags.3?true id:long reason:flags.0?PhoneCallDiscardReason duration:flags.1?int = PhoneCall;
 
 const crc_phoneCallDiscarded = 0x50ca4de1
 
@@ -11374,7 +11800,7 @@ type TL_phoneCallDiscarded struct {
 	Flags       int32
 	Need_rating bool  // need_rating:flags.2?true
 	Need_debug  bool  // need_debug:flags.3?true
-	Id          int64 // Id:long
+	Id          int64 // id:long
 	Reason      TL    // reason:flags.0?PhoneCallDiscardReason
 	Duration    int32 // duration:flags.1?int
 }
@@ -11407,12 +11833,12 @@ func (e TL_phoneCallDiscarded) encode() []byte {
 	return x.buf
 }
 
-// phoneConnection#9d4c17c0 Id:long ip:string ipv6:string port:int peer_tag:bytes = PhoneConnection;
+// phoneConnection#9d4c17c0 id:long ip:string ipv6:string port:int peer_tag:bytes = PhoneConnection;
 
 const crc_phoneConnection = 0x9d4c17c0
 
 type TL_phoneConnection struct {
-	Id       int64  // Id:long
+	Id       int64  // id:long
 	Ip       string // ip:string
 	Ipv6     string // ipv6:string
 	Port     int32  // port:int
@@ -11478,6 +11904,747 @@ func (e TL_phone_phoneCall) encode() []byte {
 	return x.buf
 }
 
+// upload.cdnFileReuploadNeeded#eea8e46e request_token:bytes = upload.CdnFile;
+
+const crc_upload_cdnFileReuploadNeeded = 0xeea8e46e
+
+type TL_upload_cdnFileReuploadNeeded struct {
+	Request_token []byte // request_token:bytes
+}
+
+// Encoding TL_upload_cdnFileReuploadNeeded
+func (e TL_upload_cdnFileReuploadNeeded) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_upload_cdnFileReuploadNeeded)
+	x.Bytes(e.Request_token)
+	return x.buf
+}
+
+// upload.cdnFile#a99fca4f bytes:bytes = upload.CdnFile;
+
+const crc_upload_cdnFile = 0xa99fca4f
+
+type TL_upload_cdnFile struct {
+	Bytes []byte // bytes:bytes
+}
+
+// Encoding TL_upload_cdnFile
+func (e TL_upload_cdnFile) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_upload_cdnFile)
+	x.Bytes(e.Bytes)
+	return x.buf
+}
+
+// cdnPublicKey#c982eaba dc_id:int public_key:string = CdnPublicKey;
+
+const crc_cdnPublicKey = 0xc982eaba
+
+type TL_cdnPublicKey struct {
+	Dc_id      int32  // dc_id:int
+	Public_key string // public_key:string
+}
+
+// Encoding TL_cdnPublicKey
+func (e TL_cdnPublicKey) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_cdnPublicKey)
+	x.Int(e.Dc_id)
+	x.String(e.Public_key)
+	return x.buf
+}
+
+// cdnConfig#5725e40a public_keys:Vector<CdnPublicKey> = CdnConfig;
+
+const crc_cdnConfig = 0x5725e40a
+
+type TL_cdnConfig struct {
+	Public_keys []TL // public_keys:Vector<CdnPublicKey>
+}
+
+// Encoding TL_cdnConfig
+func (e TL_cdnConfig) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_cdnConfig)
+	x.Vector(e.Public_keys)
+	return x.buf
+}
+
+// langPackString#cad181f6 key:string value:string = LangPackString;
+
+const crc_langPackString = 0xcad181f6
+
+type TL_langPackString struct {
+	Key   string // key:string
+	Value string // value:string
+}
+
+// Encoding TL_langPackString
+func (e TL_langPackString) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_langPackString)
+	x.String(e.Key)
+	x.String(e.Value)
+	return x.buf
+}
+
+// langPackStringPluralized#6c47ac9f flags:# key:string zero_value:flags.0?string one_value:flags.1?string two_value:flags.2?string few_value:flags.3?string many_value:flags.4?string other_value:string = LangPackString;
+
+const crc_langPackStringPluralized = 0x6c47ac9f
+
+type TL_langPackStringPluralized struct {
+	Flags       int32
+	Key         string // key:string
+	Zero_value  string // zero_value:flags.0?string
+	One_value   string // one_value:flags.1?string
+	Two_value   string // two_value:flags.2?string
+	Few_value   string // few_value:flags.3?string
+	Many_value  string // many_value:flags.4?string
+	Other_value string // other_value:string
+}
+
+// Encoding TL_langPackStringPluralized
+func (e TL_langPackStringPluralized) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_langPackStringPluralized)
+	var flags int32
+	if e.Zero_value != "" {
+		flags |= (1 << 0)
+	}
+	if e.One_value != "" {
+		flags |= (1 << 1)
+	}
+	if e.Two_value != "" {
+		flags |= (1 << 2)
+	}
+	if e.Few_value != "" {
+		flags |= (1 << 3)
+	}
+	if e.Many_value != "" {
+		flags |= (1 << 4)
+	}
+	x.Int(flags)
+	x.String(e.Key)
+	if flags&(1<<0) != 0 {
+		x.String(e.Zero_value)
+	}
+	if flags&(1<<1) != 0 {
+		x.String(e.One_value)
+	}
+	if flags&(1<<2) != 0 {
+		x.String(e.Two_value)
+	}
+	if flags&(1<<3) != 0 {
+		x.String(e.Few_value)
+	}
+	if flags&(1<<4) != 0 {
+		x.String(e.Many_value)
+	}
+	x.String(e.Other_value)
+	return x.buf
+}
+
+// langPackStringDeleted#2979eeb2 key:string = LangPackString;
+
+const crc_langPackStringDeleted = 0x2979eeb2
+
+type TL_langPackStringDeleted struct {
+	Key string // key:string
+}
+
+// Encoding TL_langPackStringDeleted
+func (e TL_langPackStringDeleted) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_langPackStringDeleted)
+	x.String(e.Key)
+	return x.buf
+}
+
+// langPackDifference#f385c1f6 lang_code:string from_version:int version:int strings:Vector<LangPackString> = LangPackDifference;
+
+const crc_langPackDifference = 0xf385c1f6
+
+type TL_langPackDifference struct {
+	Lang_code    string // lang_code:string
+	From_version int32  // from_version:int
+	Version      int32  // version:int
+	Strings      []TL   // strings:Vector<LangPackString>
+}
+
+// Encoding TL_langPackDifference
+func (e TL_langPackDifference) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_langPackDifference)
+	x.String(e.Lang_code)
+	x.Int(e.From_version)
+	x.Int(e.Version)
+	x.Vector(e.Strings)
+	return x.buf
+}
+
+// langPackLanguage#117698f1 name:string native_name:string lang_code:string = LangPackLanguage;
+
+const crc_langPackLanguage = 0x117698f1
+
+type TL_langPackLanguage struct {
+	Name        string // name:string
+	Native_name string // native_name:string
+	Lang_code   string // lang_code:string
+}
+
+// Encoding TL_langPackLanguage
+func (e TL_langPackLanguage) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_langPackLanguage)
+	x.String(e.Name)
+	x.String(e.Native_name)
+	x.String(e.Lang_code)
+	return x.buf
+}
+
+// channelAdminRights#5d7ceba5 flags:# change_info:flags.0?true post_messages:flags.1?true edit_messages:flags.2?true delete_messages:flags.3?true ban_users:flags.4?true invite_users:flags.5?true invite_link:flags.6?true pin_messages:flags.7?true add_admins:flags.9?true = ChannelAdminRights;
+
+const crc_channelAdminRights = 0x5d7ceba5
+
+type TL_channelAdminRights struct {
+	Flags           int32
+	Change_info     bool // change_info:flags.0?true
+	Post_messages   bool // post_messages:flags.1?true
+	Edit_messages   bool // edit_messages:flags.2?true
+	Delete_messages bool // delete_messages:flags.3?true
+	Ban_users       bool // ban_users:flags.4?true
+	Invite_users    bool // invite_users:flags.5?true
+	Invite_link     bool // invite_link:flags.6?true
+	Pin_messages    bool // pin_messages:flags.7?true
+	Add_admins      bool // add_admins:flags.9?true
+}
+
+// Encoding TL_channelAdminRights
+func (e TL_channelAdminRights) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelAdminRights)
+	var flags int32
+	if e.Change_info {
+		flags |= (1 << 0)
+	}
+	if e.Post_messages {
+		flags |= (1 << 1)
+	}
+	if e.Edit_messages {
+		flags |= (1 << 2)
+	}
+	if e.Delete_messages {
+		flags |= (1 << 3)
+	}
+	if e.Ban_users {
+		flags |= (1 << 4)
+	}
+	if e.Invite_users {
+		flags |= (1 << 5)
+	}
+	if e.Invite_link {
+		flags |= (1 << 6)
+	}
+	if e.Pin_messages {
+		flags |= (1 << 7)
+	}
+	if e.Add_admins {
+		flags |= (1 << 9)
+	}
+	x.Int(flags)
+	return x.buf
+}
+
+// channelBannedRights#58cf4249 flags:# view_messages:flags.0?true send_messages:flags.1?true send_media:flags.2?true send_stickers:flags.3?true send_gifs:flags.4?true send_games:flags.5?true send_inline:flags.6?true embed_links:flags.7?true until_date:int = ChannelBannedRights;
+
+const crc_channelBannedRights = 0x58cf4249
+
+type TL_channelBannedRights struct {
+	Flags         int32
+	View_messages bool  // view_messages:flags.0?true
+	Send_messages bool  // send_messages:flags.1?true
+	Send_media    bool  // send_media:flags.2?true
+	Send_stickers bool  // send_stickers:flags.3?true
+	Send_gifs     bool  // send_gifs:flags.4?true
+	Send_games    bool  // send_games:flags.5?true
+	Send_inline   bool  // send_inline:flags.6?true
+	Embed_links   bool  // embed_links:flags.7?true
+	Until_date    int32 // until_date:int
+}
+
+// Encoding TL_channelBannedRights
+func (e TL_channelBannedRights) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelBannedRights)
+	var flags int32
+	if e.View_messages {
+		flags |= (1 << 0)
+	}
+	if e.Send_messages {
+		flags |= (1 << 1)
+	}
+	if e.Send_media {
+		flags |= (1 << 2)
+	}
+	if e.Send_stickers {
+		flags |= (1 << 3)
+	}
+	if e.Send_gifs {
+		flags |= (1 << 4)
+	}
+	if e.Send_games {
+		flags |= (1 << 5)
+	}
+	if e.Send_inline {
+		flags |= (1 << 6)
+	}
+	if e.Embed_links {
+		flags |= (1 << 7)
+	}
+	x.Int(flags)
+	x.Int(e.Until_date)
+	return x.buf
+}
+
+// channelAdminLogEventActionChangeTitle#e6dfb825 prev_value:string new_value:string = ChannelAdminLogEventAction;
+
+const crc_channelAdminLogEventActionChangeTitle = 0xe6dfb825
+
+type TL_channelAdminLogEventActionChangeTitle struct {
+	Prev_value string // prev_value:string
+	New_value  string // new_value:string
+}
+
+// Encoding TL_channelAdminLogEventActionChangeTitle
+func (e TL_channelAdminLogEventActionChangeTitle) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelAdminLogEventActionChangeTitle)
+	x.String(e.Prev_value)
+	x.String(e.New_value)
+	return x.buf
+}
+
+// channelAdminLogEventActionChangeAbout#55188a2e prev_value:string new_value:string = ChannelAdminLogEventAction;
+
+const crc_channelAdminLogEventActionChangeAbout = 0x55188a2e
+
+type TL_channelAdminLogEventActionChangeAbout struct {
+	Prev_value string // prev_value:string
+	New_value  string // new_value:string
+}
+
+// Encoding TL_channelAdminLogEventActionChangeAbout
+func (e TL_channelAdminLogEventActionChangeAbout) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelAdminLogEventActionChangeAbout)
+	x.String(e.Prev_value)
+	x.String(e.New_value)
+	return x.buf
+}
+
+// channelAdminLogEventActionChangeUsername#6a4afc38 prev_value:string new_value:string = ChannelAdminLogEventAction;
+
+const crc_channelAdminLogEventActionChangeUsername = 0x6a4afc38
+
+type TL_channelAdminLogEventActionChangeUsername struct {
+	Prev_value string // prev_value:string
+	New_value  string // new_value:string
+}
+
+// Encoding TL_channelAdminLogEventActionChangeUsername
+func (e TL_channelAdminLogEventActionChangeUsername) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelAdminLogEventActionChangeUsername)
+	x.String(e.Prev_value)
+	x.String(e.New_value)
+	return x.buf
+}
+
+// channelAdminLogEventActionChangePhoto#b82f55c3 prev_photo:ChatPhoto new_photo:ChatPhoto = ChannelAdminLogEventAction;
+
+const crc_channelAdminLogEventActionChangePhoto = 0xb82f55c3
+
+type TL_channelAdminLogEventActionChangePhoto struct {
+	Prev_photo TL // prev_photo:ChatPhoto
+	New_photo  TL // new_photo:ChatPhoto
+}
+
+// Encoding TL_channelAdminLogEventActionChangePhoto
+func (e TL_channelAdminLogEventActionChangePhoto) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelAdminLogEventActionChangePhoto)
+	x.Bytes(e.Prev_photo.encode())
+	x.Bytes(e.New_photo.encode())
+	return x.buf
+}
+
+// channelAdminLogEventActionToggleInvites#1b7907ae new_value:Bool = ChannelAdminLogEventAction;
+
+const crc_channelAdminLogEventActionToggleInvites = 0x1b7907ae
+
+type TL_channelAdminLogEventActionToggleInvites struct {
+	New_value TL // new_value:Bool
+}
+
+// Encoding TL_channelAdminLogEventActionToggleInvites
+func (e TL_channelAdminLogEventActionToggleInvites) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelAdminLogEventActionToggleInvites)
+	x.Bytes(e.New_value.encode())
+	return x.buf
+}
+
+// channelAdminLogEventActionToggleSignatures#26ae0971 new_value:Bool = ChannelAdminLogEventAction;
+
+const crc_channelAdminLogEventActionToggleSignatures = 0x26ae0971
+
+type TL_channelAdminLogEventActionToggleSignatures struct {
+	New_value TL // new_value:Bool
+}
+
+// Encoding TL_channelAdminLogEventActionToggleSignatures
+func (e TL_channelAdminLogEventActionToggleSignatures) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelAdminLogEventActionToggleSignatures)
+	x.Bytes(e.New_value.encode())
+	return x.buf
+}
+
+// channelAdminLogEventActionUpdatePinned#e9e82c18 message:Message = ChannelAdminLogEventAction;
+
+const crc_channelAdminLogEventActionUpdatePinned = 0xe9e82c18
+
+type TL_channelAdminLogEventActionUpdatePinned struct {
+	Message TL // message:Message
+}
+
+// Encoding TL_channelAdminLogEventActionUpdatePinned
+func (e TL_channelAdminLogEventActionUpdatePinned) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelAdminLogEventActionUpdatePinned)
+	x.Bytes(e.Message.encode())
+	return x.buf
+}
+
+// channelAdminLogEventActionEditMessage#709b2405 prev_message:Message new_message:Message = ChannelAdminLogEventAction;
+
+const crc_channelAdminLogEventActionEditMessage = 0x709b2405
+
+type TL_channelAdminLogEventActionEditMessage struct {
+	Prev_message TL // prev_message:Message
+	New_message  TL // new_message:Message
+}
+
+// Encoding TL_channelAdminLogEventActionEditMessage
+func (e TL_channelAdminLogEventActionEditMessage) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelAdminLogEventActionEditMessage)
+	x.Bytes(e.Prev_message.encode())
+	x.Bytes(e.New_message.encode())
+	return x.buf
+}
+
+// channelAdminLogEventActionDeleteMessage#42e047bb message:Message = ChannelAdminLogEventAction;
+
+const crc_channelAdminLogEventActionDeleteMessage = 0x42e047bb
+
+type TL_channelAdminLogEventActionDeleteMessage struct {
+	Message TL // message:Message
+}
+
+// Encoding TL_channelAdminLogEventActionDeleteMessage
+func (e TL_channelAdminLogEventActionDeleteMessage) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelAdminLogEventActionDeleteMessage)
+	x.Bytes(e.Message.encode())
+	return x.buf
+}
+
+// channelAdminLogEventActionParticipantJoin#183040d3 = ChannelAdminLogEventAction;
+
+const crc_channelAdminLogEventActionParticipantJoin = 0x183040d3
+
+type TL_channelAdminLogEventActionParticipantJoin struct {
+}
+
+// Encoding TL_channelAdminLogEventActionParticipantJoin
+func (e TL_channelAdminLogEventActionParticipantJoin) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelAdminLogEventActionParticipantJoin)
+	return x.buf
+}
+
+// channelAdminLogEventActionParticipantLeave#f89777f2 = ChannelAdminLogEventAction;
+
+const crc_channelAdminLogEventActionParticipantLeave = 0xf89777f2
+
+type TL_channelAdminLogEventActionParticipantLeave struct {
+}
+
+// Encoding TL_channelAdminLogEventActionParticipantLeave
+func (e TL_channelAdminLogEventActionParticipantLeave) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelAdminLogEventActionParticipantLeave)
+	return x.buf
+}
+
+// channelAdminLogEventActionParticipantInvite#e31c34d8 participant:ChannelParticipant = ChannelAdminLogEventAction;
+
+const crc_channelAdminLogEventActionParticipantInvite = 0xe31c34d8
+
+type TL_channelAdminLogEventActionParticipantInvite struct {
+	Participant TL // participant:ChannelParticipant
+}
+
+// Encoding TL_channelAdminLogEventActionParticipantInvite
+func (e TL_channelAdminLogEventActionParticipantInvite) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelAdminLogEventActionParticipantInvite)
+	x.Bytes(e.Participant.encode())
+	return x.buf
+}
+
+// channelAdminLogEventActionParticipantToggleBan#e6d83d7e prev_participant:ChannelParticipant new_participant:ChannelParticipant = ChannelAdminLogEventAction;
+
+const crc_channelAdminLogEventActionParticipantToggleBan = 0xe6d83d7e
+
+type TL_channelAdminLogEventActionParticipantToggleBan struct {
+	Prev_participant TL // prev_participant:ChannelParticipant
+	New_participant  TL // new_participant:ChannelParticipant
+}
+
+// Encoding TL_channelAdminLogEventActionParticipantToggleBan
+func (e TL_channelAdminLogEventActionParticipantToggleBan) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelAdminLogEventActionParticipantToggleBan)
+	x.Bytes(e.Prev_participant.encode())
+	x.Bytes(e.New_participant.encode())
+	return x.buf
+}
+
+// channelAdminLogEventActionParticipantToggleAdmin#d5676710 prev_participant:ChannelParticipant new_participant:ChannelParticipant = ChannelAdminLogEventAction;
+
+const crc_channelAdminLogEventActionParticipantToggleAdmin = 0xd5676710
+
+type TL_channelAdminLogEventActionParticipantToggleAdmin struct {
+	Prev_participant TL // prev_participant:ChannelParticipant
+	New_participant  TL // new_participant:ChannelParticipant
+}
+
+// Encoding TL_channelAdminLogEventActionParticipantToggleAdmin
+func (e TL_channelAdminLogEventActionParticipantToggleAdmin) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelAdminLogEventActionParticipantToggleAdmin)
+	x.Bytes(e.Prev_participant.encode())
+	x.Bytes(e.New_participant.encode())
+	return x.buf
+}
+
+// channelAdminLogEventActionChangeStickerSet#b1c3caa7 prev_stickerset:InputStickerSet new_stickerset:InputStickerSet = ChannelAdminLogEventAction;
+
+const crc_channelAdminLogEventActionChangeStickerSet = 0xb1c3caa7
+
+type TL_channelAdminLogEventActionChangeStickerSet struct {
+	Prev_stickerset TL // prev_stickerset:InputStickerSet
+	New_stickerset  TL // new_stickerset:InputStickerSet
+}
+
+// Encoding TL_channelAdminLogEventActionChangeStickerSet
+func (e TL_channelAdminLogEventActionChangeStickerSet) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelAdminLogEventActionChangeStickerSet)
+	x.Bytes(e.Prev_stickerset.encode())
+	x.Bytes(e.New_stickerset.encode())
+	return x.buf
+}
+
+// channelAdminLogEvent#3b5a3e40 id:long date:int user_id:int action:ChannelAdminLogEventAction = ChannelAdminLogEvent;
+
+const crc_channelAdminLogEvent = 0x3b5a3e40
+
+type TL_channelAdminLogEvent struct {
+	Id      int64 // id:long
+	Date    int32 // date:int
+	User_id int32 // user_id:int
+	Action  TL    // action:ChannelAdminLogEventAction
+}
+
+// Encoding TL_channelAdminLogEvent
+func (e TL_channelAdminLogEvent) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelAdminLogEvent)
+	x.Long(e.Id)
+	x.Int(e.Date)
+	x.Int(e.User_id)
+	x.Bytes(e.Action.encode())
+	return x.buf
+}
+
+// channels.adminLogResults#ed8af74d events:Vector<ChannelAdminLogEvent> chats:Vector<Chat> users:Vector<User> = channels.AdminLogResults;
+
+const crc_channels_adminLogResults = 0xed8af74d
+
+type TL_channels_adminLogResults struct {
+	Events []TL // events:Vector<ChannelAdminLogEvent>
+	Chats  []TL // chats:Vector<Chat>
+	Users  []TL // users:Vector<User>
+}
+
+// Encoding TL_channels_adminLogResults
+func (e TL_channels_adminLogResults) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channels_adminLogResults)
+	x.Vector(e.Events)
+	x.Vector(e.Chats)
+	x.Vector(e.Users)
+	return x.buf
+}
+
+// channelAdminLogEventsFilter#ea107ae4 flags:# join:flags.0?true leave:flags.1?true invite:flags.2?true ban:flags.3?true unban:flags.4?true kick:flags.5?true unkick:flags.6?true promote:flags.7?true demote:flags.8?true info:flags.9?true settings:flags.10?true pinned:flags.11?true edit:flags.12?true delete:flags.13?true = ChannelAdminLogEventsFilter;
+
+const crc_channelAdminLogEventsFilter = 0xea107ae4
+
+type TL_channelAdminLogEventsFilter struct {
+	Flags    int32
+	Join     bool // join:flags.0?true
+	Leave    bool // leave:flags.1?true
+	Invite   bool // invite:flags.2?true
+	Ban      bool // ban:flags.3?true
+	Unban    bool // unban:flags.4?true
+	Kick     bool // kick:flags.5?true
+	Unkick   bool // unkick:flags.6?true
+	Promote  bool // promote:flags.7?true
+	Demote   bool // demote:flags.8?true
+	Info     bool // info:flags.9?true
+	Settings bool // settings:flags.10?true
+	Pinned   bool // pinned:flags.11?true
+	Edit     bool // edit:flags.12?true
+	Delete   bool // delete:flags.13?true
+}
+
+// Encoding TL_channelAdminLogEventsFilter
+func (e TL_channelAdminLogEventsFilter) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channelAdminLogEventsFilter)
+	var flags int32
+	if e.Join {
+		flags |= (1 << 0)
+	}
+	if e.Leave {
+		flags |= (1 << 1)
+	}
+	if e.Invite {
+		flags |= (1 << 2)
+	}
+	if e.Ban {
+		flags |= (1 << 3)
+	}
+	if e.Unban {
+		flags |= (1 << 4)
+	}
+	if e.Kick {
+		flags |= (1 << 5)
+	}
+	if e.Unkick {
+		flags |= (1 << 6)
+	}
+	if e.Promote {
+		flags |= (1 << 7)
+	}
+	if e.Demote {
+		flags |= (1 << 8)
+	}
+	if e.Info {
+		flags |= (1 << 9)
+	}
+	if e.Settings {
+		flags |= (1 << 10)
+	}
+	if e.Pinned {
+		flags |= (1 << 11)
+	}
+	if e.Edit {
+		flags |= (1 << 12)
+	}
+	if e.Delete {
+		flags |= (1 << 13)
+	}
+	x.Int(flags)
+	return x.buf
+}
+
+// popularContact#5ce14175 client_id:long importers:int = PopularContact;
+
+const crc_popularContact = 0x5ce14175
+
+type TL_popularContact struct {
+	Client_id int64 // client_id:long
+	Importers int32 // importers:int
+}
+
+// Encoding TL_popularContact
+func (e TL_popularContact) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_popularContact)
+	x.Long(e.Client_id)
+	x.Int(e.Importers)
+	return x.buf
+}
+
+// cdnFileHash#77eec38f offset:int limit:int hash:bytes = CdnFileHash;
+
+const crc_cdnFileHash = 0x77eec38f
+
+type TL_cdnFileHash struct {
+	Offset int32  // offset:int
+	Limit  int32  // limit:int
+	Hash   []byte // hash:bytes
+}
+
+// Encoding TL_cdnFileHash
+func (e TL_cdnFileHash) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_cdnFileHash)
+	x.Int(e.Offset)
+	x.Int(e.Limit)
+	x.Bytes(e.Hash)
+	return x.buf
+}
+
+// messages.favedStickersNotModified#9e8fa6d3 = messages.FavedStickers;
+
+const crc_messages_favedStickersNotModified = 0x9e8fa6d3
+
+type TL_messages_favedStickersNotModified struct {
+}
+
+// Encoding TL_messages_favedStickersNotModified
+func (e TL_messages_favedStickersNotModified) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_messages_favedStickersNotModified)
+	return x.buf
+}
+
+// messages.favedStickers#f37f2f16 hash:int packs:Vector<StickerPack> stickers:Vector<Document> = messages.FavedStickers;
+
+const crc_messages_favedStickers = 0xf37f2f16
+
+type TL_messages_favedStickers struct {
+	Hash     int32 // hash:int
+	Packs    []TL  // packs:Vector<StickerPack>
+	Stickers []TL  // stickers:Vector<Document>
+}
+
+// Encoding TL_messages_favedStickers
+func (e TL_messages_favedStickers) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_messages_favedStickers)
+	x.Int(e.Hash)
+	x.Vector(e.Packs)
+	x.Vector(e.Stickers)
+	return x.buf
+}
+
 // invokeAfterMsg#cb9f372d {X:Type} msg_id:long query:!X = X;
 
 const crc_invokeAfterMsg = 0xcb9f372d
@@ -11514,17 +12681,19 @@ func (e TL_invokeAfterMsgs) encode() []byte {
 	return x.buf
 }
 
-// initConnection#69796de9 {X:Type} api_id:int device_model:string system_version:string app_version:string lang_code:string query:!X = X;
+// initConnection#c7481da6 {X:Type} api_id:int device_model:string system_version:string app_version:string system_lang_code:string lang_pack:string lang_code:string query:!X = X;
 
-const crc_initConnection = 0x69796de9
+const crc_initConnection = 0xc7481da6
 
 type TL_initConnection struct {
-	Api_id         int32  // api_id:int
-	Device_model   string // device_model:string
-	System_version string // system_version:string
-	App_version    string // app_version:string
-	Lang_code      string // lang_code:string
-	Query          TL     // query:!X
+	Api_id           int32  // api_id:int
+	Device_model     string // device_model:string
+	System_version   string // system_version:string
+	App_version      string // app_version:string
+	System_lang_code string // system_lang_code:string
+	Lang_pack        string // lang_pack:string
+	Lang_code        string // lang_code:string
+	Query            TL     // query:!X
 }
 
 // Encoding TL_initConnection
@@ -11535,6 +12704,8 @@ func (e TL_initConnection) encode() []byte {
 	x.String(e.Device_model)
 	x.String(e.System_version)
 	x.String(e.App_version)
+	x.String(e.System_lang_code)
+	x.String(e.Lang_pack)
 	x.String(e.Lang_code)
 	x.Bytes(e.Query.encode())
 	return x.buf
@@ -11730,12 +12901,12 @@ func (e TL_auth_exportAuthorization) encode() []byte {
 	return x.buf
 }
 
-// auth.importAuthorization#e3ef9613 Id:int bytes:bytes = auth.Authorization;
+// auth.importAuthorization#e3ef9613 id:int bytes:bytes = auth.Authorization;
 
 const crc_auth_importAuthorization = 0xe3ef9613
 
 type TL_auth_importAuthorization struct {
-	Id    int32  // Id:int
+	Id    int32  // id:int
 	Bytes []byte // bytes:bytes
 }
 
@@ -12252,12 +13423,12 @@ func (e TL_account_getAuthorizations) encode() []byte {
 	return x.buf
 }
 
-// account.resetAuthorization#df77f3bc Hash:long = Bool;
+// account.resetAuthorization#df77f3bc hash:long = Bool;
 
 const crc_account_resetAuthorization = 0xdf77f3bc
 
 type TL_account_resetAuthorization struct {
-	Hash int64 // Hash:long
+	Hash int64 // hash:long
 }
 
 // Encoding TL_account_resetAuthorization
@@ -12316,14 +13487,14 @@ func (e TL_account_updatePasswordSettings) encode() []byte {
 	return x.buf
 }
 
-// account.sendConfirmPhoneCode#1516d7bd flags:# allow_flashcall:flags.0?true Hash:string current_number:flags.0?Bool = auth.SentCode;
+// account.sendConfirmPhoneCode#1516d7bd flags:# allow_flashcall:flags.0?true hash:string current_number:flags.0?Bool = auth.SentCode;
 
 const crc_account_sendConfirmPhoneCode = 0x1516d7bd
 
 type TL_account_sendConfirmPhoneCode struct {
 	Flags           int32
 	Allow_flashcall bool   // allow_flashcall:flags.0?true
-	Hash            string // Hash:string
+	Hash            string // hash:string
 	Current_number  TL     // current_number:flags.0?Bool
 }
 
@@ -12382,12 +13553,12 @@ func (e TL_account_getTmpPassword) encode() []byte {
 	return x.buf
 }
 
-// users.getUsers#d91a548 Id:Vector<InputUser> = Vector<User>;
+// users.getUsers#d91a548 id:Vector<InputUser> = Vector<User>;
 
 const crc_users_getUsers = 0xd91a548
 
 type TL_users_getUsers struct {
-	Id []TL // Id:Vector<InputUser>
+	Id []TL // id:Vector<InputUser>
 }
 
 // Encoding TL_users_getUsers
@@ -12398,12 +13569,12 @@ func (e TL_users_getUsers) encode() []byte {
 	return x.buf
 }
 
-// users.getFullUser#ca30a5b1 Id:InputUser = UserFull;
+// users.getFullUser#ca30a5b1 id:InputUser = UserFull;
 
 const crc_users_getFullUser = 0xca30a5b1
 
 type TL_users_getFullUser struct {
-	Id TL // Id:InputUser
+	Id TL // id:InputUser
 }
 
 // Encoding TL_users_getFullUser
@@ -12428,29 +13599,28 @@ func (e TL_contacts_getStatuses) encode() []byte {
 	return x.buf
 }
 
-// contacts.getContacts#22c6aa08 Hash:string = contacts.Contacts;
+// contacts.getContacts#c023849f hash:int = contacts.Contacts;
 
-const crc_contacts_getContacts = 0x22c6aa08
+const crc_contacts_getContacts = 0xc023849f
 
 type TL_contacts_getContacts struct {
-	Hash string // Hash:string
+	Hash int32 // hash:int
 }
 
 // Encoding TL_contacts_getContacts
 func (e TL_contacts_getContacts) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_contacts_getContacts)
-	x.String(e.Hash)
+	x.Int(e.Hash)
 	return x.buf
 }
 
-// contacts.importContacts#da30b32d contacts:Vector<InputContact> replace:Bool = contacts.ImportedContacts;
+// contacts.importContacts#2c800be5 contacts:Vector<InputContact> = contacts.ImportedContacts;
 
-const crc_contacts_importContacts = 0xda30b32d
+const crc_contacts_importContacts = 0x2c800be5
 
 type TL_contacts_importContacts struct {
 	Contacts []TL // contacts:Vector<InputContact>
-	Replace  TL   // replace:Bool
 }
 
 // Encoding TL_contacts_importContacts
@@ -12458,16 +13628,15 @@ func (e TL_contacts_importContacts) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_contacts_importContacts)
 	x.Vector(e.Contacts)
-	x.Bytes(e.Replace.encode())
 	return x.buf
 }
 
-// contacts.deleteContact#8e953744 Id:InputUser = contacts.Link;
+// contacts.deleteContact#8e953744 id:InputUser = contacts.Link;
 
 const crc_contacts_deleteContact = 0x8e953744
 
 type TL_contacts_deleteContact struct {
-	Id TL // Id:InputUser
+	Id TL // id:InputUser
 }
 
 // Encoding TL_contacts_deleteContact
@@ -12478,12 +13647,12 @@ func (e TL_contacts_deleteContact) encode() []byte {
 	return x.buf
 }
 
-// contacts.deleteContacts#59ab389e Id:Vector<InputUser> = Bool;
+// contacts.deleteContacts#59ab389e id:Vector<InputUser> = Bool;
 
 const crc_contacts_deleteContacts = 0x59ab389e
 
 type TL_contacts_deleteContacts struct {
-	Id []TL // Id:Vector<InputUser>
+	Id []TL // id:Vector<InputUser>
 }
 
 // Encoding TL_contacts_deleteContacts
@@ -12494,12 +13663,12 @@ func (e TL_contacts_deleteContacts) encode() []byte {
 	return x.buf
 }
 
-// contacts.block#332b49fc Id:InputUser = Bool;
+// contacts.block#332b49fc id:InputUser = Bool;
 
 const crc_contacts_block = 0x332b49fc
 
 type TL_contacts_block struct {
-	Id TL // Id:InputUser
+	Id TL // id:InputUser
 }
 
 // Encoding TL_contacts_block
@@ -12510,12 +13679,12 @@ func (e TL_contacts_block) encode() []byte {
 	return x.buf
 }
 
-// contacts.unblock#e54100bd Id:InputUser = Bool;
+// contacts.unblock#e54100bd id:InputUser = Bool;
 
 const crc_contacts_unblock = 0xe54100bd
 
 type TL_contacts_unblock struct {
-	Id TL // Id:InputUser
+	Id TL // id:InputUser
 }
 
 // Encoding TL_contacts_unblock
@@ -12608,7 +13777,7 @@ func (e TL_contacts_resolveUsername) encode() []byte {
 	return x.buf
 }
 
-// contacts.getTopPeers#d4982db5 flags:# correspondents:flags.0?true bots_pm:flags.1?true bots_inline:flags.2?true groups:flags.10?true channels:flags.15?true offset:int limit:int Hash:int = contacts.TopPeers;
+// contacts.getTopPeers#d4982db5 flags:# correspondents:flags.0?true bots_pm:flags.1?true bots_inline:flags.2?true phone_calls:flags.3?true groups:flags.10?true channels:flags.15?true offset:int limit:int hash:int = contacts.TopPeers;
 
 const crc_contacts_getTopPeers = 0xd4982db5
 
@@ -12617,11 +13786,12 @@ type TL_contacts_getTopPeers struct {
 	Correspondents bool  // correspondents:flags.0?true
 	Bots_pm        bool  // bots_pm:flags.1?true
 	Bots_inline    bool  // bots_inline:flags.2?true
+	Phone_calls    bool  // phone_calls:flags.3?true
 	Groups         bool  // groups:flags.10?true
 	Channels       bool  // channels:flags.15?true
 	Offset         int32 // offset:int
 	Limit          int32 // limit:int
-	Hash           int32 // Hash:int
+	Hash           int32 // hash:int
 }
 
 // Encoding TL_contacts_getTopPeers
@@ -12637,6 +13807,9 @@ func (e TL_contacts_getTopPeers) encode() []byte {
 	}
 	if e.Bots_inline {
 		flags |= (1 << 2)
+	}
+	if e.Phone_calls {
+		flags |= (1 << 3)
 	}
 	if e.Groups {
 		flags |= (1 << 10)
@@ -12669,12 +13842,26 @@ func (e TL_contacts_resetTopPeerRating) encode() []byte {
 	return x.buf
 }
 
-// messages.getMessages#4222fa74 Id:Vector<int> = messages.Messages;
+// contacts.resetSaved#879537f1 = Bool;
+
+const crc_contacts_resetSaved = 0x879537f1
+
+type TL_contacts_resetSaved struct {
+}
+
+// Encoding TL_contacts_resetSaved
+func (e TL_contacts_resetSaved) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_contacts_resetSaved)
+	return x.buf
+}
+
+// messages.getMessages#4222fa74 id:Vector<int> = messages.Messages;
 
 const crc_messages_getMessages = 0x4222fa74
 
 type TL_messages_getMessages struct {
-	Id []int32 // Id:Vector<int>
+	Id []int32 // id:Vector<int>
 }
 
 // Encoding TL_messages_getMessages
@@ -12742,20 +13929,23 @@ func (e TL_messages_getHistory) encode() []byte {
 	return x.buf
 }
 
-// messages.search#d4569248 flags:# peer:InputPeer q:string filter:MessagesFilter min_date:int max_date:int offset:int max_id:int limit:int = messages.Messages;
+// messages.search#39e9ea0 flags:# peer:InputPeer q:string from_id:flags.0?InputUser filter:MessagesFilter min_date:int max_date:int offset_id:int add_offset:int limit:int max_id:int min_id:int = messages.Messages;
 
-const crc_messages_search = 0xd4569248
+const crc_messages_search = 0x39e9ea0
 
 type TL_messages_search struct {
-	Flags    int32
-	Peer     TL     // peer:InputPeer
-	Q        string // q:string
-	Filter   TL     // filter:MessagesFilter
-	Min_date int32  // min_date:int
-	Max_date int32  // max_date:int
-	Offset   int32  // offset:int
-	Max_id   int32  // max_id:int
-	Limit    int32  // limit:int
+	Flags      int32
+	Peer       TL     // peer:InputPeer
+	Q          string // q:string
+	From_id    TL     // from_id:flags.0?InputUser
+	Filter     TL     // filter:MessagesFilter
+	Min_date   int32  // min_date:int
+	Max_date   int32  // max_date:int
+	Offset_id  int32  // offset_id:int
+	Add_offset int32  // add_offset:int
+	Limit      int32  // limit:int
+	Max_id     int32  // max_id:int
+	Min_id     int32  // min_id:int
 }
 
 // Encoding TL_messages_search
@@ -12763,15 +13953,23 @@ func (e TL_messages_search) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_messages_search)
 	var flags int32
+	if _, ok := (e.From_id).(TL_null); !ok {
+		flags |= (1 << 0)
+	}
 	x.Int(flags)
 	x.Bytes(e.Peer.encode())
 	x.String(e.Q)
+	if flags&(1<<0) != 0 {
+		x.Bytes(e.From_id.encode())
+	}
 	x.Bytes(e.Filter.encode())
 	x.Int(e.Min_date)
 	x.Int(e.Max_date)
-	x.Int(e.Offset)
-	x.Int(e.Max_id)
+	x.Int(e.Offset_id)
+	x.Int(e.Add_offset)
 	x.Int(e.Limit)
+	x.Int(e.Max_id)
+	x.Int(e.Min_id)
 	return x.buf
 }
 
@@ -12818,14 +14016,14 @@ func (e TL_messages_deleteHistory) encode() []byte {
 	return x.buf
 }
 
-// messages.deleteMessages#e58e95d2 flags:# revoke:flags.0?true Id:Vector<int> = messages.AffectedMessages;
+// messages.deleteMessages#e58e95d2 flags:# revoke:flags.0?true id:Vector<int> = messages.AffectedMessages;
 
 const crc_messages_deleteMessages = 0xe58e95d2
 
 type TL_messages_deleteMessages struct {
 	Flags  int32
 	Revoke bool    // revoke:flags.0?true
-	Id     []int32 // Id:Vector<int>
+	Id     []int32 // id:Vector<int>
 }
 
 // Encoding TL_messages_deleteMessages
@@ -12984,7 +14182,7 @@ func (e TL_messages_sendMedia) encode() []byte {
 	return x.buf
 }
 
-// messages.forwardMessages#708e0195 flags:# silent:flags.5?true background:flags.6?true with_my_score:flags.8?true from_peer:InputPeer Id:Vector<int> random_id:Vector<long> to_peer:InputPeer = Updates;
+// messages.forwardMessages#708e0195 flags:# silent:flags.5?true background:flags.6?true with_my_score:flags.8?true from_peer:InputPeer id:Vector<int> random_id:Vector<long> to_peer:InputPeer = Updates;
 
 const crc_messages_forwardMessages = 0x708e0195
 
@@ -12994,7 +14192,7 @@ type TL_messages_forwardMessages struct {
 	Background    bool    // background:flags.6?true
 	With_my_score bool    // with_my_score:flags.8?true
 	From_peer     TL      // from_peer:InputPeer
-	Id            []int32 // Id:Vector<int>
+	Id            []int32 // id:Vector<int>
 	Random_id     []int64 // random_id:Vector<long>
 	To_peer       TL      // to_peer:InputPeer
 }
@@ -13069,12 +14267,12 @@ func (e TL_messages_getPeerSettings) encode() []byte {
 	return x.buf
 }
 
-// messages.getChats#3c6aa187 Id:Vector<int> = messages.Chats;
+// messages.getChats#3c6aa187 id:Vector<int> = messages.Chats;
 
 const crc_messages_getChats = 0x3c6aa187
 
 type TL_messages_getChats struct {
-	Id []int32 // Id:Vector<int>
+	Id []int32 // id:Vector<int>
 }
 
 // Encoding TL_messages_getChats
@@ -13193,13 +14391,13 @@ func (e TL_messages_createChat) encode() []byte {
 	return x.buf
 }
 
-// messages.forwardMessage#33963bf9 peer:InputPeer Id:int random_id:long = Updates;
+// messages.forwardMessage#33963bf9 peer:InputPeer id:int random_id:long = Updates;
 
 const crc_messages_forwardMessage = 0x33963bf9
 
 type TL_messages_forwardMessage struct {
 	Peer      TL    // peer:InputPeer
-	Id        int32 // Id:int
+	Id        int32 // id:int
 	Random_id int64 // random_id:long
 }
 
@@ -13213,12 +14411,12 @@ func (e TL_messages_forwardMessage) encode() []byte {
 	return x.buf
 }
 
-// messages.getDhConfig#26cf8950 Version:int random_length:int = messages.DhConfig;
+// messages.getDhConfig#26cf8950 version:int random_length:int = messages.DhConfig;
 
 const crc_messages_getDhConfig = 0x26cf8950
 
 type TL_messages_getDhConfig struct {
-	Version       int32 // Version:int
+	Version       int32 // version:int
 	Random_length int32 // random_length:int
 }
 
@@ -13417,12 +14615,12 @@ func (e TL_messages_reportEncryptedSpam) encode() []byte {
 	return x.buf
 }
 
-// messages.readMessageContents#36a73f77 Id:Vector<int> = messages.AffectedMessages;
+// messages.readMessageContents#36a73f77 id:Vector<int> = messages.AffectedMessages;
 
 const crc_messages_readMessageContents = 0x36a73f77
 
 type TL_messages_readMessageContents struct {
-	Id []int32 // Id:Vector<int>
+	Id []int32 // id:Vector<int>
 }
 
 // Encoding TL_messages_readMessageContents
@@ -13433,12 +14631,12 @@ func (e TL_messages_readMessageContents) encode() []byte {
 	return x.buf
 }
 
-// messages.getAllStickers#1c9618b1 Hash:int = messages.AllStickers;
+// messages.getAllStickers#1c9618b1 hash:int = messages.AllStickers;
 
 const crc_messages_getAllStickers = 0x1c9618b1
 
 type TL_messages_getAllStickers struct {
-	Hash int32 // Hash:int
+	Hash int32 // hash:int
 }
 
 // Encoding TL_messages_getAllStickers
@@ -13481,12 +14679,12 @@ func (e TL_messages_exportChatInvite) encode() []byte {
 	return x.buf
 }
 
-// messages.checkChatInvite#3eadb1bb Hash:string = ChatInvite;
+// messages.checkChatInvite#3eadb1bb hash:string = ChatInvite;
 
 const crc_messages_checkChatInvite = 0x3eadb1bb
 
 type TL_messages_checkChatInvite struct {
-	Hash string // Hash:string
+	Hash string // hash:string
 }
 
 // Encoding TL_messages_checkChatInvite
@@ -13497,12 +14695,12 @@ func (e TL_messages_checkChatInvite) encode() []byte {
 	return x.buf
 }
 
-// messages.importChatInvite#6c50051c Hash:string = Updates;
+// messages.importChatInvite#6c50051c hash:string = Updates;
 
 const crc_messages_importChatInvite = 0x6c50051c
 
 type TL_messages_importChatInvite struct {
-	Hash string // Hash:string
+	Hash string // hash:string
 }
 
 // Encoding TL_messages_importChatInvite
@@ -13585,13 +14783,13 @@ func (e TL_messages_startBot) encode() []byte {
 	return x.buf
 }
 
-// messages.getMessagesViews#c4c8a55d peer:InputPeer Id:Vector<int> increment:Bool = Vector<int>;
+// messages.getMessagesViews#c4c8a55d peer:InputPeer id:Vector<int> increment:Bool = Vector<int>;
 
 const crc_messages_getMessagesViews = 0xc4c8a55d
 
 type TL_messages_getMessagesViews struct {
 	Peer      TL      // peer:InputPeer
-	Id        []int32 // Id:Vector<int>
+	Id        []int32 // id:Vector<int>
 	Increment TL      // increment:Bool
 }
 
@@ -13744,12 +14942,12 @@ func (e TL_messages_searchGifs) encode() []byte {
 	return x.buf
 }
 
-// messages.getSavedGifs#83bf3d52 Hash:int = messages.SavedGifs;
+// messages.getSavedGifs#83bf3d52 hash:int = messages.SavedGifs;
 
 const crc_messages_getSavedGifs = 0x83bf3d52
 
 type TL_messages_getSavedGifs struct {
-	Hash int32 // Hash:int
+	Hash int32 // hash:int
 }
 
 // Encoding TL_messages_getSavedGifs
@@ -13760,12 +14958,12 @@ func (e TL_messages_getSavedGifs) encode() []byte {
 	return x.buf
 }
 
-// messages.saveGif#327a30cb Id:InputDocument unsave:Bool = Bool;
+// messages.saveGif#327a30cb id:InputDocument unsave:Bool = Bool;
 
 const crc_messages_saveGif = 0x327a30cb
 
 type TL_messages_saveGif struct {
-	Id     TL // Id:InputDocument
+	Id     TL // id:InputDocument
 	Unsave TL // unsave:Bool
 }
 
@@ -13855,7 +15053,7 @@ func (e TL_messages_setInlineBotResults) encode() []byte {
 	return x.buf
 }
 
-// messages.sendInlineBotResult#b16e06fe flags:# silent:flags.5?true background:flags.6?true clear_draft:flags.7?true peer:InputPeer reply_to_msg_id:flags.0?int random_id:long query_id:long Id:string = Updates;
+// messages.sendInlineBotResult#b16e06fe flags:# silent:flags.5?true background:flags.6?true clear_draft:flags.7?true peer:InputPeer reply_to_msg_id:flags.0?int random_id:long query_id:long id:string = Updates;
 
 const crc_messages_sendInlineBotResult = 0xb16e06fe
 
@@ -13868,7 +15066,7 @@ type TL_messages_sendInlineBotResult struct {
 	Reply_to_msg_id int32  // reply_to_msg_id:flags.0?int
 	Random_id       int64  // random_id:long
 	Query_id        int64  // query_id:long
-	Id              string // Id:string
+	Id              string // id:string
 }
 
 // Encoding TL_messages_sendInlineBotResult
@@ -13899,13 +15097,13 @@ func (e TL_messages_sendInlineBotResult) encode() []byte {
 	return x.buf
 }
 
-// messages.getMessageEditData#fda68d36 peer:InputPeer Id:int = messages.MessageEditData;
+// messages.getMessageEditData#fda68d36 peer:InputPeer id:int = messages.MessageEditData;
 
 const crc_messages_getMessageEditData = 0xfda68d36
 
 type TL_messages_getMessageEditData struct {
 	Peer TL    // peer:InputPeer
-	Id   int32 // Id:int
+	Id   int32 // id:int
 }
 
 // Encoding TL_messages_getMessageEditData
@@ -13917,7 +15115,7 @@ func (e TL_messages_getMessageEditData) encode() []byte {
 	return x.buf
 }
 
-// messages.editMessage#ce91e4ca flags:# no_webpage:flags.1?true peer:InputPeer Id:int message:flags.11?string reply_markup:flags.2?ReplyMarkup entities:flags.3?Vector<MessageEntity> = Updates;
+// messages.editMessage#ce91e4ca flags:# no_webpage:flags.1?true peer:InputPeer id:int message:flags.11?string reply_markup:flags.2?ReplyMarkup entities:flags.3?Vector<MessageEntity> = Updates;
 
 const crc_messages_editMessage = 0xce91e4ca
 
@@ -13925,7 +15123,7 @@ type TL_messages_editMessage struct {
 	Flags        int32
 	No_webpage   bool   // no_webpage:flags.1?true
 	Peer         TL     // peer:InputPeer
-	Id           int32  // Id:int
+	Id           int32  // id:int
 	Message      string // message:flags.11?string
 	Reply_markup TL     // reply_markup:flags.2?ReplyMarkup
 	Entities     []TL   // entities:flags.3?Vector<MessageEntity>
@@ -13963,14 +15161,14 @@ func (e TL_messages_editMessage) encode() []byte {
 	return x.buf
 }
 
-// messages.editInlineBotMessage#130c2c85 flags:# no_webpage:flags.1?true Id:InputBotInlineMessageID message:flags.11?string reply_markup:flags.2?ReplyMarkup entities:flags.3?Vector<MessageEntity> = Bool;
+// messages.editInlineBotMessage#130c2c85 flags:# no_webpage:flags.1?true id:InputBotInlineMessageID message:flags.11?string reply_markup:flags.2?ReplyMarkup entities:flags.3?Vector<MessageEntity> = Bool;
 
 const crc_messages_editInlineBotMessage = 0x130c2c85
 
 type TL_messages_editInlineBotMessage struct {
 	Flags        int32
 	No_webpage   bool   // no_webpage:flags.1?true
-	Id           TL     // Id:InputBotInlineMessageID
+	Id           TL     // id:InputBotInlineMessageID
 	Message      string // message:flags.11?string
 	Reply_markup TL     // reply_markup:flags.2?ReplyMarkup
 	Entities     []TL   // entities:flags.3?Vector<MessageEntity>
@@ -14147,12 +15345,12 @@ func (e TL_messages_getAllDrafts) encode() []byte {
 	return x.buf
 }
 
-// messages.getFeaturedStickers#2dacca4f Hash:int = messages.FeaturedStickers;
+// messages.getFeaturedStickers#2dacca4f hash:int = messages.FeaturedStickers;
 
 const crc_messages_getFeaturedStickers = 0x2dacca4f
 
 type TL_messages_getFeaturedStickers struct {
-	Hash int32 // Hash:int
+	Hash int32 // hash:int
 }
 
 // Encoding TL_messages_getFeaturedStickers
@@ -14163,12 +15361,12 @@ func (e TL_messages_getFeaturedStickers) encode() []byte {
 	return x.buf
 }
 
-// messages.readFeaturedStickers#5b118126 Id:Vector<long> = Bool;
+// messages.readFeaturedStickers#5b118126 id:Vector<long> = Bool;
 
 const crc_messages_readFeaturedStickers = 0x5b118126
 
 type TL_messages_readFeaturedStickers struct {
-	Id []int64 // Id:Vector<long>
+	Id []int64 // id:Vector<long>
 }
 
 // Encoding TL_messages_readFeaturedStickers
@@ -14179,14 +15377,14 @@ func (e TL_messages_readFeaturedStickers) encode() []byte {
 	return x.buf
 }
 
-// messages.getRecentStickers#5ea192c9 flags:# attached:flags.0?true Hash:int = messages.RecentStickers;
+// messages.getRecentStickers#5ea192c9 flags:# attached:flags.0?true hash:int = messages.RecentStickers;
 
 const crc_messages_getRecentStickers = 0x5ea192c9
 
 type TL_messages_getRecentStickers struct {
 	Flags    int32
 	Attached bool  // attached:flags.0?true
-	Hash     int32 // Hash:int
+	Hash     int32 // hash:int
 }
 
 // Encoding TL_messages_getRecentStickers
@@ -14202,14 +15400,14 @@ func (e TL_messages_getRecentStickers) encode() []byte {
 	return x.buf
 }
 
-// messages.saveRecentSticker#392718f8 flags:# attached:flags.0?true Id:InputDocument unsave:Bool = Bool;
+// messages.saveRecentSticker#392718f8 flags:# attached:flags.0?true id:InputDocument unsave:Bool = Bool;
 
 const crc_messages_saveRecentSticker = 0x392718f8
 
 type TL_messages_saveRecentSticker struct {
 	Flags    int32
 	Attached bool // attached:flags.0?true
-	Id       TL   // Id:InputDocument
+	Id       TL   // id:InputDocument
 	Unsave   TL   // unsave:Bool
 }
 
@@ -14273,12 +15471,12 @@ func (e TL_messages_getArchivedStickers) encode() []byte {
 	return x.buf
 }
 
-// messages.getMaskStickers#65b8c79f Hash:int = messages.AllStickers;
+// messages.getMaskStickers#65b8c79f hash:int = messages.AllStickers;
 
 const crc_messages_getMaskStickers = 0x65b8c79f
 
 type TL_messages_getMaskStickers struct {
-	Hash int32 // Hash:int
+	Hash int32 // hash:int
 }
 
 // Encoding TL_messages_getMaskStickers
@@ -14305,7 +15503,7 @@ func (e TL_messages_getAttachedStickers) encode() []byte {
 	return x.buf
 }
 
-// messages.setGameScore#8ef8ecc0 flags:# edit_message:flags.0?true force:flags.1?true peer:InputPeer Id:int user_id:InputUser score:int = Updates;
+// messages.setGameScore#8ef8ecc0 flags:# edit_message:flags.0?true force:flags.1?true peer:InputPeer id:int user_id:InputUser score:int = Updates;
 
 const crc_messages_setGameScore = 0x8ef8ecc0
 
@@ -14314,7 +15512,7 @@ type TL_messages_setGameScore struct {
 	Edit_message bool  // edit_message:flags.0?true
 	Force        bool  // force:flags.1?true
 	Peer         TL    // peer:InputPeer
-	Id           int32 // Id:int
+	Id           int32 // id:int
 	User_id      TL    // user_id:InputUser
 	Score        int32 // score:int
 }
@@ -14338,7 +15536,7 @@ func (e TL_messages_setGameScore) encode() []byte {
 	return x.buf
 }
 
-// messages.setInlineGameScore#15ad9f64 flags:# edit_message:flags.0?true force:flags.1?true Id:InputBotInlineMessageID user_id:InputUser score:int = Bool;
+// messages.setInlineGameScore#15ad9f64 flags:# edit_message:flags.0?true force:flags.1?true id:InputBotInlineMessageID user_id:InputUser score:int = Bool;
 
 const crc_messages_setInlineGameScore = 0x15ad9f64
 
@@ -14346,7 +15544,7 @@ type TL_messages_setInlineGameScore struct {
 	Flags        int32
 	Edit_message bool  // edit_message:flags.0?true
 	Force        bool  // force:flags.1?true
-	Id           TL    // Id:InputBotInlineMessageID
+	Id           TL    // id:InputBotInlineMessageID
 	User_id      TL    // user_id:InputUser
 	Score        int32 // score:int
 }
@@ -14369,13 +15567,13 @@ func (e TL_messages_setInlineGameScore) encode() []byte {
 	return x.buf
 }
 
-// messages.getGameHighScores#e822649d peer:InputPeer Id:int user_id:InputUser = messages.HighScores;
+// messages.getGameHighScores#e822649d peer:InputPeer id:int user_id:InputUser = messages.HighScores;
 
 const crc_messages_getGameHighScores = 0xe822649d
 
 type TL_messages_getGameHighScores struct {
 	Peer    TL    // peer:InputPeer
-	Id      int32 // Id:int
+	Id      int32 // id:int
 	User_id TL    // user_id:InputUser
 }
 
@@ -14389,12 +15587,12 @@ func (e TL_messages_getGameHighScores) encode() []byte {
 	return x.buf
 }
 
-// messages.getInlineGameHighScores#f635e1b Id:InputBotInlineMessageID user_id:InputUser = messages.HighScores;
+// messages.getInlineGameHighScores#f635e1b id:InputBotInlineMessageID user_id:InputUser = messages.HighScores;
 
 const crc_messages_getInlineGameHighScores = 0xf635e1b
 
 type TL_messages_getInlineGameHighScores struct {
-	Id      TL // Id:InputBotInlineMessageID
+	Id      TL // id:InputBotInlineMessageID
 	User_id TL // user_id:InputUser
 }
 
@@ -14443,13 +15641,13 @@ func (e TL_messages_getAllChats) encode() []byte {
 	return x.buf
 }
 
-// messages.getWebPage#32ca8f91 url:string Hash:int = WebPage;
+// messages.getWebPage#32ca8f91 url:string hash:int = WebPage;
 
 const crc_messages_getWebPage = 0x32ca8f91
 
 type TL_messages_getWebPage struct {
 	Url  string // url:string
-	Hash int32  // Hash:int
+	Hash int32  // hash:int
 }
 
 // Encoding TL_messages_getWebPage
@@ -14584,6 +15782,104 @@ func (e TL_messages_setBotPrecheckoutResults) encode() []byte {
 	return x.buf
 }
 
+// messages.uploadMedia#519bc2b1 peer:InputPeer media:InputMedia = MessageMedia;
+
+const crc_messages_uploadMedia = 0x519bc2b1
+
+type TL_messages_uploadMedia struct {
+	Peer  TL // peer:InputPeer
+	Media TL // media:InputMedia
+}
+
+// Encoding TL_messages_uploadMedia
+func (e TL_messages_uploadMedia) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_messages_uploadMedia)
+	x.Bytes(e.Peer.encode())
+	x.Bytes(e.Media.encode())
+	return x.buf
+}
+
+// messages.sendScreenshotNotification#c97df020 peer:InputPeer reply_to_msg_id:int random_id:long = Updates;
+
+const crc_messages_sendScreenshotNotification = 0xc97df020
+
+type TL_messages_sendScreenshotNotification struct {
+	Peer            TL    // peer:InputPeer
+	Reply_to_msg_id int32 // reply_to_msg_id:int
+	Random_id       int64 // random_id:long
+}
+
+// Encoding TL_messages_sendScreenshotNotification
+func (e TL_messages_sendScreenshotNotification) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_messages_sendScreenshotNotification)
+	x.Bytes(e.Peer.encode())
+	x.Int(e.Reply_to_msg_id)
+	x.Long(e.Random_id)
+	return x.buf
+}
+
+// messages.getFavedStickers#21ce0b0e hash:int = messages.FavedStickers;
+
+const crc_messages_getFavedStickers = 0x21ce0b0e
+
+type TL_messages_getFavedStickers struct {
+	Hash int32 // hash:int
+}
+
+// Encoding TL_messages_getFavedStickers
+func (e TL_messages_getFavedStickers) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_messages_getFavedStickers)
+	x.Int(e.Hash)
+	return x.buf
+}
+
+// messages.faveSticker#b9ffc55b id:InputDocument unfave:Bool = Bool;
+
+const crc_messages_faveSticker = 0xb9ffc55b
+
+type TL_messages_faveSticker struct {
+	Id     TL // id:InputDocument
+	Unfave TL // unfave:Bool
+}
+
+// Encoding TL_messages_faveSticker
+func (e TL_messages_faveSticker) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_messages_faveSticker)
+	x.Bytes(e.Id.encode())
+	x.Bytes(e.Unfave.encode())
+	return x.buf
+}
+
+// messages.getUnreadMentions#46578472 peer:InputPeer offset_id:int add_offset:int limit:int max_id:int min_id:int = messages.Messages;
+
+const crc_messages_getUnreadMentions = 0x46578472
+
+type TL_messages_getUnreadMentions struct {
+	Peer       TL    // peer:InputPeer
+	Offset_id  int32 // offset_id:int
+	Add_offset int32 // add_offset:int
+	Limit      int32 // limit:int
+	Max_id     int32 // max_id:int
+	Min_id     int32 // min_id:int
+}
+
+// Encoding TL_messages_getUnreadMentions
+func (e TL_messages_getUnreadMentions) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_messages_getUnreadMentions)
+	x.Bytes(e.Peer.encode())
+	x.Int(e.Offset_id)
+	x.Int(e.Add_offset)
+	x.Int(e.Limit)
+	x.Int(e.Max_id)
+	x.Int(e.Min_id)
+	return x.buf
+}
+
 // updates.getState#edd4882a = updates.State;
 
 const crc_updates_getState = 0xedd4882a
@@ -14657,12 +15953,12 @@ func (e TL_updates_getChannelDifference) encode() []byte {
 	return x.buf
 }
 
-// photos.updateProfilePhoto#f0bb5152 Id:InputPhoto = UserProfilePhoto;
+// photos.updateProfilePhoto#f0bb5152 id:InputPhoto = UserProfilePhoto;
 
 const crc_photos_updateProfilePhoto = 0xf0bb5152
 
 type TL_photos_updateProfilePhoto struct {
-	Id TL // Id:InputPhoto
+	Id TL // id:InputPhoto
 }
 
 // Encoding TL_photos_updateProfilePhoto
@@ -14689,12 +15985,12 @@ func (e TL_photos_uploadProfilePhoto) encode() []byte {
 	return x.buf
 }
 
-// photos.deletePhotos#87cf7f2f Id:Vector<InputPhoto> = Vector<long>;
+// photos.deletePhotos#87cf7f2f id:Vector<InputPhoto> = Vector<long>;
 
 const crc_photos_deletePhotos = 0x87cf7f2f
 
 type TL_photos_deletePhotos struct {
-	Id []TL // Id:Vector<InputPhoto>
+	Id []TL // id:Vector<InputPhoto>
 }
 
 // Encoding TL_photos_deletePhotos
@@ -14806,6 +16102,62 @@ func (e TL_upload_getWebFile) encode() []byte {
 	x.Bytes(e.Location.encode())
 	x.Int(e.Offset)
 	x.Int(e.Limit)
+	return x.buf
+}
+
+// upload.getCdnFile#2000bcc3 file_token:bytes offset:int limit:int = upload.CdnFile;
+
+const crc_upload_getCdnFile = 0x2000bcc3
+
+type TL_upload_getCdnFile struct {
+	File_token []byte // file_token:bytes
+	Offset     int32  // offset:int
+	Limit      int32  // limit:int
+}
+
+// Encoding TL_upload_getCdnFile
+func (e TL_upload_getCdnFile) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_upload_getCdnFile)
+	x.Bytes(e.File_token)
+	x.Int(e.Offset)
+	x.Int(e.Limit)
+	return x.buf
+}
+
+// upload.reuploadCdnFile#1af91c09 file_token:bytes request_token:bytes = Vector<CdnFileHash>;
+
+const crc_upload_reuploadCdnFile = 0x1af91c09
+
+type TL_upload_reuploadCdnFile struct {
+	File_token    []byte // file_token:bytes
+	Request_token []byte // request_token:bytes
+}
+
+// Encoding TL_upload_reuploadCdnFile
+func (e TL_upload_reuploadCdnFile) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_upload_reuploadCdnFile)
+	x.Bytes(e.File_token)
+	x.Bytes(e.Request_token)
+	return x.buf
+}
+
+// upload.getCdnFileHashes#f715c87b file_token:bytes offset:int = Vector<CdnFileHash>;
+
+const crc_upload_getCdnFileHashes = 0xf715c87b
+
+type TL_upload_getCdnFileHashes struct {
+	File_token []byte // file_token:bytes
+	Offset     int32  // offset:int
+}
+
+// Encoding TL_upload_getCdnFileHashes
+func (e TL_upload_getCdnFileHashes) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_upload_getCdnFileHashes)
+	x.Bytes(e.File_token)
+	x.Int(e.Offset)
 	return x.buf
 }
 
@@ -14943,6 +16295,20 @@ func (e TL_help_setBotUpdatesStatus) encode() []byte {
 	return x.buf
 }
 
+// help.getCdnConfig#52029342 = CdnConfig;
+
+const crc_help_getCdnConfig = 0x52029342
+
+type TL_help_getCdnConfig struct {
+}
+
+// Encoding TL_help_getCdnConfig
+func (e TL_help_getCdnConfig) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_help_getCdnConfig)
+	return x.buf
+}
+
 // channels.readHistory#cc104937 channel:InputChannel max_id:int = Bool;
 
 const crc_channels_readHistory = 0xcc104937
@@ -14961,13 +16327,13 @@ func (e TL_channels_readHistory) encode() []byte {
 	return x.buf
 }
 
-// channels.deleteMessages#84c1fd4e channel:InputChannel Id:Vector<int> = messages.AffectedMessages;
+// channels.deleteMessages#84c1fd4e channel:InputChannel id:Vector<int> = messages.AffectedMessages;
 
 const crc_channels_deleteMessages = 0x84c1fd4e
 
 type TL_channels_deleteMessages struct {
 	Channel TL      // channel:InputChannel
-	Id      []int32 // Id:Vector<int>
+	Id      []int32 // id:Vector<int>
 }
 
 // Encoding TL_channels_deleteMessages
@@ -14997,14 +16363,14 @@ func (e TL_channels_deleteUserHistory) encode() []byte {
 	return x.buf
 }
 
-// channels.reportSpam#fe087810 channel:InputChannel user_id:InputUser Id:Vector<int> = Bool;
+// channels.reportSpam#fe087810 channel:InputChannel user_id:InputUser id:Vector<int> = Bool;
 
 const crc_channels_reportSpam = 0xfe087810
 
 type TL_channels_reportSpam struct {
 	Channel TL      // channel:InputChannel
 	User_id TL      // user_id:InputUser
-	Id      []int32 // Id:Vector<int>
+	Id      []int32 // id:Vector<int>
 }
 
 // Encoding TL_channels_reportSpam
@@ -15017,13 +16383,13 @@ func (e TL_channels_reportSpam) encode() []byte {
 	return x.buf
 }
 
-// channels.getMessages#93d7b347 channel:InputChannel Id:Vector<int> = messages.Messages;
+// channels.getMessages#93d7b347 channel:InputChannel id:Vector<int> = messages.Messages;
 
 const crc_channels_getMessages = 0x93d7b347
 
 type TL_channels_getMessages struct {
 	Channel TL      // channel:InputChannel
-	Id      []int32 // Id:Vector<int>
+	Id      []int32 // id:Vector<int>
 }
 
 // Encoding TL_channels_getMessages
@@ -15075,12 +16441,12 @@ func (e TL_channels_getParticipant) encode() []byte {
 	return x.buf
 }
 
-// channels.getChannels#a7f6bbb Id:Vector<InputChannel> = messages.Chats;
+// channels.getChannels#a7f6bbb id:Vector<InputChannel> = messages.Chats;
 
 const crc_channels_getChannels = 0xa7f6bbb
 
 type TL_channels_getChannels struct {
-	Id []TL // Id:Vector<InputChannel>
+	Id []TL // id:Vector<InputChannel>
 }
 
 // Encoding TL_channels_getChannels
@@ -15154,14 +16520,14 @@ func (e TL_channels_editAbout) encode() []byte {
 	return x.buf
 }
 
-// channels.editAdmin#eb7611d0 channel:InputChannel user_id:InputUser role:ChannelParticipantRole = Updates;
+// channels.editAdmin#20b88214 channel:InputChannel user_id:InputUser admin_rights:ChannelAdminRights = Updates;
 
-const crc_channels_editAdmin = 0xeb7611d0
+const crc_channels_editAdmin = 0x20b88214
 
 type TL_channels_editAdmin struct {
-	Channel TL // channel:InputChannel
-	User_id TL // user_id:InputUser
-	Role    TL // role:ChannelParticipantRole
+	Channel      TL // channel:InputChannel
+	User_id      TL // user_id:InputUser
+	Admin_rights TL // admin_rights:ChannelAdminRights
 }
 
 // Encoding TL_channels_editAdmin
@@ -15170,7 +16536,7 @@ func (e TL_channels_editAdmin) encode() []byte {
 	x.UInt(crc_channels_editAdmin)
 	x.Bytes(e.Channel.encode())
 	x.Bytes(e.User_id.encode())
-	x.Bytes(e.Role.encode())
+	x.Bytes(e.Admin_rights.encode())
 	return x.buf
 }
 
@@ -15296,26 +16662,6 @@ func (e TL_channels_inviteToChannel) encode() []byte {
 	return x.buf
 }
 
-// channels.kickFromChannel#a672de14 channel:InputChannel user_id:InputUser kicked:Bool = Updates;
-
-const crc_channels_kickFromChannel = 0xa672de14
-
-type TL_channels_kickFromChannel struct {
-	Channel TL // channel:InputChannel
-	User_id TL // user_id:InputUser
-	Kicked  TL // kicked:Bool
-}
-
-// Encoding TL_channels_kickFromChannel
-func (e TL_channels_kickFromChannel) encode() []byte {
-	x := NewEncodeBuf(512)
-	x.UInt(crc_channels_kickFromChannel)
-	x.Bytes(e.Channel.encode())
-	x.Bytes(e.User_id.encode())
-	x.Bytes(e.Kicked.encode())
-	return x.buf
-}
-
 // channels.exportInvite#c7560885 channel:InputChannel = ExportedChatInvite;
 
 const crc_channels_exportInvite = 0xc7560885
@@ -15366,13 +16712,13 @@ func (e TL_channels_toggleInvites) encode() []byte {
 	return x.buf
 }
 
-// channels.exportMessageLink#c846d22d channel:InputChannel Id:int = ExportedMessageLink;
+// channels.exportMessageLink#c846d22d channel:InputChannel id:int = ExportedMessageLink;
 
 const crc_channels_exportMessageLink = 0xc846d22d
 
 type TL_channels_exportMessageLink struct {
 	Channel TL    // channel:InputChannel
-	Id      int32 // Id:int
+	Id      int32 // id:int
 }
 
 // Encoding TL_channels_exportMessageLink
@@ -15402,7 +16748,7 @@ func (e TL_channels_toggleSignatures) encode() []byte {
 	return x.buf
 }
 
-// channels.updatePinnedMessage#a72ded52 flags:# silent:flags.0?true channel:InputChannel Id:int = Updates;
+// channels.updatePinnedMessage#a72ded52 flags:# silent:flags.0?true channel:InputChannel id:int = Updates;
 
 const crc_channels_updatePinnedMessage = 0xa72ded52
 
@@ -15410,7 +16756,7 @@ type TL_channels_updatePinnedMessage struct {
 	Flags   int32
 	Silent  bool  // silent:flags.0?true
 	Channel TL    // channel:InputChannel
-	Id      int32 // Id:int
+	Id      int32 // id:int
 }
 
 // Encoding TL_channels_updatePinnedMessage
@@ -15438,6 +16784,103 @@ type TL_channels_getAdminedPublicChannels struct {
 func (e TL_channels_getAdminedPublicChannels) encode() []byte {
 	x := NewEncodeBuf(512)
 	x.UInt(crc_channels_getAdminedPublicChannels)
+	return x.buf
+}
+
+// channels.editBanned#bfd915cd channel:InputChannel user_id:InputUser banned_rights:ChannelBannedRights = Updates;
+
+const crc_channels_editBanned = 0xbfd915cd
+
+type TL_channels_editBanned struct {
+	Channel       TL // channel:InputChannel
+	User_id       TL // user_id:InputUser
+	Banned_rights TL // banned_rights:ChannelBannedRights
+}
+
+// Encoding TL_channels_editBanned
+func (e TL_channels_editBanned) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channels_editBanned)
+	x.Bytes(e.Channel.encode())
+	x.Bytes(e.User_id.encode())
+	x.Bytes(e.Banned_rights.encode())
+	return x.buf
+}
+
+// channels.getAdminLog#33ddf480 flags:# channel:InputChannel q:string events_filter:flags.0?ChannelAdminLogEventsFilter admins:flags.1?Vector<InputUser> max_id:long min_id:long limit:int = channels.AdminLogResults;
+
+const crc_channels_getAdminLog = 0x33ddf480
+
+type TL_channels_getAdminLog struct {
+	Flags         int32
+	Channel       TL     // channel:InputChannel
+	Q             string // q:string
+	Events_filter TL     // events_filter:flags.0?ChannelAdminLogEventsFilter
+	Admins        []TL   // admins:flags.1?Vector<InputUser>
+	Max_id        int64  // max_id:long
+	Min_id        int64  // min_id:long
+	Limit         int32  // limit:int
+}
+
+// Encoding TL_channels_getAdminLog
+func (e TL_channels_getAdminLog) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channels_getAdminLog)
+	var flags int32
+	if _, ok := (e.Events_filter).(TL_null); !ok {
+		flags |= (1 << 0)
+	}
+	if len(e.Admins) != 0 {
+		flags |= (1 << 1)
+	}
+	x.Int(flags)
+	x.Bytes(e.Channel.encode())
+	x.String(e.Q)
+	if flags&(1<<0) != 0 {
+		x.Bytes(e.Events_filter.encode())
+	}
+	if flags&(1<<1) != 0 {
+		x.Vector(e.Admins)
+	}
+	x.Long(e.Max_id)
+	x.Long(e.Min_id)
+	x.Int(e.Limit)
+	return x.buf
+}
+
+// channels.setStickers#ea8ca4f9 channel:InputChannel stickerset:InputStickerSet = Bool;
+
+const crc_channels_setStickers = 0xea8ca4f9
+
+type TL_channels_setStickers struct {
+	Channel    TL // channel:InputChannel
+	Stickerset TL // stickerset:InputStickerSet
+}
+
+// Encoding TL_channels_setStickers
+func (e TL_channels_setStickers) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channels_setStickers)
+	x.Bytes(e.Channel.encode())
+	x.Bytes(e.Stickerset.encode())
+	return x.buf
+}
+
+// channels.readMessageContents#eab5dc38 channel:InputChannel id:Vector<int> = Bool;
+
+const crc_channels_readMessageContents = 0xeab5dc38
+
+type TL_channels_readMessageContents struct {
+	Channel TL      // channel:InputChannel
+	Id      []int32 // id:Vector<int>
+}
+
+// Encoding TL_channels_readMessageContents
+func (e TL_channels_readMessageContents) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_channels_readMessageContents)
+	x.Bytes(e.Channel.encode())
+	x.VectorInt(e.Id)
 	return x.buf
 }
 
@@ -15608,6 +17051,87 @@ func (e TL_payments_clearSavedInfo) encode() []byte {
 	return x.buf
 }
 
+// stickers.createStickerSet#9bd86e6a flags:# masks:flags.0?true user_id:InputUser title:string short_name:string stickers:Vector<InputStickerSetItem> = messages.StickerSet;
+
+const crc_stickers_createStickerSet = 0x9bd86e6a
+
+type TL_stickers_createStickerSet struct {
+	Flags      int32
+	Masks      bool   // masks:flags.0?true
+	User_id    TL     // user_id:InputUser
+	Title      string // title:string
+	Short_name string // short_name:string
+	Stickers   []TL   // stickers:Vector<InputStickerSetItem>
+}
+
+// Encoding TL_stickers_createStickerSet
+func (e TL_stickers_createStickerSet) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_stickers_createStickerSet)
+	var flags int32
+	if e.Masks {
+		flags |= (1 << 0)
+	}
+	x.Int(flags)
+	x.Bytes(e.User_id.encode())
+	x.String(e.Title)
+	x.String(e.Short_name)
+	x.Vector(e.Stickers)
+	return x.buf
+}
+
+// stickers.removeStickerFromSet#f7760f51 sticker:InputDocument = messages.StickerSet;
+
+const crc_stickers_removeStickerFromSet = 0xf7760f51
+
+type TL_stickers_removeStickerFromSet struct {
+	Sticker TL // sticker:InputDocument
+}
+
+// Encoding TL_stickers_removeStickerFromSet
+func (e TL_stickers_removeStickerFromSet) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_stickers_removeStickerFromSet)
+	x.Bytes(e.Sticker.encode())
+	return x.buf
+}
+
+// stickers.changeStickerPosition#ffb6d4ca sticker:InputDocument position:int = messages.StickerSet;
+
+const crc_stickers_changeStickerPosition = 0xffb6d4ca
+
+type TL_stickers_changeStickerPosition struct {
+	Sticker  TL    // sticker:InputDocument
+	Position int32 // position:int
+}
+
+// Encoding TL_stickers_changeStickerPosition
+func (e TL_stickers_changeStickerPosition) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_stickers_changeStickerPosition)
+	x.Bytes(e.Sticker.encode())
+	x.Int(e.Position)
+	return x.buf
+}
+
+// stickers.addStickerToSet#8653febe stickerset:InputStickerSet sticker:InputStickerSetItem = messages.StickerSet;
+
+const crc_stickers_addStickerToSet = 0x8653febe
+
+type TL_stickers_addStickerToSet struct {
+	Stickerset TL // stickerset:InputStickerSet
+	Sticker    TL // sticker:InputStickerSetItem
+}
+
+// Encoding TL_stickers_addStickerToSet
+func (e TL_stickers_addStickerToSet) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_stickers_addStickerToSet)
+	x.Bytes(e.Stickerset.encode())
+	x.Bytes(e.Sticker.encode())
+	return x.buf
+}
+
 // phone.getCallConfig#55451fa9 = DataJSON;
 
 const crc_phone_getCallConfig = 0x55451fa9
@@ -15761,6 +17285,70 @@ func (e TL_phone_saveCallDebug) encode() []byte {
 	x.Bytes(e.Debug.encode())
 	return x.buf
 }
+
+// langpack.getLangPack#9ab5c58e lang_code:string = LangPackDifference;
+
+const crc_langpack_getLangPack = 0x9ab5c58e
+
+type TL_langpack_getLangPack struct {
+	Lang_code string // lang_code:string
+}
+
+// Encoding TL_langpack_getLangPack
+func (e TL_langpack_getLangPack) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_langpack_getLangPack)
+	x.String(e.Lang_code)
+	return x.buf
+}
+
+// langpack.getStrings#2e1ee318 lang_code:string keys:Vector<string> = Vector<LangPackString>;
+
+const crc_langpack_getStrings = 0x2e1ee318
+
+type TL_langpack_getStrings struct {
+	Lang_code string   // lang_code:string
+	Keys      []string // keys:Vector<string>
+}
+
+// Encoding TL_langpack_getStrings
+func (e TL_langpack_getStrings) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_langpack_getStrings)
+	x.String(e.Lang_code)
+	x.VectorString(e.Keys)
+	return x.buf
+}
+
+// langpack.getDifference#b2e4d7d from_version:int = LangPackDifference;
+
+const crc_langpack_getDifference = 0xb2e4d7d
+
+type TL_langpack_getDifference struct {
+	From_version int32 // from_version:int
+}
+
+// Encoding TL_langpack_getDifference
+func (e TL_langpack_getDifference) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_langpack_getDifference)
+	x.Int(e.From_version)
+	return x.buf
+}
+
+// langpack.getLanguages#800fd57d = Vector<LangPackLanguage>;
+
+const crc_langpack_getLanguages = 0x800fd57d
+
+type TL_langpack_getLanguages struct {
+}
+
+// Encoding TL_langpack_getLanguages
+func (e TL_langpack_getLanguages) encode() []byte {
+	x := NewEncodeBuf(512)
+	x.UInt(crc_langpack_getLanguages)
+	return x.buf
+}
 func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 	switch constructor {
 	case crc_boolFalse:
@@ -15769,6 +17357,10 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		r = TL_boolTrue{}
 	case crc_true:
 		r = TL_true{}
+	/*case crc_vector:
+	r = TL_vector{
+	{t:m.Object(),
+	}*/
 	case crc_error:
 		r = TL_error{
 			Code: m.Int(),
@@ -15833,16 +17425,30 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		if flags&(1<<0) != 0 {
 			stickers = m.Vector()
 		}
+		var ttl_seconds int32
+		if flags&(1<<1) != 0 {
+			ttl_seconds = m.Int()
+		}
 		r = TL_inputMediaUploadedPhoto{
-			Flags:    flags,
-			File:     file,
-			Caption:  caption,
-			Stickers: stickers,
+			Flags:       flags,
+			File:        file,
+			Caption:     caption,
+			Stickers:    stickers,
+			Ttl_seconds: ttl_seconds,
 		}
 	case crc_inputMediaPhoto:
+		flags := m.Int()
+		id := m.Object()
+		caption := m.String()
+		var ttl_seconds int32
+		if flags&(1<<0) != 0 {
+			ttl_seconds = m.Int()
+		}
 		r = TL_inputMediaPhoto{
-			Id:      m.Object(),
-			Caption: m.String(),
+			Flags:       flags,
+			Id:          id,
+			Caption:     caption,
+			Ttl_seconds: ttl_seconds,
 		}
 	case crc_inputMediaGeoPoint:
 		r = TL_inputMediaGeoPoint{
@@ -15857,45 +17463,44 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 	case crc_inputMediaUploadedDocument:
 		flags := m.Int()
 		file := m.Object()
+		var thumb TL
+		if flags&(1<<2) != 0 {
+			thumb = m.Object()
+		}
 		mime_type := m.String()
 		attributes := m.Vector()
 		caption := m.String()
 		var stickers []TL
 		if flags&(1<<0) != 0 {
 			stickers = m.Vector()
+		}
+		var ttl_seconds int32
+		if flags&(1<<1) != 0 {
+			ttl_seconds = m.Int()
 		}
 		r = TL_inputMediaUploadedDocument{
-			Flags:      flags,
-			File:       file,
-			Mime_type:  mime_type,
-			Attributes: attributes,
-			Caption:    caption,
-			Stickers:   stickers,
-		}
-	case crc_inputMediaUploadedThumbDocument:
-		flags := m.Int()
-		file := m.Object()
-		thumb := m.Object()
-		mime_type := m.String()
-		attributes := m.Vector()
-		caption := m.String()
-		var stickers []TL
-		if flags&(1<<0) != 0 {
-			stickers = m.Vector()
-		}
-		r = TL_inputMediaUploadedThumbDocument{
-			Flags:      flags,
-			File:       file,
-			Thumb:      thumb,
-			Mime_type:  mime_type,
-			Attributes: attributes,
-			Caption:    caption,
-			Stickers:   stickers,
+			Flags:       flags,
+			File:        file,
+			Thumb:       thumb,
+			Mime_type:   mime_type,
+			Attributes:  attributes,
+			Caption:     caption,
+			Stickers:    stickers,
+			Ttl_seconds: ttl_seconds,
 		}
 	case crc_inputMediaDocument:
+		flags := m.Int()
+		id := m.Object()
+		caption := m.String()
+		var ttl_seconds int32
+		if flags&(1<<0) != 0 {
+			ttl_seconds = m.Int()
+		}
 		r = TL_inputMediaDocument{
-			Id:      m.Object(),
-			Caption: m.String(),
+			Flags:       flags,
+			Id:          id,
+			Caption:     caption,
+			Ttl_seconds: ttl_seconds,
 		}
 	case crc_inputMediaVenue:
 		r = TL_inputMediaVenue{
@@ -15911,14 +17516,32 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Q:   m.String(),
 		}
 	case crc_inputMediaPhotoExternal:
+		flags := m.Int()
+		url := m.String()
+		caption := m.String()
+		var ttl_seconds int32
+		if flags&(1<<0) != 0 {
+			ttl_seconds = m.Int()
+		}
 		r = TL_inputMediaPhotoExternal{
-			Url:     m.String(),
-			Caption: m.String(),
+			Flags:       flags,
+			Url:         url,
+			Caption:     caption,
+			Ttl_seconds: ttl_seconds,
 		}
 	case crc_inputMediaDocumentExternal:
+		flags := m.Int()
+		url := m.String()
+		caption := m.String()
+		var ttl_seconds int32
+		if flags&(1<<0) != 0 {
+			ttl_seconds = m.Int()
+		}
 		r = TL_inputMediaDocumentExternal{
-			Url:     m.String(),
-			Caption: m.String(),
+			Flags:       flags,
+			Url:         url,
+			Caption:     caption,
+			Ttl_seconds: ttl_seconds,
 		}
 	case crc_inputMediaGame:
 		r = TL_inputMediaGame{
@@ -16097,6 +17720,10 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		if flags&(1<<19) != 0 {
 			bot_inline_placeholder = m.String()
 		}
+		var lang_code string
+		if flags&(1<<22) != 0 {
+			lang_code = m.String()
+		}
 		r = TL_user{
 			Flags:                  flags,
 			Self:                   self,
@@ -16121,6 +17748,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Bot_info_version:       bot_info_version,
 			Restriction_reason:     restriction_reason,
 			Bot_inline_placeholder: bot_inline_placeholder,
+			Lang_code:              lang_code,
 		}
 	case crc_userProfilePhotoEmpty:
 		r = TL_userProfilePhotoEmpty{}
@@ -16192,10 +17820,8 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 	case crc_channel:
 		flags := m.Int()
 		creator := flags&(1<<0) != 0
-		kicked := flags&(1<<1) != 0
 		left := flags&(1<<2) != 0
 		editor := flags&(1<<3) != 0
-		moderator := flags&(1<<4) != 0
 		broadcast := flags&(1<<5) != 0
 		verified := flags&(1<<7) != 0
 		megagroup := flags&(1<<8) != 0
@@ -16220,13 +17846,19 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		if flags&(1<<9) != 0 {
 			restriction_reason = m.String()
 		}
+		var admin_rights TL
+		if flags&(1<<14) != 0 {
+			admin_rights = m.Object()
+		}
+		var banned_rights TL
+		if flags&(1<<15) != 0 {
+			banned_rights = m.Object()
+		}
 		r = TL_channel{
 			Flags:              flags,
 			Creator:            creator,
-			Kicked:             kicked,
 			Left:               left,
 			Editor:             editor,
-			Moderator:          moderator,
 			Broadcast:          broadcast,
 			Verified:           verified,
 			Megagroup:          megagroup,
@@ -16242,6 +17874,8 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Date:               date,
 			Version:            version,
 			Restriction_reason: restriction_reason,
+			Admin_rights:       admin_rights,
+			Banned_rights:      banned_rights,
 		}
 	case crc_channelForbidden:
 		flags := m.Int()
@@ -16250,6 +17884,10 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		id := m.Int()
 		access_hash := m.Long()
 		title := m.String()
+		var until_date int32
+		if flags&(1<<16) != 0 {
+			until_date = m.Int()
+		}
 		r = TL_channelForbidden{
 			Flags:       flags,
 			Broadcast:   broadcast,
@@ -16257,6 +17895,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Id:          id,
 			Access_hash: access_hash,
 			Title:       title,
+			Until_date:  until_date,
 		}
 	case crc_chatFull:
 		r = TL_chatFull{
@@ -16271,6 +17910,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		flags := m.Int()
 		can_view_participants := flags&(1<<3) != 0
 		can_set_username := flags&(1<<6) != 0
+		can_set_stickers := flags&(1<<7) != 0
 		id := m.Int()
 		about := m.String()
 		var participants_count int32
@@ -16284,6 +17924,10 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		var kicked_count int32
 		if flags&(1<<2) != 0 {
 			kicked_count = m.Int()
+		}
+		var banned_count int32
+		if flags&(1<<2) != 0 {
+			banned_count = m.Int()
 		}
 		read_inbox_max_id := m.Int()
 		read_outbox_max_id := m.Int()
@@ -16304,15 +17948,21 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		if flags&(1<<5) != 0 {
 			pinned_msg_id = m.Int()
 		}
+		var stickerset TL
+		if flags&(1<<8) != 0 {
+			stickerset = m.Object()
+		}
 		r = TL_channelFull{
 			Flags: flags,
 			Can_view_participants: can_view_participants,
 			Can_set_username:      can_set_username,
+			Can_set_stickers:      can_set_stickers,
 			Id:                    id,
 			About:                 about,
 			Participants_count:    participants_count,
 			Admins_count:          admins_count,
 			Kicked_count:          kicked_count,
+			Banned_count:          banned_count,
 			Read_inbox_max_id:     read_inbox_max_id,
 			Read_outbox_max_id:    read_outbox_max_id,
 			Unread_count:          unread_count,
@@ -16323,6 +17973,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Migrated_from_chat_id: migrated_from_chat_id,
 			Migrated_from_max_id:  migrated_from_max_id,
 			Pinned_msg_id:         pinned_msg_id,
+			Stickerset:            stickerset,
 		}
 	case crc_chatParticipant:
 		r = TL_chatParticipant{
@@ -16416,6 +18067,10 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		if flags&(1<<15) != 0 {
 			edit_date = m.Int()
 		}
+		var post_author string
+		if flags&(1<<16) != 0 {
+			post_author = m.String()
+		}
 		r = TL_message{
 			Flags:           flags,
 			Out:             out,
@@ -16436,6 +18091,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Entities:        entities,
 			Views:           views,
 			Edit_date:       edit_date,
+			Post_author:     post_author,
 		}
 	case crc_messageService:
 		flags := m.Int()
@@ -16473,9 +18129,24 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 	case crc_messageMediaEmpty:
 		r = TL_messageMediaEmpty{}
 	case crc_messageMediaPhoto:
+		flags := m.Int()
+		var photo TL
+		if flags&(1<<0) != 0 {
+			photo = m.Object()
+		}
+		var caption string
+		if flags&(1<<1) != 0 {
+			caption = m.String()
+		}
+		var ttl_seconds int32
+		if flags&(1<<2) != 0 {
+			ttl_seconds = m.Int()
+		}
 		r = TL_messageMediaPhoto{
-			Photo:   m.Object(),
-			Caption: m.String(),
+			Flags:       flags,
+			Photo:       photo,
+			Caption:     caption,
+			Ttl_seconds: ttl_seconds,
 		}
 	case crc_messageMediaGeo:
 		r = TL_messageMediaGeo{
@@ -16491,9 +18162,24 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 	case crc_messageMediaUnsupported:
 		r = TL_messageMediaUnsupported{}
 	case crc_messageMediaDocument:
+		flags := m.Int()
+		var document TL
+		if flags&(1<<0) != 0 {
+			document = m.Object()
+		}
+		var caption string
+		if flags&(1<<1) != 0 {
+			caption = m.String()
+		}
+		var ttl_seconds int32
+		if flags&(1<<2) != 0 {
+			ttl_seconds = m.Int()
+		}
 		r = TL_messageMediaDocument{
-			Document: m.Object(),
-			Caption:  m.String(),
+			Flags:       flags,
+			Document:    document,
+			Caption:     caption,
+			Ttl_seconds: ttl_seconds,
 		}
 	case crc_messageMediaWebPage:
 		r = TL_messageMediaWebPage{
@@ -16636,6 +18322,8 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Reason:   reason,
 			Duration: duration,
 		}
+	case crc_messageActionScreenshotTaken:
+		r = TL_messageActionScreenshotTaken{}
 	case crc_dialog:
 		flags := m.Int()
 		pinned := flags&(1<<2) != 0
@@ -16644,6 +18332,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		read_inbox_max_id := m.Int()
 		read_outbox_max_id := m.Int()
 		unread_count := m.Int()
+		unread_mentions_count := m.Int()
 		notify_settings := m.Object()
 		var pts int32
 		if flags&(1<<0) != 0 {
@@ -16654,16 +18343,17 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			draft = m.Object()
 		}
 		r = TL_dialog{
-			Flags:              flags,
-			Pinned:             pinned,
-			Peer:               peer,
-			Top_message:        top_message,
-			Read_inbox_max_id:  read_inbox_max_id,
-			Read_outbox_max_id: read_outbox_max_id,
-			Unread_count:       unread_count,
-			Notify_settings:    notify_settings,
-			Pts:                pts,
-			Draft:              draft,
+			Flags:                 flags,
+			Pinned:                pinned,
+			Peer:                  peer,
+			Top_message:           top_message,
+			Read_inbox_max_id:     read_inbox_max_id,
+			Read_outbox_max_id:    read_outbox_max_id,
+			Unread_count:          unread_count,
+			Unread_mentions_count: unread_mentions_count,
+			Notify_settings:       notify_settings,
+			Pts:                   pts,
+			Draft:                 draft,
 		}
 	case crc_photoEmpty:
 		r = TL_photoEmpty{
@@ -16894,14 +18584,16 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		r = TL_contacts_contactsNotModified{}
 	case crc_contacts_contacts:
 		r = TL_contacts_contacts{
-			Contacts: m.Vector(),
-			Users:    m.Vector(),
+			Contacts:    m.Vector(),
+			Saved_count: m.Int(),
+			Users:       m.Vector(),
 		}
 	case crc_contacts_importedContacts:
 		r = TL_contacts_importedContacts{
-			Imported:       m.Vector(),
-			Retry_contacts: m.VectorLong(),
-			Users:          m.Vector(),
+			Imported:        m.Vector(),
+			Popular_invites: m.Vector(),
+			Retry_contacts:  m.VectorLong(),
+			Users:           m.Vector(),
 		}
 	case crc_contacts_blocked:
 		r = TL_contacts_blocked{
@@ -17007,6 +18699,12 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Flags:  flags,
 			Missed: missed,
 		}
+	case crc_inputMessagesFilterRoundVoice:
+		r = TL_inputMessagesFilterRoundVoice{}
+	case crc_inputMessagesFilterRoundVideo:
+		r = TL_inputMessagesFilterRoundVideo{}
+	case crc_inputMessagesFilterMyMentions:
+		r = TL_inputMessagesFilterMyMentions{}
 	case crc_updateNewMessage:
 		r = TL_updateNewMessage{
 			Message:   m.Object(),
@@ -17437,6 +19135,21 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		r = TL_updatePhoneCall{
 			Phone_call: m.Object(),
 		}
+	case crc_updateLangPackTooLong:
+		r = TL_updateLangPackTooLong{}
+	case crc_updateLangPack:
+		r = TL_updateLangPack{
+			Difference: m.Object(),
+		}
+	case crc_updateFavedStickers:
+		r = TL_updateFavedStickers{}
+	case crc_updateChannelReadMessagesContents:
+		r = TL_updateChannelReadMessagesContents{
+			Channel_id: m.Int(),
+			Messages:   m.VectorInt(),
+		}
+	case crc_updateContactsReset:
+		r = TL_updateContactsReset{}
 	case crc_updates_state:
 		r = TL_updates_state{
 			Pts:          m.Int(),
@@ -17635,11 +19348,21 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Mtime:     m.Int(),
 			Bytes:     m.StringBytes(),
 		}
+	case crc_upload_fileCdnRedirect:
+		r = TL_upload_fileCdnRedirect{
+			Dc_id:           m.Int(),
+			File_token:      m.StringBytes(),
+			Encryption_key:  m.StringBytes(),
+			Encryption_iv:   m.StringBytes(),
+			Cdn_file_hashes: m.Vector(),
+		}
 	case crc_dcOption:
 		flags := m.Int()
 		ipv6 := flags&(1<<0) != 0
 		media_only := flags&(1<<1) != 0
 		tcpo_only := flags&(1<<2) != 0
+		cdn := flags&(1<<3) != 0
+		static := flags&(1<<4) != 0
 		id := m.Int()
 		ip_address := m.String()
 		port := m.Int()
@@ -17648,6 +19371,8 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Ipv6:       ipv6,
 			Media_only: media_only,
 			Tcpo_only:  tcpo_only,
+			Cdn:        cdn,
+			Static:     static,
 			Id:         id,
 			Ip_address: ip_address,
 			Port:       port,
@@ -17676,6 +19401,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		edit_time_limit := m.Int()
 		rating_e_decay := m.Int()
 		stickers_recent_limit := m.Int()
+		stickers_faved_limit := m.Int()
 		var tmp_sessions int32
 		if flags&(1<<0) != 0 {
 			tmp_sessions = m.Int()
@@ -17686,6 +19412,14 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		call_connect_timeout_ms := m.Int()
 		call_packet_timeout_ms := m.Int()
 		me_url_prefix := m.String()
+		var suggested_lang_code string
+		if flags&(1<<2) != 0 {
+			suggested_lang_code = m.String()
+		}
+		var lang_pack_version int32
+		if flags&(1<<2) != 0 {
+			lang_pack_version = m.Int()
+		}
 		disabled_features := m.Vector()
 		r = TL_config{
 			Flags:                    flags,
@@ -17711,6 +19445,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Edit_time_limit:          edit_time_limit,
 			Rating_e_decay:           rating_e_decay,
 			Stickers_recent_limit:    stickers_recent_limit,
+			Stickers_faved_limit:     stickers_faved_limit,
 			Tmp_sessions:             tmp_sessions,
 			Pinned_dialogs_count_max: pinned_dialogs_count_max,
 			Call_receive_timeout_ms:  call_receive_timeout_ms,
@@ -17718,6 +19453,8 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Call_connect_timeout_ms:  call_connect_timeout_ms,
 			Call_packet_timeout_ms:   call_packet_timeout_ms,
 			Me_url_prefix:            me_url_prefix,
+			Suggested_lang_code:      suggested_lang_code,
+			Lang_pack_version:        lang_pack_version,
 			Disabled_features:        disabled_features,
 		}
 	case crc_nearestDc:
@@ -17912,6 +19649,12 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		r = TL_sendMessageChooseContactAction{}
 	case crc_sendMessageGamePlayAction:
 		r = TL_sendMessageGamePlayAction{}
+	case crc_sendMessageRecordRoundAction:
+		r = TL_sendMessageRecordRoundAction{}
+	case crc_sendMessageUploadRoundAction:
+		r = TL_sendMessageUploadRoundAction{
+			Progress: m.Int(),
+		}
 	case crc_contacts_found:
 		r = TL_contacts_found{
 			Results: m.Vector(),
@@ -17995,10 +19738,17 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Mask_coords: mask_coords,
 		}
 	case crc_documentAttributeVideo:
+		flags := m.Int()
+		round_message := flags&(1<<0) != 0
+		duration := m.Int()
+		w := m.Int()
+		h := m.Int()
 		r = TL_documentAttributeVideo{
-			Duration: m.Int(),
-			W:        m.Int(),
-			H:        m.Int(),
+			Flags:         flags,
+			Round_message: round_message,
+			Duration:      duration,
+			W:             w,
+			H:             h,
 		}
 	case crc_documentAttributeAudio:
 		flags := m.Int()
@@ -18505,21 +20255,23 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		read_inbox_max_id := m.Int()
 		read_outbox_max_id := m.Int()
 		unread_count := m.Int()
+		unread_mentions_count := m.Int()
 		messages := m.Vector()
 		chats := m.Vector()
 		users := m.Vector()
 		r = TL_updates_channelDifferenceTooLong{
-			Flags:              flags,
-			Final:              final,
-			Pts:                pts,
-			Timeout:            timeout,
-			Top_message:        top_message,
-			Read_inbox_max_id:  read_inbox_max_id,
-			Read_outbox_max_id: read_outbox_max_id,
-			Unread_count:       unread_count,
-			Messages:           messages,
-			Chats:              chats,
-			Users:              users,
+			Flags:                 flags,
+			Final:                 final,
+			Pts:                   pts,
+			Timeout:               timeout,
+			Top_message:           top_message,
+			Read_inbox_max_id:     read_inbox_max_id,
+			Read_outbox_max_id:    read_outbox_max_id,
+			Unread_count:          unread_count,
+			Unread_mentions_count: unread_mentions_count,
+			Messages:              messages,
+			Chats:                 chats,
+			Users:                 users,
 		}
 	case crc_updates_channelDifference:
 		flags := m.Int()
@@ -18565,42 +20317,60 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Inviter_id: m.Int(),
 			Date:       m.Int(),
 		}
-	case crc_channelParticipantModerator:
-		r = TL_channelParticipantModerator{
-			User_id:    m.Int(),
-			Inviter_id: m.Int(),
-			Date:       m.Int(),
-		}
-	case crc_channelParticipantEditor:
-		r = TL_channelParticipantEditor{
-			User_id:    m.Int(),
-			Inviter_id: m.Int(),
-			Date:       m.Int(),
-		}
-	case crc_channelParticipantKicked:
-		r = TL_channelParticipantKicked{
-			User_id:   m.Int(),
-			Kicked_by: m.Int(),
-			Date:      m.Int(),
-		}
 	case crc_channelParticipantCreator:
 		r = TL_channelParticipantCreator{
 			User_id: m.Int(),
+		}
+	case crc_channelParticipantAdmin:
+		flags := m.Int()
+		can_edit := flags&(1<<0) != 0
+		user_id := m.Int()
+		inviter_id := m.Int()
+		promoted_by := m.Int()
+		date := m.Int()
+		admin_rights := m.Object()
+		r = TL_channelParticipantAdmin{
+			Flags:        flags,
+			Can_edit:     can_edit,
+			User_id:      user_id,
+			Inviter_id:   inviter_id,
+			Promoted_by:  promoted_by,
+			Date:         date,
+			Admin_rights: admin_rights,
+		}
+	case crc_channelParticipantBanned:
+		flags := m.Int()
+		left := flags&(1<<0) != 0
+		user_id := m.Int()
+		kicked_by := m.Int()
+		date := m.Int()
+		banned_rights := m.Object()
+		r = TL_channelParticipantBanned{
+			Flags:         flags,
+			Left:          left,
+			User_id:       user_id,
+			Kicked_by:     kicked_by,
+			Date:          date,
+			Banned_rights: banned_rights,
 		}
 	case crc_channelParticipantsRecent:
 		r = TL_channelParticipantsRecent{}
 	case crc_channelParticipantsAdmins:
 		r = TL_channelParticipantsAdmins{}
 	case crc_channelParticipantsKicked:
-		r = TL_channelParticipantsKicked{}
+		r = TL_channelParticipantsKicked{
+			Q: m.String(),
+		}
 	case crc_channelParticipantsBots:
 		r = TL_channelParticipantsBots{}
-	case crc_channelRoleEmpty:
-		r = TL_channelRoleEmpty{}
-	case crc_channelRoleModerator:
-		r = TL_channelRoleModerator{}
-	case crc_channelRoleEditor:
-		r = TL_channelRoleEditor{}
+	case crc_channelParticipantsBanned:
+		r = TL_channelParticipantsBanned{
+			Q: m.String(),
+		}
+	case crc_channelParticipantsSearch:
+		r = TL_channelParticipantsSearch{
+			Q: m.String(),
+		}
 	case crc_channels_channelParticipants:
 		r = TL_channels_channelParticipants{
 			Count:        m.Int(),
@@ -19032,12 +20802,17 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		if flags&(1<<2) != 0 {
 			channel_post = m.Int()
 		}
+		var post_author string
+		if flags&(1<<3) != 0 {
+			post_author = m.String()
+		}
 		r = TL_messageFwdHeader{
 			Flags:        flags,
 			From_id:      from_id,
 			Date:         date,
 			Channel_id:   channel_id,
 			Channel_post: channel_post,
+			Post_author:  post_author,
 		}
 	case crc_auth_codeTypeSms:
 		r = TL_auth_codeTypeSms{}
@@ -19123,6 +20898,8 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		r = TL_topPeerCategoryGroups{}
 	case crc_topPeerCategoryChannels:
 		r = TL_topPeerCategoryChannels{}
+	case crc_topPeerCategoryPhoneCalls:
+		r = TL_topPeerCategoryPhoneCalls{}
 	case crc_topPeerCategoryPeers:
 		r = TL_topPeerCategoryPeers{
 			Category: m.Object(),
@@ -19424,17 +21201,26 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Items:   m.Vector(),
 			Caption: m.Object(),
 		}
+	case crc_pageBlockChannel:
+		r = TL_pageBlockChannel{
+			Channel: m.Object(),
+		}
+	case crc_pageBlockAudio:
+		r = TL_pageBlockAudio{
+			Audio_id: m.Long(),
+			Caption:  m.Object(),
+		}
 	case crc_pagePart:
 		r = TL_pagePart{
-			Blocks: m.Vector(),
-			Photos: m.Vector(),
-			Videos: m.Vector(),
+			Blocks:    m.Vector(),
+			Photos:    m.Vector(),
+			Documents: m.Vector(),
 		}
 	case crc_pageFull:
 		r = TL_pageFull{
-			Blocks: m.Vector(),
-			Photos: m.Vector(),
-			Videos: m.Vector(),
+			Blocks:    m.Vector(),
+			Photos:    m.Vector(),
+			Documents: m.Vector(),
 		}
 	case crc_phoneCallDiscardReasonMissed:
 		r = TL_phoneCallDiscardReasonMissed{}
@@ -19677,6 +21463,20 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Title:  m.String(),
 			Prices: m.Vector(),
 		}
+	case crc_inputStickerSetItem:
+		flags := m.Int()
+		document := m.Object()
+		emoji := m.String()
+		var mask_coords TL
+		if flags&(1<<0) != 0 {
+			mask_coords = m.Object()
+		}
+		r = TL_inputStickerSetItem{
+			Flags:       flags,
+			Document:    document,
+			Emoji:       emoji,
+			Mask_coords: mask_coords,
+		}
 	case crc_inputPhoneCall:
 		r = TL_inputPhoneCall{
 			Id:          m.Long(),
@@ -19789,6 +21589,254 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Phone_call: m.Object(),
 			Users:      m.Vector(),
 		}
+	case crc_upload_cdnFileReuploadNeeded:
+		r = TL_upload_cdnFileReuploadNeeded{
+			Request_token: m.StringBytes(),
+		}
+	case crc_upload_cdnFile:
+		r = TL_upload_cdnFile{
+			Bytes: m.StringBytes(),
+		}
+	case crc_cdnPublicKey:
+		r = TL_cdnPublicKey{
+			Dc_id:      m.Int(),
+			Public_key: m.String(),
+		}
+	case crc_cdnConfig:
+		r = TL_cdnConfig{
+			Public_keys: m.Vector(),
+		}
+	case crc_langPackString:
+		r = TL_langPackString{
+			Key:   m.String(),
+			Value: m.String(),
+		}
+	case crc_langPackStringPluralized:
+		flags := m.Int()
+		key := m.String()
+		var zero_value string
+		if flags&(1<<0) != 0 {
+			zero_value = m.String()
+		}
+		var one_value string
+		if flags&(1<<1) != 0 {
+			one_value = m.String()
+		}
+		var two_value string
+		if flags&(1<<2) != 0 {
+			two_value = m.String()
+		}
+		var few_value string
+		if flags&(1<<3) != 0 {
+			few_value = m.String()
+		}
+		var many_value string
+		if flags&(1<<4) != 0 {
+			many_value = m.String()
+		}
+		other_value := m.String()
+		r = TL_langPackStringPluralized{
+			Flags:       flags,
+			Key:         key,
+			Zero_value:  zero_value,
+			One_value:   one_value,
+			Two_value:   two_value,
+			Few_value:   few_value,
+			Many_value:  many_value,
+			Other_value: other_value,
+		}
+	case crc_langPackStringDeleted:
+		r = TL_langPackStringDeleted{
+			Key: m.String(),
+		}
+	case crc_langPackDifference:
+		r = TL_langPackDifference{
+			Lang_code:    m.String(),
+			From_version: m.Int(),
+			Version:      m.Int(),
+			Strings:      m.Vector(),
+		}
+	case crc_langPackLanguage:
+		r = TL_langPackLanguage{
+			Name:        m.String(),
+			Native_name: m.String(),
+			Lang_code:   m.String(),
+		}
+	case crc_channelAdminRights:
+		flags := m.Int()
+		change_info := flags&(1<<0) != 0
+		post_messages := flags&(1<<1) != 0
+		edit_messages := flags&(1<<2) != 0
+		delete_messages := flags&(1<<3) != 0
+		ban_users := flags&(1<<4) != 0
+		invite_users := flags&(1<<5) != 0
+		invite_link := flags&(1<<6) != 0
+		pin_messages := flags&(1<<7) != 0
+		add_admins := flags&(1<<9) != 0
+		r = TL_channelAdminRights{
+			Flags:           flags,
+			Change_info:     change_info,
+			Post_messages:   post_messages,
+			Edit_messages:   edit_messages,
+			Delete_messages: delete_messages,
+			Ban_users:       ban_users,
+			Invite_users:    invite_users,
+			Invite_link:     invite_link,
+			Pin_messages:    pin_messages,
+			Add_admins:      add_admins,
+		}
+	case crc_channelBannedRights:
+		flags := m.Int()
+		view_messages := flags&(1<<0) != 0
+		send_messages := flags&(1<<1) != 0
+		send_media := flags&(1<<2) != 0
+		send_stickers := flags&(1<<3) != 0
+		send_gifs := flags&(1<<4) != 0
+		send_games := flags&(1<<5) != 0
+		send_inline := flags&(1<<6) != 0
+		embed_links := flags&(1<<7) != 0
+		until_date := m.Int()
+		r = TL_channelBannedRights{
+			Flags:         flags,
+			View_messages: view_messages,
+			Send_messages: send_messages,
+			Send_media:    send_media,
+			Send_stickers: send_stickers,
+			Send_gifs:     send_gifs,
+			Send_games:    send_games,
+			Send_inline:   send_inline,
+			Embed_links:   embed_links,
+			Until_date:    until_date,
+		}
+	case crc_channelAdminLogEventActionChangeTitle:
+		r = TL_channelAdminLogEventActionChangeTitle{
+			Prev_value: m.String(),
+			New_value:  m.String(),
+		}
+	case crc_channelAdminLogEventActionChangeAbout:
+		r = TL_channelAdminLogEventActionChangeAbout{
+			Prev_value: m.String(),
+			New_value:  m.String(),
+		}
+	case crc_channelAdminLogEventActionChangeUsername:
+		r = TL_channelAdminLogEventActionChangeUsername{
+			Prev_value: m.String(),
+			New_value:  m.String(),
+		}
+	case crc_channelAdminLogEventActionChangePhoto:
+		r = TL_channelAdminLogEventActionChangePhoto{
+			Prev_photo: m.Object(),
+			New_photo:  m.Object(),
+		}
+	case crc_channelAdminLogEventActionToggleInvites:
+		r = TL_channelAdminLogEventActionToggleInvites{
+			New_value: m.Object(),
+		}
+	case crc_channelAdminLogEventActionToggleSignatures:
+		r = TL_channelAdminLogEventActionToggleSignatures{
+			New_value: m.Object(),
+		}
+	case crc_channelAdminLogEventActionUpdatePinned:
+		r = TL_channelAdminLogEventActionUpdatePinned{
+			Message: m.Object(),
+		}
+	case crc_channelAdminLogEventActionEditMessage:
+		r = TL_channelAdminLogEventActionEditMessage{
+			Prev_message: m.Object(),
+			New_message:  m.Object(),
+		}
+	case crc_channelAdminLogEventActionDeleteMessage:
+		r = TL_channelAdminLogEventActionDeleteMessage{
+			Message: m.Object(),
+		}
+	case crc_channelAdminLogEventActionParticipantJoin:
+		r = TL_channelAdminLogEventActionParticipantJoin{}
+	case crc_channelAdminLogEventActionParticipantLeave:
+		r = TL_channelAdminLogEventActionParticipantLeave{}
+	case crc_channelAdminLogEventActionParticipantInvite:
+		r = TL_channelAdminLogEventActionParticipantInvite{
+			Participant: m.Object(),
+		}
+	case crc_channelAdminLogEventActionParticipantToggleBan:
+		r = TL_channelAdminLogEventActionParticipantToggleBan{
+			Prev_participant: m.Object(),
+			New_participant:  m.Object(),
+		}
+	case crc_channelAdminLogEventActionParticipantToggleAdmin:
+		r = TL_channelAdminLogEventActionParticipantToggleAdmin{
+			Prev_participant: m.Object(),
+			New_participant:  m.Object(),
+		}
+	case crc_channelAdminLogEventActionChangeStickerSet:
+		r = TL_channelAdminLogEventActionChangeStickerSet{
+			Prev_stickerset: m.Object(),
+			New_stickerset:  m.Object(),
+		}
+	case crc_channelAdminLogEvent:
+		r = TL_channelAdminLogEvent{
+			Id:      m.Long(),
+			Date:    m.Int(),
+			User_id: m.Int(),
+			Action:  m.Object(),
+		}
+	case crc_channels_adminLogResults:
+		r = TL_channels_adminLogResults{
+			Events: m.Vector(),
+			Chats:  m.Vector(),
+			Users:  m.Vector(),
+		}
+	case crc_channelAdminLogEventsFilter:
+		flags := m.Int()
+		join := flags&(1<<0) != 0
+		leave := flags&(1<<1) != 0
+		invite := flags&(1<<2) != 0
+		ban := flags&(1<<3) != 0
+		unban := flags&(1<<4) != 0
+		kick := flags&(1<<5) != 0
+		unkick := flags&(1<<6) != 0
+		promote := flags&(1<<7) != 0
+		demote := flags&(1<<8) != 0
+		info := flags&(1<<9) != 0
+		settings := flags&(1<<10) != 0
+		pinned := flags&(1<<11) != 0
+		edit := flags&(1<<12) != 0
+		delete := flags&(1<<13) != 0
+		r = TL_channelAdminLogEventsFilter{
+			Flags:    flags,
+			Join:     join,
+			Leave:    leave,
+			Invite:   invite,
+			Ban:      ban,
+			Unban:    unban,
+			Kick:     kick,
+			Unkick:   unkick,
+			Promote:  promote,
+			Demote:   demote,
+			Info:     info,
+			Settings: settings,
+			Pinned:   pinned,
+			Edit:     edit,
+			Delete:   delete,
+		}
+	case crc_popularContact:
+		r = TL_popularContact{
+			Client_id: m.Long(),
+			Importers: m.Int(),
+		}
+	case crc_cdnFileHash:
+		r = TL_cdnFileHash{
+			Offset: m.Int(),
+			Limit:  m.Int(),
+			Hash:   m.StringBytes(),
+		}
+	case crc_messages_favedStickersNotModified:
+		r = TL_messages_favedStickersNotModified{}
+	case crc_messages_favedStickers:
+		r = TL_messages_favedStickers{
+			Hash:     m.Int(),
+			Packs:    m.Vector(),
+			Stickers: m.Vector(),
+		}
 	case crc_invokeAfterMsg:
 		r = TL_invokeAfterMsg{
 			Msg_id: m.Long(),
@@ -19801,12 +21849,14 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		}
 	case crc_initConnection:
 		r = TL_initConnection{
-			Api_id:         m.Int(),
-			Device_model:   m.String(),
-			System_version: m.String(),
-			App_version:    m.String(),
-			Lang_code:      m.String(),
-			Query:          m.Object(),
+			Api_id:           m.Int(),
+			Device_model:     m.String(),
+			System_version:   m.String(),
+			App_version:      m.String(),
+			System_lang_code: m.String(),
+			Lang_pack:        m.String(),
+			Lang_code:        m.String(),
+			Query:            m.Object(),
 		}
 	case crc_invokeWithLayer:
 		r = TL_invokeWithLayer{
@@ -20065,12 +22115,11 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		r = TL_contacts_getStatuses{}
 	case crc_contacts_getContacts:
 		r = TL_contacts_getContacts{
-			Hash: m.String(),
+			Hash: m.Int(),
 		}
 	case crc_contacts_importContacts:
 		r = TL_contacts_importContacts{
 			Contacts: m.Vector(),
-			Replace:  m.Object(),
 		}
 	case crc_contacts_deleteContact:
 		r = TL_contacts_deleteContact{
@@ -20113,6 +22162,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		correspondents := flags&(1<<0) != 0
 		bots_pm := flags&(1<<1) != 0
 		bots_inline := flags&(1<<2) != 0
+		phone_calls := flags&(1<<3) != 0
 		groups := flags&(1<<10) != 0
 		channels := flags&(1<<15) != 0
 		offset := m.Int()
@@ -20123,6 +22173,7 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Correspondents: correspondents,
 			Bots_pm:        bots_pm,
 			Bots_inline:    bots_inline,
+			Phone_calls:    phone_calls,
 			Groups:         groups,
 			Channels:       channels,
 			Offset:         offset,
@@ -20134,6 +22185,8 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Category: m.Object(),
 			Peer:     m.Object(),
 		}
+	case crc_contacts_resetSaved:
+		r = TL_contacts_resetSaved{}
 	case crc_messages_getMessages:
 		r = TL_messages_getMessages{
 			Id: m.VectorInt(),
@@ -20167,22 +22220,31 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		flags := m.Int()
 		peer := m.Object()
 		q := m.String()
+		var from_id TL
+		if flags&(1<<0) != 0 {
+			from_id = m.Object()
+		}
 		filter := m.Object()
 		min_date := m.Int()
 		max_date := m.Int()
-		offset := m.Int()
-		max_id := m.Int()
+		offset_id := m.Int()
+		add_offset := m.Int()
 		limit := m.Int()
+		max_id := m.Int()
+		min_id := m.Int()
 		r = TL_messages_search{
-			Flags:    flags,
-			Peer:     peer,
-			Q:        q,
-			Filter:   filter,
-			Min_date: min_date,
-			Max_date: max_date,
-			Offset:   offset,
-			Max_id:   max_id,
-			Limit:    limit,
+			Flags:      flags,
+			Peer:       peer,
+			Q:          q,
+			From_id:    from_id,
+			Filter:     filter,
+			Min_date:   min_date,
+			Max_date:   max_date,
+			Offset_id:  offset_id,
+			Add_offset: add_offset,
+			Limit:      limit,
+			Max_id:     max_id,
+			Min_id:     min_id,
 		}
 	case crc_messages_readHistory:
 		r = TL_messages_readHistory{
@@ -20859,6 +22921,35 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Query_id: query_id,
 			Error:    error,
 		}
+	case crc_messages_uploadMedia:
+		r = TL_messages_uploadMedia{
+			Peer:  m.Object(),
+			Media: m.Object(),
+		}
+	case crc_messages_sendScreenshotNotification:
+		r = TL_messages_sendScreenshotNotification{
+			Peer:            m.Object(),
+			Reply_to_msg_id: m.Int(),
+			Random_id:       m.Long(),
+		}
+	case crc_messages_getFavedStickers:
+		r = TL_messages_getFavedStickers{
+			Hash: m.Int(),
+		}
+	case crc_messages_faveSticker:
+		r = TL_messages_faveSticker{
+			Id:     m.Object(),
+			Unfave: m.Object(),
+		}
+	case crc_messages_getUnreadMentions:
+		r = TL_messages_getUnreadMentions{
+			Peer:       m.Object(),
+			Offset_id:  m.Int(),
+			Add_offset: m.Int(),
+			Limit:      m.Int(),
+			Max_id:     m.Int(),
+			Min_id:     m.Int(),
+		}
 	case crc_updates_getState:
 		r = TL_updates_getState{}
 	case crc_updates_getDifference:
@@ -20936,6 +23027,22 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Offset:   m.Int(),
 			Limit:    m.Int(),
 		}
+	case crc_upload_getCdnFile:
+		r = TL_upload_getCdnFile{
+			File_token: m.StringBytes(),
+			Offset:     m.Int(),
+			Limit:      m.Int(),
+		}
+	case crc_upload_reuploadCdnFile:
+		r = TL_upload_reuploadCdnFile{
+			File_token:    m.StringBytes(),
+			Request_token: m.StringBytes(),
+		}
+	case crc_upload_getCdnFileHashes:
+		r = TL_upload_getCdnFileHashes{
+			File_token: m.StringBytes(),
+			Offset:     m.Int(),
+		}
 	case crc_help_getConfig:
 		r = TL_help_getConfig{}
 	case crc_help_getNearestDc:
@@ -20961,6 +23068,8 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Pending_updates_count: m.Int(),
 			Message:               m.String(),
 		}
+	case crc_help_getCdnConfig:
+		r = TL_help_getCdnConfig{}
 	case crc_channels_readHistory:
 		r = TL_channels_readHistory{
 			Channel: m.Object(),
@@ -21027,9 +23136,9 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		}
 	case crc_channels_editAdmin:
 		r = TL_channels_editAdmin{
-			Channel: m.Object(),
-			User_id: m.Object(),
-			Role:    m.Object(),
+			Channel:      m.Object(),
+			User_id:      m.Object(),
+			Admin_rights: m.Object(),
 		}
 	case crc_channels_editTitle:
 		r = TL_channels_editTitle{
@@ -21063,12 +23172,6 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		r = TL_channels_inviteToChannel{
 			Channel: m.Object(),
 			Users:   m.Vector(),
-		}
-	case crc_channels_kickFromChannel:
-		r = TL_channels_kickFromChannel{
-			Channel: m.Object(),
-			User_id: m.Object(),
-			Kicked:  m.Object(),
 		}
 	case crc_channels_exportInvite:
 		r = TL_channels_exportInvite{
@@ -21106,6 +23209,47 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 		}
 	case crc_channels_getAdminedPublicChannels:
 		r = TL_channels_getAdminedPublicChannels{}
+	case crc_channels_editBanned:
+		r = TL_channels_editBanned{
+			Channel:       m.Object(),
+			User_id:       m.Object(),
+			Banned_rights: m.Object(),
+		}
+	case crc_channels_getAdminLog:
+		flags := m.Int()
+		channel := m.Object()
+		q := m.String()
+		var events_filter TL
+		if flags&(1<<0) != 0 {
+			events_filter = m.Object()
+		}
+		var admins []TL
+		if flags&(1<<1) != 0 {
+			admins = m.Vector()
+		}
+		max_id := m.Long()
+		min_id := m.Long()
+		limit := m.Int()
+		r = TL_channels_getAdminLog{
+			Flags:         flags,
+			Channel:       channel,
+			Q:             q,
+			Events_filter: events_filter,
+			Admins:        admins,
+			Max_id:        max_id,
+			Min_id:        min_id,
+			Limit:         limit,
+		}
+	case crc_channels_setStickers:
+		r = TL_channels_setStickers{
+			Channel:    m.Object(),
+			Stickerset: m.Object(),
+		}
+	case crc_channels_readMessageContents:
+		r = TL_channels_readMessageContents{
+			Channel: m.Object(),
+			Id:      m.VectorInt(),
+		}
 	case crc_bots_sendCustomRequest:
 		r = TL_bots_sendCustomRequest{
 			Custom_method: m.String(),
@@ -21165,6 +23309,35 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Credentials: credentials,
 			Info:        info,
 		}
+	case crc_stickers_createStickerSet:
+		flags := m.Int()
+		masks := flags&(1<<0) != 0
+		user_id := m.Object()
+		title := m.String()
+		short_name := m.String()
+		stickers := m.Vector()
+		r = TL_stickers_createStickerSet{
+			Flags:      flags,
+			Masks:      masks,
+			User_id:    user_id,
+			Title:      title,
+			Short_name: short_name,
+			Stickers:   stickers,
+		}
+	case crc_stickers_removeStickerFromSet:
+		r = TL_stickers_removeStickerFromSet{
+			Sticker: m.Object(),
+		}
+	case crc_stickers_changeStickerPosition:
+		r = TL_stickers_changeStickerPosition{
+			Sticker:  m.Object(),
+			Position: m.Int(),
+		}
+	case crc_stickers_addStickerToSet:
+		r = TL_stickers_addStickerToSet{
+			Stickerset: m.Object(),
+			Sticker:    m.Object(),
+		}
 	case crc_phone_getCallConfig:
 		r = TL_phone_getCallConfig{}
 	case crc_phone_requestCall:
@@ -21209,6 +23382,21 @@ func (m *DecodeBuf) ObjectGenerated(constructor uint32) (r TL) {
 			Peer:  m.Object(),
 			Debug: m.Object(),
 		}
+	case crc_langpack_getLangPack:
+		r = TL_langpack_getLangPack{
+			Lang_code: m.String(),
+		}
+	case crc_langpack_getStrings:
+		r = TL_langpack_getStrings{
+			Lang_code: m.String(),
+			Keys:      m.VectorString(),
+		}
+	case crc_langpack_getDifference:
+		r = TL_langpack_getDifference{
+			From_version: m.Int(),
+		}
+	case crc_langpack_getLanguages:
+		r = TL_langpack_getLanguages{}
 	default:
 		m.err = fmt.Errorf("Unknown constructor: %x", constructor)
 		return nil

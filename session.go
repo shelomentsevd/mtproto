@@ -3,6 +3,8 @@ package mtproto
 import (
 	"errors"
 	"os"
+	"math/rand"
+	"time"
 )
 
 // Session storage interface
@@ -46,9 +48,14 @@ type Session struct {
 }
 
 func NewSession(file *os.File) ISession {
-	return &Session{
+	session := &Session{
 		file: file,
 	}
+
+	rand.Seed(time.Now().UnixNano())
+	session.SetSessionID(rand.Int63())
+
+	return session
 }
 
 func (s *Session) Load() error {

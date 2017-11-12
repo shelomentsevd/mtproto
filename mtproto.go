@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
 	"os"
 	"runtime"
 	"sync"
@@ -17,8 +16,9 @@ type MTProto struct {
 	stopRoutines chan struct{}
 	allDone      sync.WaitGroup
 
-	session ISession
 	network INetwork
+	IPv6 bool
+	authkeyfile string
 
 	appConfig Configuration
 
@@ -122,34 +122,17 @@ func NewMTProto(newSession bool, serverAddr string, useIPv6 bool, authkeyfile st
 	m.queueSend = make(chan packetToSend, 64)
 	m.stopRoutines = make(chan struct{})
 	m.allDone = sync.WaitGroup{}
+	m.authkeyfile = authkeyfile
+	m.IPv6 = useIPv6
 
 	m.f, err = os.OpenFile(authkeyfile, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		return nil, err
 	}
 
-	m.session = NewSession(m.f)
-
-	rand.Seed(time.Now().UnixNano())
-	m.session.SetSessionID(rand.Int63())
-
-	if newSession {
-		m.session.SetAddress(serverAddr)
-		m.session.UseIPv6(useIPv6)
-		m.session.Encrypted(false)
-		return m, nil
+	if m.network, err = NewNetwork(newSession, m.authkeyfile, m.queueSend, serverAddr, m.IPv6); err != nil {
+		return nil, err
 	}
-
-	err = m.session.Load()
-	if err == nil {
-		m.session.Encrypted(true)
-	} else {
-		m.session.SetAddress(serverAddr)
-		m.session.UseIPv6(useIPv6)
-		m.session.Encrypted(false)
-	}
-
-	m.network = NewNetwork(m.session, m.queueSend)
 
 	return m, nil
 }
@@ -183,7 +166,7 @@ func (m *MTProto) Connect() (err error) {
 		m.dclist = make(map[int32]string, 5)
 		for _, v := range (*data).(TL_config).Dc_options {
 			v := v.(TL_dcOption)
-			if m.session.IsIPv6() && v.Ipv6 {
+			if m.IPv6 && v.Ipv6 {
 				m.dclist[v.Id] = fmt.Sprintf("[%s]:%d", v.Ip_address, v.Port)
 			} else if !v.Ipv6 {
 				m.dclist[v.Id] = fmt.Sprintf("%s:%d", v.Ip_address, v.Port)
@@ -219,11 +202,8 @@ func (m *MTProto) reconnect(newaddr string) error {
 	}
 
 	// renew connection
-	m.session.Encrypted(true)
-	if newaddr != m.session.GetAddress() {
-		m.session = NewSession(m.f)
-		m.session.SetAddress(newaddr)
-		m.session.Encrypted(false)
+	if newaddr != m.network.Address() {
+		m.network, err = NewNetwork(true, m.authkeyfile, m.queueSend, newaddr, m.IPv6)
 	}
 
 	err = m.Connect()
@@ -269,7 +249,7 @@ func (m *MTProto) readRoutine() {
 			data, err := m.network.Read()
 			if err == io.EOF {
 				// Connection closed by server, trying to reconnect
-				err = m.reconnect(m.session.GetAddress())
+				err = m.reconnect(m.network.Address())
 				if err != nil {
 					log.Fatalln("ReadRoutine: ", err)
 				}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"os"
 	"fmt"
 	"net"
 	"sync"
@@ -14,13 +15,19 @@ import (
 type INetwork interface {
 	Connect() error
 	Disconnect() error
+
 	Send(msg TL, resp chan response) error
 	Read() (interface{}, error)
 	Process(data interface{}) interface{}
+
+	Address() string
 }
 
 type Network struct {
 	session ISession
+
+	useIPv6 bool
+	address string
 
 	conn *net.TCPConn
 
@@ -34,16 +41,61 @@ type Network struct {
 	msgId     int64
 }
 
-func NewNetwork(session ISession, queueSend chan packetToSend) INetwork {
+func NewNetwork(newSession bool, authkeyfile string, queueSend chan packetToSend, address string, useIPv6 bool) (INetwork, error) {
 	nw := new(Network)
 
-	nw.session = session
 	nw.queueSend = queueSend
 	nw.msgsIdToAck = make(map[int64]packetToSend)
 	nw.msgsIdToResp = make(map[int64]chan response)
 	nw.mutex = &sync.Mutex{}
 
-	return nw
+	nw.useIPv6 = useIPv6
+	nw.address = address
+
+	var err error
+	if newSession {
+		err = nw.CreateSession(authkeyfile)
+	} else {
+		err = nw.LoadSession(authkeyfile)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return nw, nil
+}
+
+// Accepts path to file where to store session key
+func (nw *Network) CreateSession(session string) error {
+	file, err := os.OpenFile(session, os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+
+	nw.session = NewSession(file)
+	nw.session.SetAddress(nw.address)
+	nw.session.UseIPv6(nw.useIPv6)
+	nw.session.Encrypted(false)
+
+	return nil
+}
+
+// Accepts path to file where to store session key
+func (nw *Network) LoadSession(session string) error {
+	file, err := os.OpenFile(session, os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+
+	nw.session = NewSession(file)
+	if err = nw.session.Load(); err != nil {
+		return nw.CreateSession(session)
+	}
+
+	nw.session.Encrypted(true)
+
+	return nil
 }
 
 func (nw *Network) Connect() error {
@@ -488,4 +540,8 @@ func (nw *Network) process(msgId int64, seqNo int32, data interface{}) interface
 	}
 
 	return nil
+}
+
+func (nw Network) Address() string {
+	return nw.address
 }

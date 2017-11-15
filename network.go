@@ -525,8 +525,13 @@ func (nw *Network) process(msgId int64, seqNo int32, data interface{}) interface
 		nw.mutex.Lock()
 		defer nw.mutex.Unlock()
 		if v, ok := nw.msgsIdToResp[data.Req_msg_id]; ok {
-			// TODO: response struct is useless
-			v <- response{x.(TL), nil}
+			var resp response
+			if rpcError, ok := x.(TL_rpc_error); ok {
+				resp.err = rpcError
+			}
+			resp.data = x.(TL)
+			v <- resp
+
 			close(v)
 		}
 		delete(nw.msgsIdToAck, data.Req_msg_id)

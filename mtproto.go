@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"runtime"
 	"sync"
 	"time"
 )
 
 type MTProto struct {
-	f            *os.File
 	queueSend    chan packetToSend
 	stopRoutines chan struct{}
 	allDone      sync.WaitGroup
@@ -125,11 +123,6 @@ func NewMTProto(newSession bool, serverAddr string, useIPv6 bool, authkeyfile st
 	m.authkeyfile = authkeyfile
 	m.IPv6 = useIPv6
 
-	m.f, err = os.OpenFile(authkeyfile, os.O_RDWR|os.O_CREATE, 0600)
-	if err != nil {
-		return nil, err
-	}
-
 	if m.network, err = NewNetwork(newSession, m.authkeyfile, m.queueSend, serverAddr, m.IPv6); err != nil {
 		return nil, err
 	}
@@ -218,6 +211,7 @@ func (m *MTProto) pingRoutine() {
 		case <-m.stopRoutines:
 			return
 		case <-time.After(60 * time.Second):
+			// TODO: m.InvokeSync()?
 			m.InvokeAsync(TL_ping{0xCADACAD})
 		}
 	}
@@ -248,6 +242,7 @@ func (m *MTProto) readRoutine() {
 		go func(ch chan<- interface{}) {
 			data, err := m.network.Read()
 			if err == io.EOF {
+				// TODO: Last message to the server was lost. Fix it.
 				// Connection closed by server, trying to reconnect
 				err = m.reconnect(m.network.Address())
 				if err != nil {
@@ -272,37 +267,34 @@ func (m *MTProto) readRoutine() {
 	}
 }
 
-func (m *MTProto) handleRPCError(rpcError TL_rpc_error) error {
-	switch rpcError.Error_code {
-	case errorSeeOther:
-		var newDc int32
-		n, _ := fmt.Sscanf(rpcError.Error_message, "PHONE_MIGRATE_%d", &newDc)
-		if n != 1 {
-			n, _ := fmt.Sscanf(rpcError.Error_message, "NETWORK_MIGRATE_%d", &newDc)
-			if n != 1 {
-				return fmt.Errorf("RPC error_string: %s", rpcError.Error_message)
-			}
-		}
-		newDcAddr, ok := m.dclist[newDc]
-		if !ok {
-			return fmt.Errorf("Wrong DC index: %d", newDc)
-		}
-		err := m.reconnect(newDcAddr)
-		if err != nil {
-			return err
-		}
-		return fmt.Errorf("mtproto error: %d %s", rpcError.Error_code, rpcError.Error_message)
-	case errorBadRequest, errorUnauthorized, errorFlood, errorInternal:
-		return fmt.Errorf("mtproto error: %d %s", rpcError.Error_code, rpcError.Error_message)
-	default:
-		return fmt.Errorf("mtproto unknow error: %d %s", rpcError.Error_code, rpcError.Error_message)
-	}
-}
-
 func (m *MTProto) InvokeSync(msg TL) (*TL, error) {
 	x := <-m.InvokeAsync(msg)
 
 	if x.err != nil {
+		if err, ok := x.err.(TL_rpc_error); ok {
+			switch err.Error_code {
+			case errorSeeOther:
+				var newDc int32
+				n, _ := fmt.Sscanf(err.Error_message, "PHONE_MIGRATE_%d", &newDc)
+				if n != 1 {
+					n, _ := fmt.Sscanf(err.Error_message, "NETWORK_MIGRATE_%d", &newDc)
+					if n != 1 {
+						return nil, fmt.Errorf("RPC error_string: %s", err.Error_message)
+					}
+				}
+				newDcAddr, ok := m.dclist[newDc]
+				if !ok {
+					return nil, fmt.Errorf("wrong DC index: %d", newDc)
+				}
+				err := m.reconnect(newDcAddr)
+				if err != nil {
+					return nil, err
+				}
+			default:
+				return nil, x.err
+			}
+		}
+
 		return nil, x.err
 	}
 

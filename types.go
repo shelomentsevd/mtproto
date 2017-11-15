@@ -147,6 +147,10 @@ type TL_rpc_error struct {
 	Error_message string
 }
 
+func (err TL_rpc_error) Error() string {
+	return err.Error_message
+}
+
 const crc_dh_gen_ok = 0x3bcbf734
 
 type TL_dh_gen_ok struct {

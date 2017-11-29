@@ -4,18 +4,18 @@ import "fmt"
 
 func (m *MTProto) UsersGetFullUsers(id TL) (*TL_userFull, error) {
 	var user TL_userFull
-	x := <-m.InvokeAsync(TL_users_getFullUser{
+	tl, err := m.InvokeSync(TL_users_getFullUser{
 		Id: id,
 	})
-	if x.err != nil {
-		return nil, x.err
+	if err != nil {
+		return nil, err
 	}
 
-	switch x.data.(type) {
+	switch (*tl).(type) {
 	case TL_userFull:
-		user = x.data.(TL_userFull)
+		user = (*tl).(TL_userFull)
 	default:
-		return nil, fmt.Errorf("Got: %T", x)
+		return nil, fmt.Errorf("Got: %T", *tl)
 	}
 
 	return &user, nil

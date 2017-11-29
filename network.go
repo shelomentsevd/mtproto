@@ -4,11 +4,135 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"os"
 	"fmt"
+	"net"
+	"sync"
 	"time"
 )
 
-func (m *MTProto) sendPacket(msg TL, resp chan response) error {
+// low-level communication with telegram server
+type INetwork interface {
+	Connect() error
+	Disconnect() error
+
+	Send(msg TL, resp chan response) error
+	Read() (interface{}, error)
+	Process(data interface{}) interface{}
+
+	Address() string
+}
+
+type Network struct {
+	session ISession
+
+	useIPv6 bool
+	address string
+
+	conn *net.TCPConn
+
+	mutex        *sync.Mutex
+	msgsIdToAck  map[int64]packetToSend
+	msgsIdToResp map[int64]chan response
+
+	queueSend chan packetToSend
+	lastSeqNo int32
+	seqNo     int32
+	msgId     int64
+}
+
+func NewNetwork(newSession bool, authkeyfile string, queueSend chan packetToSend, address string, useIPv6 bool) (INetwork, error) {
+	nw := new(Network)
+
+	nw.queueSend = queueSend
+	nw.msgsIdToAck = make(map[int64]packetToSend)
+	nw.msgsIdToResp = make(map[int64]chan response)
+	nw.mutex = &sync.Mutex{}
+
+	nw.useIPv6 = useIPv6
+	nw.address = address
+
+	var err error
+	if newSession {
+		err = nw.CreateSession(authkeyfile)
+	} else {
+		err = nw.LoadSession(authkeyfile)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return nw, nil
+}
+
+// Accepts path to file where to store session key
+func (nw *Network) CreateSession(session string) error {
+	file, err := os.OpenFile(session, os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+
+	nw.session = NewSession(file)
+	nw.session.SetAddress(nw.address)
+	nw.session.UseIPv6(nw.useIPv6)
+	nw.session.Encrypted(false)
+
+	return nil
+}
+
+// Accepts path to file where to store session key
+func (nw *Network) LoadSession(session string) error {
+	file, err := os.OpenFile(session, os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+
+	nw.session = NewSession(file)
+	if err = nw.session.Load(); err != nil {
+		return nw.CreateSession(session)
+	}
+
+	nw.session.Encrypted(true)
+
+	return nil
+}
+
+func (nw *Network) Connect() error {
+	var err error
+	var tcpAddr *net.TCPAddr
+
+	// connect
+	tcpAddr, err = net.ResolveTCPAddr("tcp", nw.session.GetAddress())
+	if err != nil {
+		return err
+	}
+	nw.conn, err = net.DialTCP("tcp", nil, tcpAddr)
+	if err != nil {
+		return err
+	}
+	// Packet Length is encoded by a single byte (see: https://core.telegram.org/mtproto)
+	_, err = nw.conn.Write([]byte{0xef})
+	if err != nil {
+		return err
+	}
+	// get new authKey if need
+	if !nw.session.IsEncrypted() {
+		err = nw.makeAuthKey()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (nw *Network) Disconnect() error {
+
+	return nw.conn.Close()
+}
+
+func (nw *Network) Send(msg TL, resp chan response) error {
 	obj := msg.encode()
 
 	x := NewEncodeBuf(256)
@@ -16,7 +140,7 @@ func (m *MTProto) sendPacket(msg TL, resp chan response) error {
 	// padding for tcpsize
 	x.Int(0)
 
-	if m.encrypted {
+	if nw.session.IsEncrypted() {
 		needAck := true
 		switch msg.(type) {
 		case TL_ping, TL_msgs_ack:
@@ -24,19 +148,19 @@ func (m *MTProto) sendPacket(msg TL, resp chan response) error {
 		}
 		z := NewEncodeBuf(256)
 		newMsgId := GenerateMessageId()
-		z.Bytes(m.serverSalt)
-		z.Long(m.sessionId)
+		z.Bytes(nw.session.GetServerSalt())
+		z.Long(nw.session.GetSessionID())
 		z.Long(newMsgId)
 		if needAck {
-			z.Int(m.lastSeqNo | 1)
+			z.Int(nw.lastSeqNo | 1)
 		} else {
-			z.Int(m.lastSeqNo)
+			z.Int(nw.lastSeqNo)
 		}
 		z.Int(int32(len(obj)))
 		z.Bytes(obj)
 
 		msgKey := sha1(z.buf)[4:20]
-		aesKey, aesIV := generateAES(msgKey, m.authKey, false)
+		aesKey, aesIV := generateAES(msgKey, nw.session.GetAuthKey(), false)
 
 		y := make([]byte, len(z.buf)+((16-(len(obj)%16))&15))
 		copy(y, z.buf)
@@ -45,21 +169,21 @@ func (m *MTProto) sendPacket(msg TL, resp chan response) error {
 			return err
 		}
 
-		m.lastSeqNo += 2
+		nw.lastSeqNo += 2
 		if needAck {
-			m.mutex.Lock()
-			m.msgsIdToAck[newMsgId] = packetToSend{msg, resp}
-			m.mutex.Unlock()
+			nw.mutex.Lock()
+			nw.msgsIdToAck[newMsgId] = packetToSend{msg, resp}
+			nw.mutex.Unlock()
 		}
 
-		x.Bytes(m.authKeyHash)
+		x.Bytes(nw.session.GetAuthKeyHash())
 		x.Bytes(msgKey)
 		x.Bytes(encryptedData)
 
 		if resp != nil {
-			m.mutex.Lock()
-			m.msgsIdToResp[newMsgId] = resp
-			m.mutex.Unlock()
+			nw.mutex.Lock()
+			nw.msgsIdToResp[newMsgId] = resp
+			nw.mutex.Unlock()
 		}
 
 	} else {
@@ -79,7 +203,7 @@ func (m *MTProto) sendPacket(msg TL, resp chan response) error {
 	} else {
 		binary.LittleEndian.PutUint32(x.buf, uint32(size<<8|127))
 	}
-	_, err := m.conn.Write(x.buf)
+	_, err := nw.conn.Write(x.buf)
 	if err != nil {
 		return err
 	}
@@ -87,18 +211,18 @@ func (m *MTProto) sendPacket(msg TL, resp chan response) error {
 	return nil
 }
 
-func (m *MTProto) read() (interface{}, error) {
+func (nw *Network) Read() (interface{}, error) {
 	var err error
 	var n int
 	var size int
 	var data interface{}
 
-	err = m.conn.SetReadDeadline(time.Now().Add(300 * time.Second))
+	err = nw.conn.SetReadDeadline(time.Now().Add(300 * time.Second))
 	if err != nil {
 		return nil, err
 	}
 	b := make([]byte, 1)
-	n, err = m.conn.Read(b)
+	n, err = nw.conn.Read(b)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +231,7 @@ func (m *MTProto) read() (interface{}, error) {
 		size = int(b[0]) << 2
 	} else {
 		b := make([]byte, 3)
-		n, err = m.conn.Read(b)
+		n, err = nw.conn.Read(b)
 		if err != nil {
 			return nil, err
 		}
@@ -117,7 +241,7 @@ func (m *MTProto) read() (interface{}, error) {
 	left := size
 	buf := make([]byte, size)
 	for left > 0 {
-		n, err = m.conn.Read(buf[size-left:])
+		n, err = nw.conn.Read(buf[size-left:])
 		if err != nil {
 			return nil, err
 		}
@@ -132,12 +256,12 @@ func (m *MTProto) read() (interface{}, error) {
 
 	authKeyHash := dbuf.Bytes(8)
 	if binary.LittleEndian.Uint64(authKeyHash) == 0 {
-		m.msgId = dbuf.Long()
+		nw.msgId = dbuf.Long()
 		messageLen := dbuf.Int()
 		if int(messageLen) != dbuf.size-20 {
 			return nil, fmt.Errorf("Message len: %d (need %d)", messageLen, dbuf.size-20)
 		}
-		m.seqNo = 0
+		nw.seqNo = 0
 
 		data = dbuf.Object()
 		if dbuf.err != nil {
@@ -147,7 +271,7 @@ func (m *MTProto) read() (interface{}, error) {
 	} else {
 		msgKey := dbuf.Bytes(16)
 		encryptedData := dbuf.Bytes(dbuf.size - 24)
-		aesKey, aesIV := generateAES(msgKey, m.authKey, true)
+		aesKey, aesIV := generateAES(msgKey, nw.session.GetAuthKey(), true)
 		x, err := doAES256IGEdecrypt(encryptedData, aesKey, aesIV)
 		if err != nil {
 			return nil, err
@@ -155,8 +279,8 @@ func (m *MTProto) read() (interface{}, error) {
 		dbuf = NewDecodeBuf(x)
 		_ = dbuf.Long() // salt
 		_ = dbuf.Long() // session_id
-		m.msgId = dbuf.Long()
-		m.seqNo = dbuf.Int()
+		nw.msgId = dbuf.Long()
+		nw.seqNo = dbuf.Int()
 		messageLen := dbuf.Int()
 		if int(messageLen) > dbuf.size-32 {
 			return nil, fmt.Errorf("Message len: %d (need less than %d)", messageLen, dbuf.size-32)
@@ -171,7 +295,7 @@ func (m *MTProto) read() (interface{}, error) {
 		}
 
 	}
-	mod := m.msgId & 3
+	mod := nw.msgId & 3
 	if mod != 1 && mod != 3 {
 		return nil, fmt.Errorf("Wrong bits of message_id: %d", mod)
 	}
@@ -179,20 +303,20 @@ func (m *MTProto) read() (interface{}, error) {
 	return data, nil
 }
 
-func (m *MTProto) makeAuthKey() error {
+func (nw *Network) makeAuthKey() error {
 	var x []byte
 	var err error
 	var data interface{}
 
 	// (send) req_pq
 	nonceFirst := GenerateNonce(16)
-	err = m.sendPacket(TL_req_pq{nonceFirst}, nil)
+	err = nw.Send(TL_req_pq{nonceFirst}, nil)
 	if err != nil {
 		return err
 	}
 
 	// (parse) resPQ
-	data, err = m.read()
+	data, err = nw.Read()
 	if err != nil {
 		return err
 	}
@@ -225,13 +349,13 @@ func (m *MTProto) makeAuthKey() error {
 	copy(x[20:], innerData1)
 	encryptedData1 := doRSAencrypt(x)
 	// (send) req_DH_params
-	err = m.sendPacket(TL_req_DH_params{nonceFirst, nonceServer, p, q, telegramPublicKey_FP, encryptedData1}, nil)
+	err = nw.Send(TL_req_DH_params{nonceFirst, nonceServer, p, q, telegramPublicKey_FP, encryptedData1}, nil)
 	if err != nil {
 		return err
 	}
 
 	// (parse) server_DH_params_{ok, fail}
-	data, err = m.read()
+	data, err = nw.Read()
 	if err != nil {
 		return err
 	}
@@ -292,19 +416,23 @@ func (m *MTProto) makeAuthKey() error {
 	}
 
 	_, g_b, g_ab := makeGAB(dhi.G, dhi.G_a, dhi.Dh_prime)
-	m.authKey = g_ab.Bytes()
-	if m.authKey[0] == 0 {
-		m.authKey = m.authKey[1:]
+	authKey := g_ab.Bytes()
+	if authKey[0] == 0 {
+		authKey = authKey[1:]
 	}
-	m.authKeyHash = sha1(m.authKey)[12:20]
+	authKeyHash := sha1(authKey)[12:20]
 	t4 := make([]byte, 32+1+8)
 	copy(t4[0:], nonceSecond)
 	t4[32] = 1
-	copy(t4[33:], sha1(m.authKey)[0:8])
+	copy(t4[33:], sha1(authKey)[0:8])
 	nonceHash1 := sha1(t4)[4:20]
-	m.serverSalt = make([]byte, 8)
-	copy(m.serverSalt, nonceSecond[:8])
-	xor(m.serverSalt, nonceServer[:8])
+	serverSalt := make([]byte, 8)
+	copy(serverSalt, nonceSecond[:8])
+	xor(serverSalt, nonceServer[:8])
+
+	nw.session.SetAuthKey(authKey)
+	nw.session.SetAuthKeyHash(authKeyHash)
+	nw.session.SetServerSalt(serverSalt)
 
 	// (encoding) client_DH_inner_data
 	innerData2 := (TL_client_DH_inner_data{nonceFirst, nonceServer, 0, g_b}).encode()
@@ -314,13 +442,13 @@ func (m *MTProto) makeAuthKey() error {
 	encryptedData2, err := doAES256IGEencrypt(x, tmpAESKey, tmpAESIV)
 
 	// (send) set_client_DH_params
-	err = m.sendPacket(TL_set_client_DH_params{nonceFirst, nonceServer, encryptedData2}, nil)
+	err = nw.Send(TL_set_client_DH_params{nonceFirst, nonceServer, encryptedData2}, nil)
 	if err != nil {
 		return err
 	}
 
 	// (parse) dh_gen_{ok, Retry, fail}
-	data, err = m.read()
+	data, err = nw.Read()
 	if err != nil {
 		return err
 	}
@@ -339,10 +467,86 @@ func (m *MTProto) makeAuthKey() error {
 	}
 
 	// (all ok)
-	err = m.saveData()
+	err = nw.session.Save()
 	if err != nil {
 		return err
 	}
+	nw.session.Encrypted(true)
 
 	return nil
+}
+
+func (nw *Network) Process(data interface{}) interface{} {
+	return nw.process(nw.msgId, nw.seqNo, data)
+}
+
+func (nw *Network) process(msgId int64, seqNo int32, data interface{}) interface{} {
+	switch data.(type) {
+	case TL_msg_container:
+		data := data.(TL_msg_container).Items
+		for _, v := range data {
+			nw.process(v.Msg_id, v.Seq_no, v.Data)
+		}
+
+	case TL_bad_server_salt:
+		data := data.(TL_bad_server_salt)
+		nw.session.SetServerSalt(data.New_server_salt)
+		_ = nw.session.Save()
+		nw.mutex.Lock()
+		defer nw.mutex.Unlock()
+		for k, v := range nw.msgsIdToAck {
+			delete(nw.msgsIdToAck, k)
+			nw.queueSend <- v
+		}
+
+	case TL_new_session_created:
+		data := data.(TL_new_session_created)
+		nw.session.SetServerSalt(data.Server_salt)
+		_ = nw.session.Save()
+
+	case TL_ping:
+		data := data.(TL_ping)
+		nw.queueSend <- packetToSend{TL_pong{msgId, data.Ping_id}, nil}
+
+	case TL_pong:
+		// ignore
+
+	case TL_msgs_ack:
+		data := data.(TL_msgs_ack)
+		nw.mutex.Lock()
+		defer nw.mutex.Unlock()
+		for _, v := range data.MsgIds {
+			delete(nw.msgsIdToAck, v)
+		}
+
+	case TL_rpc_result:
+		data := data.(TL_rpc_result)
+		x := nw.process(msgId, seqNo, data.Obj)
+		nw.mutex.Lock()
+		defer nw.mutex.Unlock()
+		if v, ok := nw.msgsIdToResp[data.Req_msg_id]; ok {
+			var resp response
+			if rpcError, ok := x.(TL_rpc_error); ok {
+				resp.err = rpcError
+			}
+			resp.data = x.(TL)
+			v <- resp
+
+			close(v)
+		}
+		delete(nw.msgsIdToAck, data.Req_msg_id)
+	default:
+		return data
+	}
+
+	// TODO: Check why I should do this
+	if (seqNo & 1) == 1 {
+		nw.queueSend <- packetToSend{TL_msgs_ack{[]int64{msgId}}, nil}
+	}
+
+	return nil
+}
+
+func (nw Network) Address() string {
+	return nw.address
 }

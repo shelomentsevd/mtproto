@@ -1,39 +1,22 @@
 package mtproto
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
-	"net"
-	"os"
 	"runtime"
 	"sync"
 	"time"
 )
 
 type MTProto struct {
-	addr         string
-	useIPv6      bool
-	conn         *net.TCPConn
-	f            *os.File
 	queueSend    chan packetToSend
 	stopRoutines chan struct{}
 	allDone      sync.WaitGroup
 
-	authKey     []byte
-	authKeyHash []byte
-	serverSalt  []byte
-	encrypted   bool
-	sessionId   int64
-
-	mutex        *sync.Mutex
-	lastSeqNo    int32
-	msgsIdToAck  map[int64]packetToSend
-	msgsIdToResp map[int64]chan response
-	seqNo        int32
-	msgId        int64
+	network INetwork
+	IPv6 bool
+	authkeyfile string
 
 	appConfig Configuration
 
@@ -134,109 +117,62 @@ func NewMTProto(newSession bool, serverAddr string, useIPv6 bool, authkeyfile st
 	m := new(MTProto)
 	m.appConfig = appConfig
 
-	m.f, err = os.OpenFile(authkeyfile, os.O_RDWR|os.O_CREATE, 0600)
-	if err != nil {
+	m.queueSend = make(chan packetToSend, 64)
+	m.stopRoutines = make(chan struct{})
+	m.allDone = sync.WaitGroup{}
+	m.authkeyfile = authkeyfile
+	m.IPv6 = useIPv6
+
+	if m.network, err = NewNetwork(newSession, m.authkeyfile, m.queueSend, serverAddr, m.IPv6); err != nil {
 		return nil, err
-	}
-
-	rand.Seed(time.Now().UnixNano())
-	m.sessionId = rand.Int63()
-
-	if newSession {
-		m.addr = serverAddr
-		m.useIPv6 = useIPv6
-		m.encrypted = false
-		return m, nil
-	}
-
-	err = m.readData()
-	if err == nil {
-		m.encrypted = true
-	} else {
-		m.addr = serverAddr
-		m.useIPv6 = useIPv6
-		m.encrypted = false
 	}
 
 	return m, nil
 }
 
-func (m *MTProto) Connect() error {
-	var err error
-	var tcpAddr *net.TCPAddr
-
-	// connect
-	tcpAddr, err = net.ResolveTCPAddr("tcp", m.addr)
-	if err != nil {
-		return err
-	}
-	m.conn, err = net.DialTCP("tcp", nil, tcpAddr)
-	if err != nil {
-		return err
-	}
-	// Packet Length is encoded by a single byte (see: https://core.telegram.org/mtproto)
-	_, err = m.conn.Write([]byte{0xef})
-	if err != nil {
-		return err
-	}
-	// get new authKey if need
-	if !m.encrypted {
-		err = m.makeAuthKey()
-		if err != nil {
-			return err
-		}
-	}
+func (m *MTProto) Connect() (err error) {
+	m.network.Connect()
 
 	// start goroutines
-	m.queueSend = make(chan packetToSend, 64)
-	m.stopRoutines = make(chan struct{})
-	m.allDone = sync.WaitGroup{}
-	m.msgsIdToAck = make(map[int64]packetToSend)
-	m.msgsIdToResp = make(map[int64]chan response)
-	m.mutex = &sync.Mutex{}
 	go m.sendRoutine()
 	go m.readRoutine()
 
+	var data *TL
+
 	// (help_getConfig)
-	resp := make(chan response, 1)
-	m.queueSend <- packetToSend{
-		msg: TL_invokeWithLayer{
-			Layer: layer,
-			Query: TL_initConnection{
-				Api_id:         m.appConfig.Id,
-				Device_model:   m.appConfig.DeviceModel,
-				System_version: m.appConfig.SystemVersion,
-				App_version:    m.appConfig.Version,
-				Lang_code:      m.appConfig.Language,
-				Query:          TL_help_getConfig{},
-			},
+	if data, err = m.InvokeSync(TL_invokeWithLayer{
+		Layer: layer,
+		Query: TL_initConnection{
+			Api_id:         m.appConfig.Id,
+			Device_model:   m.appConfig.DeviceModel,
+			System_version: m.appConfig.SystemVersion,
+			App_version:    m.appConfig.Version,
+			Lang_code:      m.appConfig.Language,
+			Query:          TL_help_getConfig{},
 		},
-		resp: resp,
-	}
-	x := <-resp
-	if x.err != nil {
-		return x.err
+	}); err !=nil {
+		return
 	}
 
-	switch x.data.(type) {
+	switch (*data).(type) {
 	case TL_config:
 		m.dclist = make(map[int32]string, 5)
-		for _, v := range x.data.(TL_config).Dc_options {
+		for _, v := range (*data).(TL_config).Dc_options {
 			v := v.(TL_dcOption)
-			if m.useIPv6 && v.Ipv6 {
+			if m.IPv6 && v.Ipv6 {
 				m.dclist[v.Id] = fmt.Sprintf("[%s]:%d", v.Ip_address, v.Port)
 			} else if !v.Ipv6 {
 				m.dclist[v.Id] = fmt.Sprintf("%s:%d", v.Ip_address, v.Port)
 			}
 		}
 	default:
-		return fmt.Errorf("Connection error: got: %T", x)
+		err = fmt.Errorf("Connection error: got: %T", data)
 	}
 
 	// start keep alive ping
 	go m.pingRoutine()
 
-	return nil
+	return
 }
 
 func (m *MTProto) Disconnect() error {
@@ -249,13 +185,7 @@ func (m *MTProto) Disconnect() error {
 	// close send queue
 	close(m.queueSend)
 
-	// close connection
-	err := m.conn.Close()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return m.network.Disconnect()
 }
 
 func (m *MTProto) reconnect(newaddr string) error {
@@ -265,12 +195,10 @@ func (m *MTProto) reconnect(newaddr string) error {
 	}
 
 	// renew connection
-	m.encrypted = true
-	if m.addr != newaddr {
-		m.encrypted = false
+	if newaddr != m.network.Address() {
+		m.network, err = NewNetwork(true, m.authkeyfile, m.queueSend, newaddr, m.IPv6)
 	}
 
-	m.addr = newaddr
 	err = m.Connect()
 	return err
 }
@@ -283,7 +211,8 @@ func (m *MTProto) pingRoutine() {
 		case <-m.stopRoutines:
 			return
 		case <-time.After(60 * time.Second):
-			m.queueSend <- packetToSend{TL_ping{0xCADACADA}, nil}
+			// TODO: m.InvokeSync()?
+			m.InvokeAsync(TL_ping{0xCADACAD})
 		}
 	}
 }
@@ -296,7 +225,7 @@ func (m *MTProto) sendRoutine() {
 		case <-m.stopRoutines:
 			return
 		case x := <-m.queueSend:
-			err := m.sendPacket(x.msg, x.resp)
+			err := m.network.Send(x.msg, x.resp)
 			if err != nil {
 				log.Fatalln("SendRoutine:", err)
 			}
@@ -311,10 +240,11 @@ func (m *MTProto) readRoutine() {
 		// Run async wait for data from server
 		ch := make(chan interface{}, 1)
 		go func(ch chan<- interface{}) {
-			data, err := m.read()
+			data, err := m.network.Read()
 			if err == io.EOF {
+				// TODO: Last message to the server was lost. Fix it.
 				// Connection closed by server, trying to reconnect
-				err = m.reconnect(m.addr)
+				err = m.reconnect(m.network.Address())
 				if err != nil {
 					log.Fatalln("ReadRoutine: ", err)
 				}
@@ -332,165 +262,39 @@ func (m *MTProto) readRoutine() {
 			if data == nil {
 				return
 			}
-			m.process(m.msgId, m.seqNo, data)
+			m.network.Process(data)
 		}
 	}
-}
-
-func (m *MTProto) process(msgId int64, seqNo int32, data interface{}) interface{} {
-	switch data.(type) {
-	case TL_msg_container:
-		data := data.(TL_msg_container).Items
-		for _, v := range data {
-			m.process(v.Msg_id, v.Seq_no, v.Data)
-		}
-
-	case TL_bad_server_salt:
-		data := data.(TL_bad_server_salt)
-		m.serverSalt = data.New_server_salt
-		_ = m.saveData()
-		m.mutex.Lock()
-		defer m.mutex.Unlock()
-		for k, v := range m.msgsIdToAck {
-			delete(m.msgsIdToAck, k)
-			m.queueSend <- v
-		}
-
-	case TL_new_session_created:
-		data := data.(TL_new_session_created)
-		m.serverSalt = data.Server_salt
-		_ = m.saveData()
-
-	case TL_ping:
-		data := data.(TL_ping)
-		m.queueSend <- packetToSend{TL_pong{msgId, data.Ping_id}, nil}
-
-	case TL_pong:
-		// ignore
-
-	case TL_msgs_ack:
-		data := data.(TL_msgs_ack)
-		m.mutex.Lock()
-		defer m.mutex.Unlock()
-		for _, v := range data.MsgIds {
-			delete(m.msgsIdToAck, v)
-		}
-
-	case TL_rpc_result:
-		data := data.(TL_rpc_result)
-		x := m.process(msgId, seqNo, data.Obj)
-		m.mutex.Lock()
-		defer m.mutex.Unlock()
-		v, ok := m.msgsIdToResp[data.Req_msg_id]
-		if ok {
-			go func() {
-				var resp response
-				rpcError, ok := x.(TL_rpc_error)
-				if ok {
-					resp.err = m.handleRPCError(rpcError)
-				}
-				resp.data = x.(TL)
-				v <- resp
-				close(v)
-			}()
-		}
-		delete(m.msgsIdToAck, data.Req_msg_id)
-	default:
-		return data
-	}
-
-	// TODO: Check why I should do this
-	if (seqNo & 1) == 1 {
-		m.queueSend <- packetToSend{TL_msgs_ack{[]int64{msgId}}, nil}
-	}
-
-	return nil
-}
-
-func (m *MTProto) handleRPCError(rpcError TL_rpc_error) error {
-	switch rpcError.Error_code {
-	case errorSeeOther:
-		var newDc int32
-		n, _ := fmt.Sscanf(rpcError.Error_message, "PHONE_MIGRATE_%d", &newDc)
-		if n != 1 {
-			n, _ := fmt.Sscanf(rpcError.Error_message, "NETWORK_MIGRATE_%d", &newDc)
-			if n != 1 {
-				return fmt.Errorf("RPC error_string: %s", rpcError.Error_message)
-			}
-		}
-		newDcAddr, ok := m.dclist[newDc]
-		if !ok {
-			return fmt.Errorf("Wrong DC index: %d", newDc)
-		}
-		err := m.reconnect(newDcAddr)
-		if err != nil {
-			return err
-		}
-		return fmt.Errorf("mtproto error: %d %s", rpcError.Error_code, rpcError.Error_message)
-	case errorBadRequest, errorUnauthorized, errorFlood, errorInternal:
-		return fmt.Errorf("mtproto error: %d %s", rpcError.Error_code, rpcError.Error_message)
-	default:
-		return fmt.Errorf("mtproto unknow error: %d %s", rpcError.Error_code, rpcError.Error_message)
-	}
-}
-
-// Save session
-func (m *MTProto) saveData() (err error) {
-	m.encrypted = true
-
-	b := NewEncodeBuf(1024)
-	b.StringBytes(m.authKey)
-	b.StringBytes(m.authKeyHash)
-	b.StringBytes(m.serverSalt)
-	b.String(m.addr)
-	var useIPv6UInt uint32
-	if m.useIPv6 {
-		useIPv6UInt = 1
-	}
-	b.UInt(useIPv6UInt)
-
-	err = m.f.Truncate(0)
-	if err != nil {
-		return err
-	}
-
-	_, err = m.f.WriteAt(b.buf, 0)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Load session
-func (m *MTProto) readData() (err error) {
-	b := make([]byte, 1024*4)
-	n, err := m.f.ReadAt(b, 0)
-	if n <= 0 {
-		return errors.New("New session")
-	}
-
-	d := NewDecodeBuf(b)
-	m.authKey = d.StringBytes()
-	m.authKeyHash = d.StringBytes()
-	m.serverSalt = d.StringBytes()
-	m.addr = d.String()
-	m.useIPv6 = false
-	if d.UInt() == 1 {
-		m.useIPv6 = true
-	}
-
-	if d.err != nil {
-		return d.err
-	}
-
-	return nil
 }
 
 func (m *MTProto) InvokeSync(msg TL) (*TL, error) {
 	x := <-m.InvokeAsync(msg)
 
 	if x.err != nil {
+		if err, ok := x.err.(TL_rpc_error); ok {
+			switch err.Error_code {
+			case errorSeeOther:
+				var newDc int32
+				n, _ := fmt.Sscanf(err.Error_message, "PHONE_MIGRATE_%d", &newDc)
+				if n != 1 {
+					n, _ := fmt.Sscanf(err.Error_message, "NETWORK_MIGRATE_%d", &newDc)
+					if n != 1 {
+						return nil, fmt.Errorf("RPC error_string: %s", err.Error_message)
+					}
+				}
+				newDcAddr, ok := m.dclist[newDc]
+				if !ok {
+					return nil, fmt.Errorf("wrong DC index: %d", newDc)
+				}
+				err := m.reconnect(newDcAddr)
+				if err != nil {
+					return nil, err
+				}
+			default:
+				return nil, x.err
+			}
+		}
+
 		return nil, x.err
 	}
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"runtime"
 	"sync"
 	"time"
@@ -15,10 +16,15 @@ type MTProto struct {
 	allDone      sync.WaitGroup
 
 	network INetwork
-	IPv6 bool
-	authkeyfile string
 
-	appConfig Configuration
+	IPv6        bool
+	authkeyfile string
+	id          int32
+	hash        string
+	version     string
+	device      string
+	system      string
+	language    string
 
 	dclist map[int32]string
 }
@@ -33,13 +39,66 @@ type response struct {
 	err  error
 }
 
-type Configuration struct {
-	Id            int32
-	Hash          string
+type Option func(*options)
+
+type options struct {
 	Version       string
 	DeviceModel   string
 	SystemVersion string
 	Language      string
+	IPv6          bool
+	AuthkeyFile   string
+	ServerAddress string
+	NewSession    bool
+}
+
+func WithVersion(version string) Option {
+	return func(opts *options) {
+		opts.Version = version
+	}
+}
+
+func WithDevice(device string) Option {
+	return func(opts *options) {
+		opts.DeviceModel = device
+	}
+}
+
+func WithSystem(system string) Option {
+	return func(opts *options) {
+		opts.SystemVersion = system
+	}
+}
+
+func WithLanguage(language string) Option {
+	return func(opts *options) {
+		opts.Language = language
+	}
+}
+
+func WithServer(server string, ipv6 bool) Option {
+	return func(opts *options) {
+		opts.ServerAddress = server
+		opts.IPv6 = ipv6
+	}
+}
+
+func WithAuthFile(authfile string, newSession bool) Option {
+	return func(opts *options) {
+		opts.AuthkeyFile = authfile
+		opts.NewSession = newSession
+	}
+}
+
+var defaultOptions = options{
+	DeviceModel:   "Unknown",
+	SystemVersion: runtime.GOOS + "/" + runtime.GOARCH,
+	Language:      "en",
+	IPv6:          false,
+	AuthkeyFile:   os.Getenv("HOME") + "/mtproto.auth",
+	ServerAddress: "149.154.167.50:443",
+	Version:       "0.0.1",
+	NewSession:    false,
 }
 
 // API Errors
@@ -53,77 +112,41 @@ const (
 	errorInternal     = 500
 )
 
-const appConfigError = "App configuration error: %s"
-
 // Current API Layer Version
 const layer = 65
 
-func NewConfiguration(id int32, hash, version, deviceModel, systemVersion, language string) (*Configuration, error) {
-	appConfig := new(Configuration)
-
-	if id == 0 || hash == "" || version == "" {
-		return nil, fmt.Errorf(appConfigError, "Fields Id, Hash or Version are empty")
-	}
-	appConfig.Id = id
-	appConfig.Hash = hash
-	appConfig.Version = version
-
-	appConfig.DeviceModel = deviceModel
-	if deviceModel == "" {
-		appConfig.DeviceModel = "Unknown"
-	}
-
-	appConfig.SystemVersion = systemVersion
-	if systemVersion == "" {
-		appConfig.SystemVersion = runtime.GOOS + "/" + runtime.GOARCH
-	}
-
-	appConfig.Language = language
-	if language == "" {
-		appConfig.Language = "en"
-	}
-
-	return appConfig, nil
-}
-
-func (appConfig Configuration) Check() error {
-	if appConfig.Id == 0 || appConfig.Hash == "" || appConfig.Version == "" {
-		return fmt.Errorf(appConfigError, "Configuration.Id, Configuration.Hash or Configuration.Version are empty")
-	}
-
-	if appConfig.DeviceModel == "" {
-		return fmt.Errorf(appConfigError, "Configuration.DeviceModel is empty")
-	}
-
-	if appConfig.SystemVersion == "" {
-		return fmt.Errorf(appConfigError, "Configuration.SystemVersion is empty")
-	}
-
-	if appConfig.Language == "" {
-		return fmt.Errorf(appConfigError, "Configuration.Language is empty")
-	}
-
-	return nil
-}
-
-func NewMTProto(newSession bool, serverAddr string, useIPv6 bool, authkeyfile string, appConfig Configuration) (*MTProto, error) {
+func NewMTProto(id int32, hash string, opts ...Option) (*MTProto, error) {
 	var err error
 
-	err = appConfig.Check()
-	if err != nil {
-		return nil, err
+	if id == 0 {
+		return nil, fmt.Errorf("can't initialize mtproto: wrong application id")
+	}
+
+	if len(hash) == 0 {
+		return nil, fmt.Errorf("can't initialize mtpoto: wrong application hash")
+	}
+
+	configuration := defaultOptions
+	for _, option := range opts {
+		option(&configuration)
 	}
 
 	m := new(MTProto)
-	m.appConfig = appConfig
 
 	m.queueSend = make(chan packetToSend, 64)
 	m.stopRoutines = make(chan struct{})
 	m.allDone = sync.WaitGroup{}
-	m.authkeyfile = authkeyfile
-	m.IPv6 = useIPv6
 
-	if m.network, err = NewNetwork(newSession, m.authkeyfile, m.queueSend, serverAddr, m.IPv6); err != nil {
+	m.id = id
+	m.hash = hash
+	m.version = configuration.Version
+	m.device = configuration.DeviceModel
+	m.system = configuration.SystemVersion
+	m.language = configuration.Language
+	m.authkeyfile = configuration.AuthkeyFile
+	m.IPv6 = configuration.IPv6
+
+	if m.network, err = NewNetwork(configuration.NewSession, m.authkeyfile, m.queueSend, configuration.ServerAddress, m.IPv6); err != nil {
 		return nil, err
 	}
 
@@ -143,14 +166,14 @@ func (m *MTProto) Connect() (err error) {
 	if data, err = m.InvokeSync(TL_invokeWithLayer{
 		Layer: layer,
 		Query: TL_initConnection{
-			Api_id:         m.appConfig.Id,
-			Device_model:   m.appConfig.DeviceModel,
-			System_version: m.appConfig.SystemVersion,
-			App_version:    m.appConfig.Version,
-			Lang_code:      m.appConfig.Language,
+			Api_id:         m.id,
+			Device_model:   m.device,
+			System_version: m.system,
+			App_version:    m.version,
+			Lang_code:      m.language,
 			Query:          TL_help_getConfig{},
 		},
-	}); err !=nil {
+	}); err != nil {
 		return
 	}
 

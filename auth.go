@@ -11,8 +11,8 @@ func (m *MTProto) AuthSendCode(phonenumber string) (*TL_auth_sentCode, error) {
 		Allow_flashcall: false,
 		Phone_number:    phonenumber,
 		Current_number:  TL_boolTrue{},
-		Api_id:          m.appConfig.Id,
-		Api_hash:        m.appConfig.Hash,
+		Api_id:          m.id,
+		Api_hash:        m.hash,
 	})
 
 	if err != nil {

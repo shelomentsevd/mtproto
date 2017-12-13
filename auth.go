@@ -29,6 +29,28 @@ func (m *MTProto) AuthSendCode(phonenumber string) (*TL_auth_sentCode, error) {
 	return &authSentCode, nil
 }
 
+func (m *MTProto) AuthSignUp(phoneNumber, phoneCodeHash, phoneCode, firstName, lastName string) (*TL_auth_authorization, error) {
+	tl, err := m.InvokeSync(TL_auth_signUp{
+		Phone_number: phoneNumber,
+		Phone_code_hash: phoneCodeHash,
+		Phone_code:phoneCode,
+		First_name:firstName,
+		Last_name:lastName,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	auth, ok := (*tl).(TL_auth_authorization)
+
+	if !ok {
+		return nil, fmt.Errorf("RPC: %#v", *tl)
+	}
+
+	return &auth, nil
+}
+
 func (m *MTProto) AuthSignIn(phoneNumber, phoneCode, phoneCodeHash string) (*TL_auth_authorization, error) {
 	if phoneNumber == "" || phoneCode == "" || phoneCodeHash == "" {
 		return nil, errors.New("MRProto::AuthSignIn one of function parameters is empty")

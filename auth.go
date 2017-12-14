@@ -5,6 +5,26 @@ import (
 	"fmt"
 )
 
+func (m *MTProto) AuthCheckPhone(phonenumber string) (*TL_auth_checkedPhone, error) {
+	var phone TL_auth_checkedPhone
+	tl, err := m.InvokeSync(TL_auth_checkPhone{
+		Phone_number:phonenumber,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	switch (*tl).(type) {
+	case TL_auth_sentCode:
+		phone = (*tl).(TL_auth_checkedPhone)
+	default:
+		return nil, fmt.Errorf("Got: %T", *tl)
+	}
+
+	return &phone, nil
+}
+
 func (m *MTProto) AuthSendCode(phonenumber string) (*TL_auth_sentCode, error) {
 	var authSentCode TL_auth_sentCode
 	tl, err := m.InvokeSync(TL_auth_sendCode{

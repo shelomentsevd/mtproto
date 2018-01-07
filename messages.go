@@ -36,3 +36,16 @@ func (m *MTProto) MessagesSendMessage(no_webpage, silent, background, clear_draf
 		Entities:        entities,
 	})
 }
+
+func (m *MTProto) MessagesExportChatInvite(chat_id int32) (*TL, error) {
+	return m.InvokeSync(TL_messages_exportChatInvite{
+		Chat_id: chat_id,
+	})
+}
+
+func (m *MTProto) MessagesCreateChat(users []TL, title string) (*TL, error) {
+	return m.InvokeSync(TL_messages_createChat{
+		Users: users,
+		Title: title,
+	})
+}

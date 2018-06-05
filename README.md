@@ -1,3 +1,8 @@
+### Deprecated!!!
+This library is deprecated and I don't have enough time to support it.<br/>
+If you want to use golang in your project you should check golang binding to official library:<br/>
+https://github.com/Arman92/go-tdlib<br/>
+
 ## Telegram
 
 MTProto implementation in Go language
